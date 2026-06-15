@@ -4,7 +4,7 @@ import PageHero from '@/components/layout/PageHero'
 import Reveal from '@/components/ui/Reveal'
 import SermonCard from '@/components/sermons/SermonCard'
 import WorshipFilter from '@/components/sermons/WorshipFilter'
-import { getSermonsByWorshipType } from '@/lib/seed/sermons'
+import { getSermonsByWorshipType } from '@/lib/data/sermons'
 import { isWorshipType, type WorshipFilterValue } from '@/lib/worship'
 
 export const metadata: Metadata = {

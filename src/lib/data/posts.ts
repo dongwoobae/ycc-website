@@ -1,0 +1,42 @@
+import { and, desc, eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { posts as postsTable, type PostRow } from '@/lib/db/schema'
+import type { Post, PostCategory } from '@/lib/types'
+
+function toDateString(value: Date | null): string {
+  return (value ?? new Date()).toISOString().slice(0, 10)
+}
+
+function toPost(row: PostRow): Post {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content ?? '',
+    category: row.category as PostCategory,
+    isPinned: row.isPinned,
+    publishedAt: toDateString(row.publishedAt ?? row.createdAt),
+  }
+}
+
+export async function getPosts(): Promise<Post[]> {
+  const rows = await db
+    .select()
+    .from(postsTable)
+    .where(eq(postsTable.isPublished, true))
+    .orderBy(desc(postsTable.isPinned), desc(postsTable.publishedAt))
+  return rows.map(toPost)
+}
+
+export async function getPostById(id: string): Promise<Post | undefined> {
+  const rows = await db
+    .select()
+    .from(postsTable)
+    .where(and(eq(postsTable.id, id), eq(postsTable.isPublished, true)))
+    .limit(1)
+  return rows[0] ? toPost(rows[0]) : undefined
+}
+
+export async function getLatestPosts(limit = 3): Promise<Post[]> {
+  const sorted = await getPosts()
+  return sorted.slice(0, limit)
+}

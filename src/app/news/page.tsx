@@ -3,7 +3,7 @@ import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import Reveal from '@/components/ui/Reveal'
 import PostCard from '@/components/posts/PostCard'
-import { getPosts } from '@/lib/seed/posts'
+import { getPosts } from '@/lib/data/posts'
 
 export const metadata: Metadata = {
   title: '교회소식',

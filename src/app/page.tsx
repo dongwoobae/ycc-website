@@ -4,9 +4,9 @@ import SectionTitle from '@/components/ui/SectionTitle'
 import Reveal from '@/components/ui/Reveal'
 import SermonCard from '@/components/sermons/SermonCard'
 import PostCard from '@/components/posts/PostCard'
-import { getLatestSermons } from '@/lib/seed/sermons'
-import { getLatestBulletin } from '@/lib/seed/bulletins'
-import { getLatestPosts } from '@/lib/seed/posts'
+import { getLatestSermons } from '@/lib/data/sermons'
+import { getLatestBulletin } from '@/lib/data/bulletins'
+import { getLatestPosts } from '@/lib/data/posts'
 
 export default async function HomePage() {
   const [sermons, bulletin, posts] = await Promise.all([

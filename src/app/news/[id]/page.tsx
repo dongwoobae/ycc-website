@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
-import { getPostById } from '@/lib/seed/posts'
+import { getPostById } from '@/lib/data/posts'
 
 interface NewsDetailProps {
   params: Promise<{ id: string }>

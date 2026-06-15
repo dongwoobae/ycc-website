@@ -3,7 +3,7 @@ import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import Reveal from '@/components/ui/Reveal'
 import AlbumCard from '@/components/gallery/AlbumCard'
-import { getGalleryAlbums } from '@/lib/seed/gallery'
+import { getGalleryAlbums } from '@/lib/data/gallery'
 
 export const metadata: Metadata = {
   title: '갤러리',

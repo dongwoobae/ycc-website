@@ -75,7 +75,8 @@ export default function BulletinView({ bulletin }: { bulletin: Bulletin }) {
         <div className="mt-6 text-sm leading-6 text-ink-muted">
           <p>{bulletin.churchInfo.address}</p>
           <p>
-            전화 {bulletin.churchInfo.phone} / 팩스 {bulletin.churchInfo.fax}
+            전화 {bulletin.churchInfo.phone}
+            {bulletin.churchInfo.phone2 && `, ${bulletin.churchInfo.phone2}`}
           </p>
           <p>{bulletin.churchInfo.blog}</p>
         </div>

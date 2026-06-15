@@ -71,7 +71,7 @@ export default function VisitPage() {
               <div>
                 <h2 className="font-serif text-2xl text-ink">오시는 길</h2>
                 <p className="mt-4 leading-7 text-ink-muted">경북 영천시 완산중앙8길 21</p>
-                <p className="mt-2 text-ink-muted">전화 337-5692 / 팩스 337-5693</p>
+                <p className="mt-2 text-ink-muted">전화 054-334-6644, 054-334-6645</p>
               </div>
               <div className="flex aspect-video items-center justify-center rounded-lg bg-surface text-center text-sm leading-6 text-ink-muted">
                 카카오맵 임베드 영역

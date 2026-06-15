@@ -44,7 +44,7 @@ export interface Bulletin {
   churchInfo: {
     address: string
     phone: string
-    fax: string
+    phone2?: string
     blog: string
   }
   sections: BulletinSection[]

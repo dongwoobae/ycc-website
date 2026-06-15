@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import Reveal from '@/components/ui/Reveal'
-import { getBulletins } from '@/lib/seed/bulletins'
+import { getBulletins } from '@/lib/data/bulletins'
 
 export const metadata: Metadata = {
   title: '주보',

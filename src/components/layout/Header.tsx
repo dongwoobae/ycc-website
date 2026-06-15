@@ -65,11 +65,25 @@ export default function Header() {
         </nav>
         <button
           type="button"
-          className="rounded-full border border-line px-3 py-2 text-sm text-ink md:hidden"
+          className="rounded-full border border-line p-2 text-ink transition hover:bg-surface md:hidden"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
+          aria-label={open ? '메뉴 닫기' : '메뉴 열기'}
         >
-          메뉴
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+            {open ? (
+              <>
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </>
+            ) : (
+              <>
+                <line x1="3.5" y1="7" x2="20.5" y2="7" />
+                <line x1="3.5" y1="12" x2="20.5" y2="12" />
+                <line x1="3.5" y1="17" x2="20.5" y2="17" />
+              </>
+            )}
+          </svg>
         </button>
       </Container>
       {open && (

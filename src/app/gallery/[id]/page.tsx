@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
-import { getGalleryAlbumById } from '@/lib/seed/gallery'
+import { getGalleryAlbumById } from '@/lib/data/gallery'
 
 interface GalleryDetailProps {
   params: Promise<{ id: string }>

@@ -1,11 +1,5 @@
 import type { Bulletin } from '@/lib/types'
-
-const churchInfo = {
-  address: '경북 영천시 완산중앙8길 21',
-  phone: '337-5692',
-  fax: '337-5693',
-  blog: 'http://blog.naver.com/ycch6645',
-}
+import { churchInfo } from '../church'
 
 const commonSections = [
   {

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
 import BulletinView from '@/components/bulletins/BulletinView'
-import { getBulletinById } from '@/lib/seed/bulletins'
+import { getBulletinById } from '@/lib/data/bulletins'
 
 interface BulletinDetailProps {
   params: Promise<{ id: string }>

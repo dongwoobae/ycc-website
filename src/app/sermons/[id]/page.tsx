@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
 import YouTubeEmbed from '@/components/sermons/YouTubeEmbed'
-import { getSermonById } from '@/lib/seed/sermons'
+import { getSermonById } from '@/lib/data/sermons'
 
 interface SermonDetailProps {
   params: Promise<{ id: string }>
