@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className="mt-auto border-t border-line bg-surface">
       <Container className="grid gap-10 py-12 text-sm text-ink-muted md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
-          <h2 className="font-serif text-2xl font-bold text-ink">영천중앙교회</h2>
+          <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">영천중앙교회</h2>
           <p className="mt-4 leading-7">
             삶의 소망을 주는 은혜로운 교회. 구역이 살아나고 지역 사회를 섬기는 교회로
             함께 걷습니다.
@@ -27,17 +27,17 @@ export default function Footer() {
           <h3 className="font-semibold text-ink">바로가기</h3>
           <ul className="mt-4 space-y-2">
             <li>
-              <Link href="/sermons" className="hover:text-accent">
+              <Link href="/sermons" className="hover:text-accent-deep">
                 예배·설교
               </Link>
             </li>
             <li>
-              <Link href="/bulletins" className="hover:text-accent">
+              <Link href="/bulletins" className="hover:text-accent-deep">
                 주보
               </Link>
             </li>
             <li>
-              <Link href="/about/visit" className="hover:text-accent">
+              <Link href="/about/visit" className="hover:text-accent-deep">
                 오시는 길
               </Link>
             </li>

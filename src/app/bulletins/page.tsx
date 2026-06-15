@@ -18,7 +18,7 @@ export default async function BulletinsPage() {
         eyebrow="Bulletin"
         title="주보"
         subtitle="매주 예배 순서와 교회 소식을 정리해 제공합니다."
-        image="https://images.unsplash.com/photo-1490127252417-7c393f993ee4?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80"
       />
       <div className="py-16">
         <Container>
@@ -29,10 +29,12 @@ export default async function BulletinsPage() {
                   href={`/bulletins/${bulletin.id}`}
                   className="block h-full rounded-lg border border-line bg-paper p-6 shadow-subtle transition hover:-translate-y-1 hover:shadow-soft"
                 >
-                  <p className="text-sm font-semibold text-accent">
+                  <p className="text-sm font-semibold text-accent-deep">
                     {bulletin.volume} {bulletin.issue}
                   </p>
-                  <h2 className="mt-3 font-serif text-3xl text-ink">{bulletin.bulletinDate} 주보</h2>
+                  <h2 className="mt-3 font-serif text-3xl font-extrabold tracking-tight text-ink">
+                    {bulletin.bulletinDate} 주보
+                  </h2>
                   <p className="mt-4 text-ink-muted">{bulletin.theme}</p>
                   <p className="mt-2 text-sm text-ink-muted">({bulletin.scripture})</p>
                 </Link>

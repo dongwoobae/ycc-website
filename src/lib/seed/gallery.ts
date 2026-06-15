@@ -5,13 +5,13 @@ const albums: GalleryAlbum[] = [
     id: '2026-spring-service',
     title: '봄맞이 교회 대청소',
     description: '성도들이 함께 예배당과 교육관을 정돈하며 새 계절을 맞이했습니다.',
-    coverImgUrl: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=1200&q=80',
+    coverImgUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
     eventDate: '2026-04-18',
     isPublished: true,
     images: [
       {
         id: 'spring-service-1',
-        imageUrl: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=1200&q=80',
+        imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
         alt: '햇빛이 드는 교회 내부',
         caption: '예배당 정돈',
       },

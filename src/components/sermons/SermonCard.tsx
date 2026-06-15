@@ -16,11 +16,13 @@ export default function SermonCard({ sermon }: { sermon: Sermon }) {
         />
       </div>
       <div className="p-5">
-        <div className="flex items-center justify-between gap-3 text-xs font-medium text-accent">
+        <div className="flex items-center justify-between gap-3 text-xs font-medium text-accent-deep">
           <span>{sermon.worshipType}</span>
           <time dateTime={sermon.sermonDate}>{sermon.sermonDate}</time>
         </div>
-        <h3 className="mt-3 line-clamp-2 font-serif text-xl leading-snug text-ink">{sermon.title}</h3>
+        <h3 className="mt-3 line-clamp-2 font-serif text-xl font-extrabold leading-snug tracking-tight text-ink">
+          {sermon.title}
+        </h3>
         <p className="mt-3 text-sm text-ink-muted">{sermon.preacher}</p>
         {sermon.scripture && <p className="mt-1 text-sm text-ink-muted">{sermon.scripture}</p>}
       </div>

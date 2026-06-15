@@ -31,8 +31,10 @@ export default async function SermonDetailPage({ params }: SermonDetailProps) {
   return (
     <div className="py-16">
       <Container className="max-w-4xl">
-        <p className="text-sm font-semibold text-accent">{sermon.worshipType}</p>
-        <h1 className="mt-3 font-serif text-4xl leading-tight text-ink sm:text-5xl">{sermon.title}</h1>
+        <p className="text-sm font-semibold text-accent-deep">{sermon.worshipType}</p>
+        <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
+          {sermon.title}
+        </h1>
         <p className="mt-4 text-ink-muted">
           {sermon.preacher} · {sermon.scripture} · {sermon.sermonDate}
         </p>
@@ -41,7 +43,7 @@ export default async function SermonDetailPage({ params }: SermonDetailProps) {
         </div>
         {sermon.summary && (
           <section className="mt-8 rounded-lg border border-line bg-paper p-6 shadow-subtle">
-            <h2 className="font-serif text-2xl text-ink">설교 요약</h2>
+            <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">설교 요약</h2>
             <p className="mt-4 leading-8 text-ink-muted">{sermon.summary}</p>
           </section>
         )}

@@ -13,7 +13,7 @@ export default async function AdminGalleryPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-ink">갤러리 관리</h1>
         <Link
           href="/admin/gallery/new"
@@ -23,8 +23,8 @@ export default async function AdminGalleryPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-paper shadow-sm">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
+        <table className="min-w-[48rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
             <tr>
               {['행사일', '표지', '앨범명', '공개', '관리'].map((heading) => (

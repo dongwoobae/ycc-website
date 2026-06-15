@@ -13,13 +13,15 @@ export default function PageHero({ eyebrow, title, subtitle, image }: PageHeroPr
     <section className="relative isolate overflow-hidden bg-gradient-to-br from-accent-deep to-ink">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={image} alt="" aria-hidden className="absolute inset-0 -z-20 h-full w-full object-cover" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/55 via-ink/45 to-ink/65" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-accent-deep/80 via-ink/60 to-ink/78" />
       <Container className="flex min-h-[18rem] flex-col justify-center py-16 md:min-h-[22rem]">
         <Reveal variant="fade">
-          {eyebrow && <p className="text-sm font-semibold tracking-wide text-bg/80">{eyebrow}</p>}
+          {eyebrow && <p className="text-sm font-semibold tracking-wide text-emerald-100">{eyebrow}</p>}
         </Reveal>
         <Reveal variant="fade-up" delay={100}>
-          <h1 className="mt-3 font-serif text-4xl leading-tight text-bg sm:text-5xl">{title}</h1>
+          <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-bg sm:text-5xl">
+            {title}
+          </h1>
         </Reveal>
         {subtitle && (
           <Reveal variant="fade-up" delay={220}>

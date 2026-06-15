@@ -14,7 +14,7 @@ export default function WorshipFilter({ current }: { current: WorshipFilterValue
             className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
               active
                 ? 'border-accent bg-accent text-bg'
-                : 'border-line bg-paper text-ink-muted hover:border-accent hover:text-accent'
+                : 'border-line bg-paper text-ink-muted hover:border-accent-deep hover:text-accent-deep'
             }`}
           >
             {item.label}

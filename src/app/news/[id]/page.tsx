@@ -25,10 +25,12 @@ export default async function NewsDetailPage({ params }: NewsDetailProps) {
   return (
     <div className="py-16">
       <Container className="max-w-3xl">
-        <p className="text-sm font-semibold text-accent">
+        <p className="text-sm font-semibold text-accent-deep">
           {post.category} · {post.publishedAt}
         </p>
-        <h1 className="mt-3 font-serif text-4xl leading-tight text-ink sm:text-5xl">{post.title}</h1>
+        <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
+          {post.title}
+        </h1>
         <article className="mt-10 rounded-lg border border-line bg-paper p-8 text-lg leading-9 text-ink-muted shadow-subtle">
           {post.content}
         </article>
