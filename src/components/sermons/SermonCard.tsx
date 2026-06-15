@@ -1,45 +1,28 @@
 import Link from 'next/link'
+import type { Sermon } from '@/lib/types'
 
-interface SermonCardProps {
-  id: string
-  title: string
-  preacher: string
-  scripture?: string
-  worshipType: string
-  sermonDate: string
-  thumbnailUrl?: string
-}
-
-export default function SermonCard({
-  id,
-  title,
-  preacher,
-  scripture,
-  worshipType,
-  sermonDate,
-  thumbnailUrl,
-}: SermonCardProps) {
+export default function SermonCard({ sermon }: { sermon: Sermon }) {
   return (
     <Link
-      href={`/sermons/${id}`}
-      className="block overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md"
+      href={`/sermons/${sermon.id}`}
+      className="group block overflow-hidden rounded-lg border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:shadow-soft"
     >
-      <div className="flex h-40 w-full items-center justify-center bg-gray-200 text-sm text-gray-400">
-        {thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={thumbnailUrl} alt={title} className="h-full w-full object-cover" />
-        ) : (
-          '썸네일'
-        )}
+      <div className="aspect-video overflow-hidden bg-surface">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={sermon.thumbnailUrl}
+          alt={`${sermon.title} 설교 썸네일`}
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+        />
       </div>
-      <div className="p-4">
-        <span className="text-xs font-medium text-blue-600">{worshipType}</span>
-        <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900">{title}</h3>
-        {scripture && <p className="mt-1 text-xs text-gray-500">{scripture}</p>}
-        <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
-          <span>{preacher}</span>
-          <span>{sermonDate}</span>
+      <div className="p-5">
+        <div className="flex items-center justify-between gap-3 text-xs font-medium text-accent">
+          <span>{sermon.worshipType}</span>
+          <time dateTime={sermon.sermonDate}>{sermon.sermonDate}</time>
         </div>
+        <h3 className="mt-3 line-clamp-2 font-serif text-xl leading-snug text-ink">{sermon.title}</h3>
+        <p className="mt-3 text-sm text-ink-muted">{sermon.preacher}</p>
+        {sermon.scripture && <p className="mt-1 text-sm text-ink-muted">{sermon.scripture}</p>}
       </div>
     </Link>
   )

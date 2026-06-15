@@ -1,5 +1,52 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
 @import "tailwindcss";
 
+:root {
+  --bg: 253 251 247;
+  --surface: 244 238 228;
+  --ink: 46 40 32;
+  --ink-muted: 107 94 79;
+  --accent: 180 114 78;
+  --accent-deep: 143 86 54;
+  --line: 231 221 205;
+  --paper: 255 255 255;
+}
+
+@theme inline {
+  --color-bg: rgb(var(--bg));
+  --color-surface: rgb(var(--surface));
+  --color-ink: rgb(var(--ink));
+  --color-ink-muted: rgb(var(--ink-muted));
+  --color-accent: rgb(var(--accent));
+  --color-accent-deep: rgb(var(--accent-deep));
+  --color-line: rgb(var(--line));
+  --color-paper: rgb(var(--paper));
+  --font-sans: "Pretendard", system-ui, sans-serif;
+  --font-serif: var(--font-gowun-batang), serif;
+  --shadow-soft: 0 18px 50px rgb(var(--ink) / 0.08);
+  --shadow-subtle: 0 8px 26px rgb(var(--ink) / 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  color: #111827;
+  min-height: 100vh;
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-family: var(--font-sans);
+}
+
+a {
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.18);
 }

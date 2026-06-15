@@ -1,19 +1,38 @@
-// Next.js 16: params는 Promise
-interface Props {
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import Container from '@/components/layout/Container'
+import { getPostById } from '@/lib/seed/posts'
+
+interface NewsDetailProps {
   params: Promise<{ id: string }>
 }
 
-export default async function NewsDetailPage({ params }: Props) {
+export async function generateMetadata({ params }: NewsDetailProps): Promise<Metadata> {
   const { id } = await params
-  // TODO: Supabase에서 id로 post fetch
+  const post = await getPostById(id)
+  if (!post) return { title: '교회소식' }
+  return {
+    title: post.title,
+    description: post.content,
+  }
+}
+
+export default async function NewsDetailPage({ params }: NewsDetailProps) {
+  const { id } = await params
+  const post = await getPostById(id)
+  if (!post) notFound()
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <p className="mb-1 text-xs text-gray-400">공지 · 2025-01-05</p>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">게시글 제목 (ID: {id})</h1>
-      <div className="prose max-w-none text-gray-700">
-        <p>게시글 내용이 여기 표시됩니다. TODO: Supabase fetch</p>
-      </div>
+    <div className="py-16">
+      <Container className="max-w-3xl">
+        <p className="text-sm font-semibold text-accent">
+          {post.category} · {post.publishedAt}
+        </p>
+        <h1 className="mt-3 font-serif text-4xl leading-tight text-ink sm:text-5xl">{post.title}</h1>
+        <article className="mt-10 rounded-lg border border-line bg-paper p-8 text-lg leading-9 text-ink-muted shadow-subtle">
+          {post.content}
+        </article>
+      </Container>
     </div>
   )
 }

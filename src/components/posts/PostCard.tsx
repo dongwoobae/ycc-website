@@ -1,25 +1,25 @@
 import Link from 'next/link'
+import type { Post } from '@/lib/types'
 
-interface PostCardProps {
-  id: string
-  title: string
-  category: string
-  publishedAt: string
-  isPinned?: boolean
-}
-
-export default function PostCard({ id, title, category, publishedAt, isPinned }: PostCardProps) {
+export default function PostCard({ post }: { post: Post }) {
   return (
     <Link
-      href={`/news/${id}`}
-      className="flex items-center justify-between rounded border-b border-gray-100 px-2 py-3 transition hover:bg-gray-50"
+      href={`/news/${post.id}`}
+      className="grid gap-3 border-b border-line py-5 last:border-b-0 sm:grid-cols-[auto_1fr_auto] sm:items-center"
     >
-      <div className="flex items-center gap-3">
-        <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{category}</span>
-        {isPinned && <span className="text-xs font-medium text-red-500">📌</span>}
-        <span className="line-clamp-1 text-sm text-gray-800">{title}</span>
+      <span className="w-fit rounded-full bg-surface px-3 py-1 text-xs font-semibold text-accent">
+        {post.category}
+      </span>
+      <div>
+        <h3 className="font-medium text-ink transition hover:text-accent">
+          {post.isPinned && <span className="mr-2 text-accent">고정</span>}
+          {post.title}
+        </h3>
+        <p className="mt-1 line-clamp-1 text-sm text-ink-muted">{post.content}</p>
       </div>
-      <span className="ml-4 shrink-0 text-xs text-gray-400">{publishedAt}</span>
+      <time className="text-sm text-ink-muted" dateTime={post.publishedAt}>
+        {post.publishedAt}
+      </time>
     </Link>
   )
 }

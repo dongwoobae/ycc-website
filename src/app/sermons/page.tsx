@@ -1,24 +1,38 @@
+import type { Metadata } from 'next'
+import Container from '@/components/layout/Container'
+import SectionTitle from '@/components/ui/SectionTitle'
 import SermonCard from '@/components/sermons/SermonCard'
+import WorshipFilter from '@/components/sermons/WorshipFilter'
+import { getSermonsByWorshipType } from '@/lib/seed/sermons'
+import { isWorshipType, type WorshipFilterValue } from '@/lib/worship'
 
-// TODO: Supabase fetch로 교체
-const SAMPLE_SERMONS = Array.from({ length: 6 }, (_, i) => ({
-  id: `s${i + 1}`,
-  title: `샘플 설교 제목 ${i + 1}`,
-  preacher: '홍길동 목사',
-  scripture: '창세기 1:1',
-  worshipType: i % 2 === 0 ? '주일예배' : '수요예배',
-  sermonDate: `2025-01-${String(i + 1).padStart(2, '0')}`,
-}))
+export const metadata: Metadata = {
+  title: '예배·설교',
+}
 
-export default function SermonsPage() {
+interface SermonsPageProps {
+  searchParams: Promise<{ worship?: string }>
+}
+
+export default async function SermonsPage({ searchParams }: SermonsPageProps) {
+  const { worship } = await searchParams
+  const selected = worship && isWorshipType(worship) ? worship : undefined
+  const sermons = await getSermonsByWorshipType(selected)
+  const current: WorshipFilterValue = selected ?? '전체'
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">예배 &amp; 설교</h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {SAMPLE_SERMONS.map((sermon) => (
-          <SermonCard key={sermon.id} {...sermon} />
-        ))}
-      </div>
+    <div className="py-16">
+      <Container>
+        <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <SectionTitle eyebrow="Sermons" title="예배·설교" description="예배별 말씀을 다시 듣고 묵상할 수 있습니다." />
+          <WorshipFilter current={current} />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {sermons.map((sermon) => (
+            <SermonCard key={sermon.id} sermon={sermon} />
+          ))}
+        </div>
+      </Container>
     </div>
   )
 }
