@@ -21,10 +21,10 @@ export default async function HomePage() {
         <Container className="grid min-h-[calc(100vh-4.5rem)] items-center gap-10 py-16 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
             <Reveal>
-              <p className="text-sm font-semibold text-accent">대한예수교장로회</p>
+              <p className="text-sm font-semibold text-accent-deep">대한예수교장로회</p>
             </Reveal>
             <Reveal delay={120}>
-              <h1 className="mt-5 font-serif text-5xl leading-tight text-ink sm:text-6xl">
+              <h1 className="mt-5 font-serif text-5xl font-extrabold leading-tight tracking-tight text-ink sm:text-6xl">
                 삶의 소망을 주는 은혜로운 영천중앙교회
               </h1>
             </Reveal>
@@ -48,13 +48,14 @@ export default async function HomePage() {
               </div>
             </Reveal>
           </div>
-          <Reveal delay={200} className="overflow-hidden rounded-lg border border-line bg-paper shadow-soft">
+          <Reveal delay={200} className="relative isolate overflow-hidden rounded-lg border border-line bg-paper shadow-soft">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1400&q=80"
-              alt="따뜻한 빛이 들어오는 예배당"
-              className="h-full min-h-[28rem] w-full object-cover"
+              src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1400&q=80"
+              alt="햇살이 비치는 숲길"
+              className="ken-burns h-full min-h-[28rem] w-full object-cover"
             />
+            <div className="absolute inset-0 bg-gradient-to-br from-accent-deep/25 via-transparent to-ink/30" />
           </Reveal>
         </Container>
       </section>
@@ -64,7 +65,7 @@ export default async function HomePage() {
           <Reveal>
             <div className="mb-8 flex items-end justify-between gap-4">
               <SectionTitle eyebrow="Worship" title="최근 설교" description="말씀을 다시 듣고 묵상할 수 있습니다." />
-              <Link href="/sermons" className="hidden text-sm font-semibold text-accent sm:block">
+              <Link href="/sermons" className="hidden text-sm font-semibold text-accent-deep sm:block">
                 전체 보기
               </Link>
             </div>
@@ -94,10 +95,12 @@ export default async function HomePage() {
                 href={`/bulletins/${bulletin.id}`}
                 className="block rounded-lg border border-line bg-paper p-8 shadow-subtle transition hover:-translate-y-1 hover:shadow-soft"
               >
-                <p className="text-sm font-semibold text-accent">
+                <p className="text-sm font-semibold text-accent-deep">
                   {bulletin.volume} {bulletin.issue}
                 </p>
-                <h3 className="mt-3 font-serif text-3xl text-ink">{bulletin.bulletinDate} 주보</h3>
+                <h3 className="mt-3 font-serif text-3xl font-extrabold tracking-tight text-ink">
+                  {bulletin.bulletinDate} 주보
+                </h3>
                 <p className="mt-4 text-ink-muted">{bulletin.theme}</p>
                 <p className="mt-2 text-sm text-ink-muted">({bulletin.scripture})</p>
               </Link>
@@ -126,8 +129,8 @@ export default async function HomePage() {
           </Reveal>
           <Reveal delay={120} className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="font-serif text-2xl text-ink">교회소식</h2>
-              <Link href="/news" className="text-sm font-semibold text-accent">
+              <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">교회소식</h2>
+              <Link href="/news" className="text-sm font-semibold text-accent-deep">
                 더 보기
               </Link>
             </div>

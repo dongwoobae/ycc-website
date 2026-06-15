@@ -33,7 +33,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-bg/95 backdrop-blur">
       <Container className="flex h-[4.5rem] items-center justify-between">
-        <Link href="/" className="font-serif text-2xl font-bold text-ink">
+        <Link href="/" className="font-serif text-2xl font-extrabold tracking-tight text-ink">
           영천중앙교회
         </Link>
         <nav className="hidden items-center gap-2 md:flex">

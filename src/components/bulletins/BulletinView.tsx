@@ -3,7 +3,7 @@ import type { Bulletin, BulletinSection } from '@/lib/types'
 function SectionBlock({ section }: { section: BulletinSection }) {
   return (
     <section className="rounded-lg border border-line bg-paper p-5 shadow-subtle">
-      <h2 className="font-serif text-2xl text-ink">{section.title}</h2>
+      <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">{section.title}</h2>
       {section.body && (
         <div className="mt-4 space-y-1 text-sm leading-6 text-ink-muted">
           {section.body.map((line) => (
@@ -66,10 +66,12 @@ export default function BulletinView({ bulletin }: { bulletin: Bulletin }) {
   return (
     <article className="space-y-6">
       <header className="rounded-lg border border-line bg-paper p-8 text-center shadow-subtle">
-        <p className="text-sm font-semibold text-accent">
+        <p className="text-sm font-semibold text-accent-deep">
           {bulletin.volume} {bulletin.issue} · {bulletin.bulletinDate}
         </p>
-        <h1 className="mt-4 font-serif text-4xl leading-tight text-ink">영천중앙교회 주보</h1>
+        <h1 className="mt-4 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink">
+          영천중앙교회 주보
+        </h1>
         <p className="mt-5 text-xl text-ink">{bulletin.theme}</p>
         <p className="mt-2 text-ink-muted">({bulletin.scripture})</p>
         <div className="mt-6 text-sm leading-6 text-ink-muted">
