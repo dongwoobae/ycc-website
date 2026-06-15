@@ -12,6 +12,9 @@ import {
 import { sql } from 'drizzle-orm'
 import type { BulletinSection } from '../types'
 
+// Better Auth 테이블 (user/session/account/verification) — drizzle push 포함용 재노출
+export * from './auth-schema'
+
 export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey(),
   fullName: text('full_name'),
