@@ -53,7 +53,7 @@ export default async function HomePage() {
             <img
               src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1400&q=80"
               alt="햇살이 비치는 숲길"
-              className="h-full min-h-[28rem] w-full object-cover"
+              className="ken-burns h-full min-h-[28rem] w-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-br from-accent-deep/25 via-transparent to-ink/30" />
           </Reveal>

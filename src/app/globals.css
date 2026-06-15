@@ -51,6 +51,21 @@ a {
   background: rgb(var(--accent) / 0.18);
 }
 
+/* Ken Burns — hero 이미지 느린 줌·팬 (자동, CSS only) */
+.ken-burns {
+  animation: kenburns 18s ease-in-out infinite alternate;
+  transform-origin: center;
+  will-change: transform;
+}
+@keyframes kenburns {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    transform: scale(1.12) translate(-2%, -1.5%);
+  }
+}
+
 /* 스크롤 진입 모션 (Reveal) — variant별 */
 [data-reveal] {
   opacity: 0;
@@ -95,6 +110,9 @@ a {
     transform: none !important;
     clip-path: none !important;
     transition: none !important;
+  }
+  .ken-burns {
+    animation: none !important;
   }
   * {
     scroll-behavior: auto !important;

@@ -1,5 +1,6 @@
 import Container from './Container'
 import Reveal from '@/components/ui/Reveal'
+import HeroBackdrop from './HeroBackdrop'
 
 interface PageHeroProps {
   eyebrow?: string
@@ -11,9 +12,7 @@ interface PageHeroProps {
 export default function PageHero({ eyebrow, title, subtitle, image }: PageHeroProps) {
   return (
     <section className="relative isolate overflow-hidden bg-gradient-to-br from-accent-deep to-ink">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image} alt="" aria-hidden className="absolute inset-0 -z-20 h-full w-full object-cover" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-accent-deep/80 via-ink/60 to-ink/78" />
+      <HeroBackdrop image={image} />
       <Container className="flex min-h-[18rem] flex-col justify-center py-16 md:min-h-[22rem]">
         <Reveal variant="fade">
           {eyebrow && <p className="text-sm font-semibold tracking-wide text-emerald-100">{eyebrow}</p>}
