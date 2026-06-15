@@ -1,4 +1,4 @@
-import { asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   galleryAlbums as albumsTable,
@@ -39,6 +39,22 @@ export async function getGalleryAlbums(): Promise<GalleryAlbum[]> {
 }
 
 export async function getGalleryAlbumById(id: string): Promise<GalleryAlbum | undefined> {
+  const rows = await db
+    .select()
+    .from(albumsTable)
+    .where(and(eq(albumsTable.id, id), eq(albumsTable.isPublished, true)))
+    .limit(1)
+  const album = rows[0]
+  if (!album) return undefined
+  const imageRows = await db
+    .select()
+    .from(imagesTable)
+    .where(eq(imagesTable.albumId, id))
+    .orderBy(asc(imagesTable.sortOrder))
+  return toAlbum(album, imageRows.map(toImage))
+}
+
+export async function getAlbumForAdmin(id: string): Promise<GalleryAlbum | undefined> {
   const rows = await db.select().from(albumsTable).where(eq(albumsTable.id, id)).limit(1)
   const album = rows[0]
   if (!album) return undefined

@@ -8,6 +8,7 @@ const adminNav = [
   { label: '대시보드', href: '/admin' },
   { label: '설교 관리', href: '/admin/sermons' },
   { label: '소식/공지 관리', href: '/admin/posts' },
+  { label: '갤러리 관리', href: '/admin/gallery' },
   { label: '서버 로그', href: '/admin/log' },
 ]
 
