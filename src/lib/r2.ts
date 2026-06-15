@@ -41,6 +41,10 @@ export function galleryImageKey(filename: string) {
   return `gallery/${crypto.randomUUID()}-${sanitizeR2Filename(filename)}`
 }
 
+export function bulletinHwpKey(filename: string) {
+  return `bulletins/${crypto.randomUUID()}-${sanitizeR2Filename(filename)}`
+}
+
 export async function uploadToR2(buffer: Buffer, key: string, contentType: string): Promise<string> {
   await r2Client.send(
     new PutObjectCommand({
