@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import Reveal from '@/components/ui/Reveal'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '예배시간·오시는 길',
@@ -70,8 +71,8 @@ export default function VisitPage() {
             <section className="mt-8 grid gap-6 rounded-lg border border-line bg-paper p-6 shadow-subtle lg:grid-cols-[0.8fr_1.2fr]">
               <div>
                 <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">오시는 길</h2>
-                <p className="mt-4 leading-7 text-ink-muted">경북 영천시 완산중앙8길 21</p>
-                <p className="mt-2 text-ink-muted">전화 054-334-6644, 054-334-6645</p>
+                <p className="mt-4 leading-7 text-ink-muted">{churchInfo.address}</p>
+                <p className="mt-2 text-ink-muted">전화 {churchInfo.phone}, {churchInfo.phone2}</p>
               </div>
               <div className="flex aspect-video items-center justify-center rounded-lg bg-surface text-center text-sm leading-6 text-ink-muted">
                 카카오맵 임베드 영역

@@ -2,14 +2,15 @@
 @import "tailwindcss";
 
 :root {
-  --bg: 250 250 249;
-  --surface: 244 244 242;
-  --ink: 22 24 22;
-  --ink-muted: 90 96 90;
-  --accent: 47 125 91;
-  --accent-deep: 32 92 66;
-  --line: 228 228 224;
-  --paper: 255 255 255;
+  --bg: 228 236 246;
+  --surface: 215 227 242;
+  --paper: 245 249 253;
+  --ink: 30 42 69;
+  --ink-muted: 88 103 129;
+  --faint: 122 135 156;
+  --line: 196 210 228;
+  --accent: 47 108 206;
+  --accent-deep: 33 83 180;
 }
 
 @theme inline {
@@ -17,12 +18,13 @@
   --color-surface: rgb(var(--surface));
   --color-ink: rgb(var(--ink));
   --color-ink-muted: rgb(var(--ink-muted));
+  --color-faint: rgb(var(--faint));
   --color-accent: rgb(var(--accent));
   --color-accent-deep: rgb(var(--accent-deep));
   --color-line: rgb(var(--line));
   --color-paper: rgb(var(--paper));
   --font-sans: "Pretendard", system-ui, sans-serif;
-  --font-serif: var(--font-sans);
+  --font-serif: var(--font-nanum-myeongjo), "Nanum Myeongjo", serif;
   --shadow-soft: 0 18px 50px rgb(var(--ink) / 0.08);
   --shadow-subtle: 0 8px 26px rgb(var(--ink) / 0.06);
 }
@@ -63,6 +65,18 @@ a {
   }
   100% {
     transform: scale(1.12) translate(-2%, -1.5%);
+  }
+}
+
+@keyframes scroll-cue {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scaleY(0.55);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
   }
 }
 
@@ -113,6 +127,13 @@ a {
   }
   .ken-burns {
     animation: none !important;
+  }
+  .scroll-cue-line {
+    animation: none !important;
+  }
+  .motion-hover {
+    transform: none !important;
+    transition: none !important;
   }
   * {
     scroll-behavior: auto !important;
