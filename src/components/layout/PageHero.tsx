@@ -1,0 +1,32 @@
+import Container from './Container'
+import Reveal from '@/components/ui/Reveal'
+
+interface PageHeroProps {
+  eyebrow?: string
+  title: string
+  subtitle?: string
+  image: string
+}
+
+export default function PageHero({ eyebrow, title, subtitle, image }: PageHeroProps) {
+  return (
+    <section className="relative isolate overflow-hidden bg-gradient-to-br from-accent-deep to-ink">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={image} alt="" aria-hidden className="absolute inset-0 -z-20 h-full w-full object-cover" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/55 via-ink/45 to-ink/65" />
+      <Container className="flex min-h-[18rem] flex-col justify-center py-16 md:min-h-[22rem]">
+        <Reveal variant="fade">
+          {eyebrow && <p className="text-sm font-semibold tracking-wide text-bg/80">{eyebrow}</p>}
+        </Reveal>
+        <Reveal variant="fade-up" delay={100}>
+          <h1 className="mt-3 font-serif text-4xl leading-tight text-bg sm:text-5xl">{title}</h1>
+        </Reveal>
+        {subtitle && (
+          <Reveal variant="fade-up" delay={220}>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-bg/85">{subtitle}</p>
+          </Reveal>
+        )}
+      </Container>
+    </section>
+  )
+}

@@ -46,16 +46,18 @@ export default function Header() {
                 {item.label}
               </Link>
               {item.children && (
-                <div className="invisible absolute left-0 top-full w-52 translate-y-2 rounded-lg border border-line bg-paper p-2 opacity-0 shadow-soft transition group-hover:visible group-hover:translate-y-1 group-hover:opacity-100">
-                  {item.children.map((child) => (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      className="block rounded-md px-3 py-2 text-sm text-ink-muted hover:bg-surface hover:text-ink"
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
+                <div className="invisible absolute left-0 top-full pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100">
+                  <div className="w-52 translate-y-1 rounded-lg border border-line bg-paper p-2 shadow-soft transition group-hover:translate-y-0">
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className="block rounded-md px-3 py-2 text-sm text-ink-muted hover:bg-surface hover:text-ink"
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

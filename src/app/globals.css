@@ -50,3 +50,53 @@ a {
 ::selection {
   background: rgb(var(--accent) / 0.18);
 }
+
+/* 스크롤 진입 모션 (Reveal) — variant별 */
+[data-reveal] {
+  opacity: 0;
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+[data-reveal][data-variant='fade-up'] {
+  transform: translateY(18px);
+}
+[data-reveal][data-variant='left'] {
+  transform: translateX(-32px);
+}
+[data-reveal][data-variant='right'] {
+  transform: translateX(32px);
+}
+[data-reveal][data-variant='zoom'] {
+  transform: scale(0.94);
+}
+[data-reveal][data-variant='fade'] {
+  transform: none;
+}
+
+/* 이미지 와이프(clip) — 가려졌다 드러남 */
+[data-reveal][data-variant='clip'] {
+  opacity: 1;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-reveal][data-shown='true'] {
+  opacity: 1;
+  transform: none;
+  clip-path: inset(0 0 0 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    transition: none !important;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
+}

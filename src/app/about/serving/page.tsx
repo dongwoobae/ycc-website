@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
-import SectionTitle from '@/components/ui/SectionTitle'
+import PageHero from '@/components/layout/PageHero'
+import Reveal from '@/components/ui/Reveal'
 
 export const metadata: Metadata = {
   title: '섬기는 분들',
@@ -15,24 +16,33 @@ const groups = [
 
 export default function ServingPage() {
   return (
-    <div className="py-16">
-      <Container>
-        <SectionTitle eyebrow="People" title="섬기는 분들" description="주보에 공지된 섬김 명단을 기준으로 정리했습니다." />
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
-          {groups.map((group) => (
-            <section key={group.title} className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
-              <h2 className="font-serif text-2xl text-ink">{group.title}</h2>
-              <ul className="mt-5 space-y-3 text-ink-muted">
-                {group.people.map((person) => (
-                  <li key={person} className="border-b border-line pb-3 last:border-b-0">
-                    {person}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      </Container>
-    </div>
+    <>
+      <PageHero
+        eyebrow="People"
+        title="섬기는 분들"
+        subtitle="말씀과 예배, 다음세대와 선교의 자리에서 교회를 섬기는 분들입니다."
+        image="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80"
+      />
+      <div className="py-16">
+        <Container>
+          <div className="grid gap-6 md:grid-cols-2">
+            {groups.map((group, i) => (
+              <Reveal key={group.title} variant="zoom" delay={i * 90}>
+                <section className="h-full rounded-lg border border-line bg-paper p-6 shadow-subtle transition hover:-translate-y-1 hover:shadow-soft">
+                  <h2 className="font-serif text-2xl text-ink">{group.title}</h2>
+                  <ul className="mt-5 space-y-3 text-ink-muted">
+                    {group.people.map((person) => (
+                      <li key={person} className="border-b border-line pb-3 last:border-b-0">
+                        {person}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </Reveal>
+            ))}
+          </div>
+        </Container>
+      </div>
+    </>
   )
 }
