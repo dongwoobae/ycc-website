@@ -27,7 +27,7 @@ export default async function SermonsPage({ searchParams }: SermonsPageProps) {
         eyebrow="Sermons"
         title="예배·설교"
         subtitle="주일·찬양·수요 예배의 말씀을 다시 듣고 묵상할 수 있습니다."
-        image="https://images.unsplash.com/photo-1545987796-200677ee1011?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1473773508845-188df298d2d1?auto=format&fit=crop&w=1600&q=80"
       />
       <div className="py-16">
         <Container>

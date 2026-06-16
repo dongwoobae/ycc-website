@@ -16,10 +16,10 @@ export default function AlbumCard({ album }: { album: GalleryAlbum }) {
         />
       </div>
       <div className="p-5">
-        <time className="text-sm font-medium text-accent" dateTime={album.eventDate}>
+        <time className="text-sm font-medium text-accent-deep" dateTime={album.eventDate}>
           {album.eventDate}
         </time>
-        <h3 className="mt-2 font-serif text-xl text-ink">{album.title}</h3>
+        <h3 className="mt-2 font-serif text-xl font-extrabold tracking-tight text-ink">{album.title}</h3>
         {album.description && <p className="mt-2 line-clamp-2 text-sm leading-6 text-ink-muted">{album.description}</p>}
       </div>
     </Link>

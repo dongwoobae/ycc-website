@@ -15,12 +15,12 @@ export default function AboutPage() {
         eyebrow="Welcome"
         title="교회소개"
         subtitle="영천중앙교회는 1956년 창립 이후 말씀과 예배, 선교와 섬김으로 지역 사회와 함께 걸어왔습니다."
-        image="https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=80"
       />
       <div className="py-16">
         <Container className="max-w-3xl">
           <Reveal variant="fade">
-            <h2 className="font-serif text-3xl leading-tight text-ink sm:text-4xl">
+            <h2 className="font-serif text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-4xl">
               처음 오신 분도 편안히 머물 수 있는 교회
             </h2>
           </Reveal>

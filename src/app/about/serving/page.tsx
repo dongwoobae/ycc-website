@@ -21,7 +21,7 @@ export default function ServingPage() {
         eyebrow="People"
         title="섬기는 분들"
         subtitle="말씀과 예배, 다음세대와 선교의 자리에서 교회를 섬기는 분들입니다."
-        image="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1600&q=80"
       />
       <div className="py-16">
         <Container>
@@ -29,7 +29,7 @@ export default function ServingPage() {
             {groups.map((group, i) => (
               <Reveal key={group.title} variant="zoom" delay={i * 90}>
                 <section className="h-full rounded-lg border border-line bg-paper p-6 shadow-subtle transition hover:-translate-y-1 hover:shadow-soft">
-                  <h2 className="font-serif text-2xl text-ink">{group.title}</h2>
+                  <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">{group.title}</h2>
                   <ul className="mt-5 space-y-3 text-ink-muted">
                     {group.people.map((person) => (
                       <li key={person} className="border-b border-line pb-3 last:border-b-0">

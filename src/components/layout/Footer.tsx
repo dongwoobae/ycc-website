@@ -1,51 +1,62 @@
 import Link from 'next/link'
 import Container from './Container'
+import { churchInfo } from '@/lib/church'
+
+const worshipItems = ['주일예배: 주일 오전 11:00', '찬양예배: 주일 오후 2:00', '수요예배: 수요일 오후 7:30', '새벽기도: 매주일 오전 5:00']
+
+const menuLinks = [
+  { label: '처음 오세요', href: '/newfamily' },
+  { label: '설교', href: '/sermons' },
+  { label: '주보', href: '/bulletins' },
+  { label: '교회소식', href: '/news' },
+  { label: '갤러리', href: '/gallery' },
+  { label: '오시는 길', href: '/#visit' },
+]
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-line bg-surface">
-      <Container className="grid gap-10 py-12 text-sm text-ink-muted md:grid-cols-[1.4fr_1fr_1fr]">
+    <footer className="mt-auto border-t border-line bg-bg">
+      <Container size="wide" className="grid gap-10 py-16 text-sm text-ink-muted md:grid-cols-[1.5fr_1fr_1fr]">
         <div>
-          <h2 className="font-serif text-2xl font-bold text-ink">영천중앙교회</h2>
-          <p className="mt-4 leading-7">
-            삶의 소망을 주는 은혜로운 교회. 구역이 살아나고 지역 사회를 섬기는 교회로
-            함께 걷습니다.
+          <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">영천중앙교회</h2>
+          <p className="mt-4 max-w-[36ch] leading-7">
+            삶의 닻을 주는 교회. 말씀과 예배, 서로를 돌보는 공동체로 영천의 이웃과 함께 걷습니다.
           </p>
-          <p className="mt-4">경북 영천시 완산중앙8길 21</p>
-          <p>전화 337-5692 / 팩스 337-5693</p>
+          <address className="mt-5 not-italic leading-7">
+            {churchInfo.address}
+            <br />
+            전화 {churchInfo.phone}
+          </address>
         </div>
+
         <div>
-          <h3 className="font-semibold text-ink">예배 안내</h3>
+          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-accent">Worship</h3>
           <ul className="mt-4 space-y-2">
-            <li>주일예배: 주일 오전 11시</li>
-            <li>찬양예배: 주일 오후 2시</li>
-            <li>수요예배: 수요일 오후 7시 30분</li>
-            <li>새벽기도: 화-주일 오전 5시</li>
+            {worshipItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
           </ul>
         </div>
+
         <div>
-          <h3 className="font-semibold text-ink">바로가기</h3>
+          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-accent">Menu</h3>
           <ul className="mt-4 space-y-2">
-            <li>
-              <Link href="/sermons" className="hover:text-accent">
-                예배·설교
-              </Link>
-            </li>
-            <li>
-              <Link href="/bulletins" className="hover:text-accent">
-                주보
-              </Link>
-            </li>
-            <li>
-              <Link href="/about/visit" className="hover:text-accent">
-                오시는 길
-              </Link>
-            </li>
+            {menuLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="transition hover:text-ink">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       </Container>
-      <div className="border-t border-line py-5 text-center text-xs text-ink-muted">
-        © {new Date().getFullYear()} 영천중앙교회. All rights reserved.
+
+      <div className="border-t border-line">
+        <Container size="wide" className="flex flex-wrap items-center justify-between gap-3 py-6 text-xs text-faint">
+          <span>© {new Date().getFullYear()} 영천중앙교회. All rights reserved.</span>
+          <span>대한예수교장로회</span>
+        </Container>
       </div>
     </footer>
   )

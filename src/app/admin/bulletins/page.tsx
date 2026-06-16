@@ -6,14 +6,14 @@ export default async function AdminBulletinsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-ink">주보 관리</h1>
         <Link href="/admin/bulletins/new" className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-deep">
           새 주보
         </Link>
       </div>
-      <div className="overflow-hidden rounded-xl bg-paper shadow-sm">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
+        <table className="min-w-[48rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
             <tr>
               {['날짜', '권/호', '주제', '공개', '관리'].map((heading) => (

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import Reveal from '@/components/ui/Reveal'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '예배시간·오시는 길',
@@ -32,14 +33,14 @@ export default function VisitPage() {
         eyebrow="Visit"
         title="예배시간·오시는 길"
         subtitle="처음 방문하시는 분은 주일 오전 11시 본당 예배에 오시면 안내를 받으실 수 있습니다."
-        image="https://images.unsplash.com/photo-1473177104440-ffee2f376098?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1600&q=80"
       />
       <div className="py-16">
         <Container>
           <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
             <Reveal variant="fade-up">
               <section className="h-full rounded-lg border border-line bg-paper p-6 shadow-subtle">
-                <h2 className="font-serif text-2xl text-ink">장년부 예배 및 모임</h2>
+                <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">장년부 예배 및 모임</h2>
                 <div className="mt-5 divide-y divide-line">
                   {schedules.map(([name, place, time]) => (
                     <div key={name} className="grid gap-2 py-4 sm:grid-cols-[7rem_1fr_1fr]">
@@ -53,7 +54,7 @@ export default function VisitPage() {
             </Reveal>
             <Reveal variant="fade-up" delay={120}>
               <section className="h-full rounded-lg border border-line bg-paper p-6 shadow-subtle">
-                <h2 className="font-serif text-2xl text-ink">교회학교</h2>
+                <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">교회학교</h2>
                 <div className="mt-5 divide-y divide-line">
                   {schools.map(([name, place, time]) => (
                     <div key={name} className="grid gap-2 py-4 sm:grid-cols-[6rem_1fr_1fr]">
@@ -69,9 +70,9 @@ export default function VisitPage() {
           <Reveal variant="fade-up" delay={120}>
             <section className="mt-8 grid gap-6 rounded-lg border border-line bg-paper p-6 shadow-subtle lg:grid-cols-[0.8fr_1.2fr]">
               <div>
-                <h2 className="font-serif text-2xl text-ink">오시는 길</h2>
-                <p className="mt-4 leading-7 text-ink-muted">경북 영천시 완산중앙8길 21</p>
-                <p className="mt-2 text-ink-muted">전화 054-334-6644, 054-334-6645</p>
+                <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">오시는 길</h2>
+                <p className="mt-4 leading-7 text-ink-muted">{churchInfo.address}</p>
+                <p className="mt-2 text-ink-muted">전화 {churchInfo.phone}, {churchInfo.phone2}</p>
               </div>
               <div className="flex aspect-video items-center justify-center rounded-lg bg-surface text-center text-sm leading-6 text-ink-muted">
                 카카오맵 임베드 영역
