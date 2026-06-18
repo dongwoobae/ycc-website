@@ -20,9 +20,9 @@ export default async function NewsPage() {
         subtitle="공지와 행사, 공동체 소식을 전합니다."
         image="https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1600&q=80"
       />
-      <div className="py-16">
-        <Container className="max-w-4xl">
-          <div className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
+      <div className="py-20 sm:py-24">
+        <Container className="max-w-3xl">
+          <div className="rounded-2xl border border-line bg-paper p-8 shadow-subtle sm:p-11">
             {posts.map((post, i) => (
               <Reveal key={post.id} variant="left" delay={i * 70}>
                 <PostCard post={post} />

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, count, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   galleryAlbums as albumsTable,
@@ -8,7 +8,7 @@ import {
 } from '@/lib/db/schema'
 import type { GalleryAlbum, GalleryImage } from '@/lib/types'
 
-function toAlbum(row: GalleryAlbumRow, images: GalleryImage[]): GalleryAlbum {
+function toAlbum(row: GalleryAlbumRow, images: GalleryImage[], imageCount?: number): GalleryAlbum {
   return {
     id: row.id,
     title: row.title,
@@ -16,6 +16,7 @@ function toAlbum(row: GalleryAlbumRow, images: GalleryImage[]): GalleryAlbum {
     coverImgUrl: row.coverImgUrl ?? '',
     eventDate: row.eventDate ?? '',
     images,
+    imageCount: imageCount ?? images.length,
     isPublished: row.isPublished,
   }
 }
@@ -35,7 +36,12 @@ export async function getGalleryAlbums(): Promise<GalleryAlbum[]> {
     .from(albumsTable)
     .where(eq(albumsTable.isPublished, true))
     .orderBy(desc(albumsTable.eventDate))
-  return rows.map((row) => toAlbum(row, []))
+  const countRows = await db
+    .select({ albumId: imagesTable.albumId, total: count() })
+    .from(imagesTable)
+    .groupBy(imagesTable.albumId)
+  const countByAlbum = new Map(countRows.map((row) => [row.albumId, row.total]))
+  return rows.map((row) => toAlbum(row, [], countByAlbum.get(row.id) ?? 0))
 }
 
 export async function getGalleryAlbumById(id: string): Promise<GalleryAlbum | undefined> {

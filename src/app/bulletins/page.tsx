@@ -20,23 +20,33 @@ export default async function BulletinsPage() {
         subtitle="매주 예배 순서와 교회 소식을 정리해 제공합니다."
         image="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80"
       />
-      <div className="py-16">
-        <Container>
+      <div className="py-20 sm:py-24">
+        <Container size="wide">
           <div className="grid gap-6 md:grid-cols-2">
             {bulletins.map((bulletin, i) => (
               <Reveal key={bulletin.id} variant="fade-up" delay={(i % 2) * 100}>
                 <Link
                   href={`/bulletins/${bulletin.id}`}
-                  className="block h-full rounded-lg border border-line bg-paper p-6 shadow-subtle transition hover:-translate-y-1 hover:shadow-soft"
+                  className="group relative block h-full overflow-hidden rounded-2xl border border-line bg-paper p-8 shadow-subtle transition hover:-translate-y-1 hover:border-accent hover:shadow-soft"
                 >
-                  <p className="text-sm font-semibold text-accent-deep">
+                  <span className="pointer-events-none absolute -right-[30px] -top-[30px] h-[110px] w-[110px] rounded-full bg-accent/15 opacity-60 transition duration-300 group-hover:scale-125" />
+                  <span className="relative z-[1] mb-[18px] flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line bg-bg text-accent-deep">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <path d="M14 2v6h6" />
+                    </svg>
+                  </span>
+                  <p className="relative z-[1] text-[13.5px] font-bold text-accent-deep">
                     {bulletin.volume} {bulletin.issue}
                   </p>
-                  <h2 className="mt-3 font-serif text-3xl font-extrabold tracking-tight text-ink">
+                  <h2 className="relative z-[1] mt-2.5 font-serif text-3xl font-extrabold tracking-tight text-ink">
                     {bulletin.bulletinDate} 주보
                   </h2>
-                  <p className="mt-4 text-ink-muted">{bulletin.theme}</p>
-                  <p className="mt-2 text-sm text-ink-muted">({bulletin.scripture})</p>
+                  <p className="relative z-[1] mt-4 font-semibold text-ink">{bulletin.theme}</p>
+                  <p className="relative z-[1] mt-1.5 text-sm text-faint">({bulletin.scripture})</p>
+                  <span className="relative z-[1] mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-accent-deep">
+                    주보 보기 →
+                  </span>
                 </Link>
               </Reveal>
             ))}

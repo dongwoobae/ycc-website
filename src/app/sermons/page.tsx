@@ -29,9 +29,9 @@ export default async function SermonsPage({ searchParams }: SermonsPageProps) {
         subtitle="주일·찬양·수요 예배의 말씀을 다시 듣고 묵상할 수 있습니다."
         image="https://images.unsplash.com/photo-1473773508845-188df298d2d1?auto=format&fit=crop&w=1600&q=80"
       />
-      <div className="py-16">
-        <Container>
-          <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-end">
+      <div className="py-20 sm:py-24">
+        <Container size="wide">
+          <div className="mb-9 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-end">
             <WorshipFilter current={current} />
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

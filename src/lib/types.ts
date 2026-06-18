@@ -65,6 +65,8 @@ export interface GalleryAlbum {
   coverImgUrl: string
   eventDate: string
   images: GalleryImage[]
+  /** 목록 카드 배지용 사진 수. 상세 조회 시에는 images.length로 대체 가능. */
+  imageCount?: number
   isPublished: boolean
 }
 
