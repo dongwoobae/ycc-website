@@ -105,7 +105,8 @@ export default function Header() {
     [item.section, ...(item.children?.map((child) => child.href) ?? [])].some(matchesSection)
 
   return (
-    <header className={headerClassName}>
+    <>
+      <header className={headerClassName}>
       <Container size="wide" className="flex h-20 items-center justify-between px-6 min-[960px]:px-10">
         <Link href="/" className="group inline-flex flex-col leading-none" aria-label="영천중앙교회 홈">
           <span className="font-serif text-[21px] font-extrabold tracking-tight">영천중앙교회</span>
@@ -187,6 +188,7 @@ export default function Header() {
           </svg>
         </button>
       </Container>
+      </header>
 
       {menuOpen && (
         <div id="mobile-navigation" className="fixed inset-0 top-20 z-40 overflow-y-auto bg-bg min-[960px]:hidden">
@@ -228,6 +230,6 @@ export default function Header() {
           </Container>
         </div>
       )}
-    </header>
+    </>
   )
 }
