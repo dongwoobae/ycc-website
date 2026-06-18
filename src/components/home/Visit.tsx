@@ -18,7 +18,7 @@ export default function Visit() {
         </Reveal>
         <div className="mt-12 grid gap-10 min-[960px]:grid-cols-[1.05fr_0.95fr]">
           <Reveal>
-            <div className="min-h-[380px] overflow-hidden rounded-[20px] border border-line bg-surface">
+            <div className="overflow-hidden rounded-[20px] border border-line bg-surface">
               <KakaoMap />
             </div>
           </Reveal>
