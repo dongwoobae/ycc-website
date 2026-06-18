@@ -15,7 +15,9 @@ export default function PageHero({ eyebrow, title, subtitle, image }: PageHeroPr
       <HeroBackdrop image={image} />
       <Container className="flex min-h-[18rem] flex-col justify-center py-16 md:min-h-[22rem]">
         <Reveal variant="fade">
-          {eyebrow && <p className="text-sm font-semibold tracking-wide text-emerald-100">{eyebrow}</p>}
+          {eyebrow && (
+            <p className="text-[12.5px] font-bold uppercase tracking-[0.28em] text-[#a8c6ef]">{eyebrow}</p>
+          )}
         </Reveal>
         <Reveal variant="fade-up" delay={100}>
           <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-bg sm:text-5xl">

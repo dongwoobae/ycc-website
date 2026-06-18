@@ -1,25 +1,34 @@
 import Link from 'next/link'
 import type { Post } from '@/lib/types'
 
+const chipStyles: Record<Post['category'], string> = {
+  공지: 'bg-accent/12 text-accent-deep',
+  소식: 'bg-accent/12 text-accent-deep',
+  행사: 'bg-emerald-100 text-emerald-700',
+}
+
 export default function PostCard({ post }: { post: Post }) {
   return (
     <Link
       href={`/news/${post.id}`}
-      className="grid gap-3 border-b border-line py-5 last:border-b-0 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+      className="block border-b border-line py-7 transition-[padding] duration-200 first:pt-0 last:border-b-0 last:pb-0 hover:pl-2"
     >
-      <span className="w-fit rounded-full bg-surface px-3 py-1 text-xs font-semibold text-accent-deep">
-        {post.category}
-      </span>
-      <div>
-        <h3 className="font-medium text-ink transition hover:text-accent-deep">
-          {post.isPinned && <span className="mr-2 text-accent-deep">고정</span>}
-          {post.title}
-        </h3>
-        <p className="mt-1 line-clamp-1 text-sm text-ink-muted">{post.content}</p>
+      <div className="flex items-center gap-3">
+        {post.isPinned && (
+          <span className="whitespace-nowrap rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-white">고정</span>
+        )}
+        <span className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${chipStyles[post.category]}`}>
+          {post.category}
+        </span>
+        <time className="whitespace-nowrap text-[13.5px] font-semibold text-faint" dateTime={post.publishedAt}>
+          {post.publishedAt}
+        </time>
       </div>
-      <time className="text-sm text-ink-muted" dateTime={post.publishedAt}>
-        {post.publishedAt}
-      </time>
+      <h2 className="mt-3.5 font-serif text-2xl font-extrabold leading-snug tracking-tight text-ink">{post.title}</h2>
+      <p className="mt-2.5 line-clamp-2 leading-7 text-ink-muted">{post.content}</p>
+      <span className="mt-3 inline-flex items-center gap-1.5 text-[13.5px] font-bold text-accent-deep">
+        자세히 보기 →
+      </span>
     </Link>
   )
 }

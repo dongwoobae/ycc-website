@@ -20,8 +20,8 @@ export default async function GalleryPage() {
         subtitle="교회 공동체의 예배와 섬김, 교제의 순간을 앨범으로 모았습니다."
         image="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80"
       />
-      <div className="py-16">
-        <Container>
+      <div className="py-20 sm:py-24">
+        <Container size="wide">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {albums.map((album, i) => (
               <Reveal key={album.id} variant="zoom" delay={(i % 3) * 90}>

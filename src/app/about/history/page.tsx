@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
+import AboutSubnav from '@/components/about/AboutSubnav'
 import Reveal from '@/components/ui/Reveal'
 
 export const metadata: Metadata = {
@@ -25,7 +26,8 @@ export default function HistoryPage() {
         subtitle="1956년 창립 이후, 영천중앙교회가 걸어온 발자취입니다."
         image="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80"
       />
-      <div className="py-16">
+      <AboutSubnav />
+      <div className="py-20 sm:py-24">
         <Container className="max-w-4xl">
           <ol className="relative">
             <div className="absolute left-1/2 top-2 hidden h-[calc(100%-1rem)] w-px -translate-x-1/2 bg-line sm:block" />
@@ -38,7 +40,7 @@ export default function HistoryPage() {
                     variant={left ? 'left' : 'right'}
                     className={left ? 'sm:col-start-1' : 'sm:col-start-2'}
                   >
-                    <div className={`rounded-lg border border-line bg-paper p-6 shadow-subtle ${left ? 'sm:text-right' : ''}`}>
+                    <div className={`rounded-2xl border border-line bg-paper p-7 shadow-subtle ${left ? 'sm:text-right' : ''}`}>
                       <time className="font-serif text-3xl font-extrabold tracking-tight text-accent-deep">{year}</time>
                       <p className="mt-3 leading-7 text-ink-muted">{content}</p>
                     </div>
