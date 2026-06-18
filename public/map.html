@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    .root_daum_roughmap { width: 100% !important; height: 100% !important; }
+    .root_daum_roughmap iframe { width: 100% !important; height: 100% !important; }
+  </style>
+</head>
+<body>
+  <!--
+    카카오맵 "지도 퍼가기 > 약도(Roughmap)" 임베드 — JS 앱키 불필요.
+    https://map.kakao.com 에서 "영천중앙교회" 검색 → 지도 퍼가기 → 약도 → 생성된 스크립트의
+    timestamp / key / container id 값을 아래에 붙여넣으세요. (값을 넣기 전엔 KakaoMap 컴포넌트가 구글맵으로 자동 폴백)
+  -->
+  <div id="daumRoughmapContainer1781743864821" class="root_daum_roughmap root_daum_roughmap_landing"></div>
+  <script charset="UTF-8" class="daum_roughmap_loader_script" src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js" onerror="parent.postMessage('kakaomap-fail','*')"></script>
+  <script charset="UTF-8">
+    var KAKAO_KEY = "pq2kfbnjo6q";
+    var KAKAO_TIMESTAMP = "1781743864821";
+    if (KAKAO_KEY === "REPLACE_KEY") {
+      // 아직 카카오 약도 key 미입력 → 구글맵으로 폴백
+      parent.postMessage("kakaomap-fail", "*");
+    } else {
+      try {
+        new daum.roughmap.Lander({
+          "timestamp": KAKAO_TIMESTAMP,
+          "key": KAKAO_KEY,
+          "mapWidth": "640",
+          "mapHeight": "360"
+        }).render();
+        parent.postMessage("kakaomap-ok", "*");
+      } catch (e) {
+        parent.postMessage("kakaomap-fail", "*");
+      }
+    }
+  </script>
+</body>
+</html>

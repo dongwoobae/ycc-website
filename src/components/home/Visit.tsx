@@ -1,7 +1,8 @@
 import Container from '@/components/layout/Container'
+import KakaoMap from '@/components/layout/KakaoMap'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
-import { Eyebrow, ImagePlaceholder } from './HomePrimitives'
+import { Eyebrow } from './HomePrimitives'
 import type { ReactNode } from 'react'
 
 export default function Visit() {
@@ -16,8 +17,8 @@ export default function Visit() {
         </Reveal>
         <div className="mt-12 grid gap-10 min-[960px]:grid-cols-[1.05fr_0.95fr]">
           <Reveal>
-            <div className="min-h-[380px] overflow-hidden rounded-[20px] border border-line">
-              <ImagePlaceholder label="지도 이미지 또는 지도 임베드 영역" />
+            <div className="min-h-[380px] overflow-hidden rounded-[20px] border border-line bg-surface">
+              <KakaoMap />
             </div>
           </Reveal>
           <Reveal delay={120}>

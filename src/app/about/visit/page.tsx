@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import AboutSubnav from '@/components/about/AboutSubnav'
+import KakaoMap from '@/components/layout/KakaoMap'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
 
@@ -103,8 +104,8 @@ export default function VisitPage() {
                   </a>
                 </div>
               </div>
-              <div className="flex min-h-[300px] items-center justify-center bg-surface p-6 text-center text-sm leading-6 text-ink-muted">
-                카카오맵/네이버 지도 임베드 또는 약도 이미지
+              <div className="min-h-[300px] bg-surface">
+                <KakaoMap />
               </div>
             </section>
           </Reveal>
