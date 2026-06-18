@@ -1,5 +1,6 @@
 import Container from '@/components/layout/Container'
 import KakaoMap from '@/components/layout/KakaoMap'
+import PastorKakaoCard from '@/components/layout/PastorKakaoCard'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
 import { Eyebrow } from './HomePrimitives'
@@ -29,7 +30,7 @@ export default function Visit() {
               <Info label="Parking">
                 <p className="font-semibold leading-7 text-ink-muted">교회 주차장 이용 · 주일에는 안내위원이 안내해드립니다</p>
               </Info>
-              <Info label="Contact" last>
+              <Info label="Contact">
                 <div className="flex flex-wrap gap-3">
                   <a
                     href={`tel:${churchInfo.phone}`}
@@ -39,12 +40,15 @@ export default function Visit() {
                   </a>
                   <a
                     href={churchInfo.blog}
-                    className="motion-hover rounded-full border border-[#FEE500] bg-[#FEE500] px-5 py-3 text-sm font-bold text-[#3a2929] transition hover:-translate-y-0.5"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="motion-hover rounded-full border border-line bg-paper px-5 py-3 text-sm font-bold text-ink transition hover:border-accent"
                   >
-                    카카오톡 문의
+                    블로그
                   </a>
                 </div>
               </Info>
+              <PastorKakaoCard />
             </div>
           </Reveal>
         </div>

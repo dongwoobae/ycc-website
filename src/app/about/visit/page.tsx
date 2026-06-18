@@ -3,6 +3,7 @@ import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import AboutSubnav from '@/components/about/AboutSubnav'
 import KakaoMap from '@/components/layout/KakaoMap'
+import PastorKakaoCard from '@/components/layout/PastorKakaoCard'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
 
@@ -102,6 +103,9 @@ export default function VisitPage() {
                     </svg>
                     카카오맵 길찾기
                   </a>
+                </div>
+                <div className="mt-6">
+                  <PastorKakaoCard />
                 </div>
               </div>
               <div className="min-h-[300px] bg-surface">
