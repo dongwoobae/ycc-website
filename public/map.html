@@ -21,21 +21,37 @@
   <script charset="UTF-8">
     var KAKAO_KEY = "pq2kfbnjo6q";
     var KAKAO_TIMESTAMP = "1781743864821";
-    if (KAKAO_KEY === "REPLACE_KEY") {
-      // 아직 카카오 약도 key 미입력 → 구글맵으로 폴백
-      parent.postMessage("kakaomap-fail", "*");
-    } else {
-      try {
-        new daum.roughmap.Lander({
-          "timestamp": KAKAO_TIMESTAMP,
-          "key": KAKAO_KEY,
-          "mapWidth": "640",
-          "mapHeight": "360"
-        }).render();
-        parent.postMessage("kakaomap-ok", "*");
-      } catch (e) {
-        parent.postMessage("kakaomap-fail", "*");
+
+    function kakaoFail() { parent.postMessage("kakaomap-fail", "*"); }
+    function kakaoOk() { parent.postMessage("kakaomap-ok", "*"); }
+
+    // roughmapLoader.js 가 daum.roughmap.Lander 를 정의할 때까지 잠시 대기 후 렌더.
+    function renderRoughmap(attempt) {
+      if (window.daum && daum.roughmap && daum.roughmap.Lander) {
+        try {
+          new daum.roughmap.Lander({
+            "timestamp": KAKAO_TIMESTAMP,
+            "key": KAKAO_KEY,
+            "mapWidth": "640",
+            "mapHeight": "360"
+          }).render();
+          kakaoOk();
+        } catch (e) {
+          kakaoFail();
+        }
+        return;
       }
+      if (attempt >= 30) { // 약 3초 대기 후 포기 → 구글맵 폴백
+        kakaoFail();
+        return;
+      }
+      setTimeout(function () { renderRoughmap(attempt + 1); }, 100);
+    }
+
+    if (KAKAO_KEY === "REPLACE_KEY") {
+      kakaoFail(); // key 미입력 → 구글맵 폴백
+    } else {
+      renderRoughmap(0);
     }
   </script>
 </body>
