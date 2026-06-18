@@ -19,7 +19,7 @@ export default function Subnav({ items, label }: { items: SubnavItem[]; label: s
     .sort((a, b) => b.length - a.length)[0]
 
   return (
-    <nav className="sticky top-20 z-40 border-b border-line bg-paper" aria-label={label}>
+    <nav className="sticky top-20 z-30 border-b border-line bg-paper" aria-label={label}>
       <Container size="wide" className="flex gap-1.5 overflow-x-auto">
         {items.map((item) => {
           const active = item.href === activeHref
