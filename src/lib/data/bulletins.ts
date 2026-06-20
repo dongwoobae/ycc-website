@@ -4,7 +4,20 @@ import { bulletins as bulletinsTable, type BulletinRow } from '@/lib/db/schema'
 import { churchInfo } from '@/lib/church'
 import type { Bulletin } from '@/lib/types'
 
-function toBulletin(row: BulletinRow): Bulletin {
+type BulletinListRow = Pick<BulletinRow, 'id' | 'bulletinDate' | 'volume' | 'issue' | 'theme' | 'scripture' | 'sections' | 'isPublished'>
+
+const bulletinColumns = {
+  id: bulletinsTable.id,
+  bulletinDate: bulletinsTable.bulletinDate,
+  volume: bulletinsTable.volume,
+  issue: bulletinsTable.issue,
+  theme: bulletinsTable.theme,
+  scripture: bulletinsTable.scripture,
+  sections: bulletinsTable.sections,
+  isPublished: bulletinsTable.isPublished,
+}
+
+function toBulletin(row: BulletinListRow): Bulletin {
   return {
     id: row.id,
     bulletinDate: row.bulletinDate,
@@ -20,7 +33,7 @@ function toBulletin(row: BulletinRow): Bulletin {
 
 export async function getBulletins(): Promise<Bulletin[]> {
   const rows = await db
-    .select()
+    .select(bulletinColumns)
     .from(bulletinsTable)
     .where(eq(bulletinsTable.isPublished, true))
     .orderBy(desc(bulletinsTable.bulletinDate))
@@ -29,7 +42,7 @@ export async function getBulletins(): Promise<Bulletin[]> {
 
 export async function getBulletinById(id: string): Promise<Bulletin | undefined> {
   const rows = await db
-    .select()
+    .select(bulletinColumns)
     .from(bulletinsTable)
     .where(and(eq(bulletinsTable.id, id), eq(bulletinsTable.isPublished, true)))
     .limit(1)
@@ -38,7 +51,7 @@ export async function getBulletinById(id: string): Promise<Bulletin | undefined>
 
 export async function getLatestBulletin(): Promise<Bulletin | undefined> {
   const rows = await db
-    .select()
+    .select(bulletinColumns)
     .from(bulletinsTable)
     .where(eq(bulletinsTable.isPublished, true))
     .orderBy(desc(bulletinsTable.bulletinDate))

@@ -5,7 +5,7 @@ config({ path: '.env.local' })
 
 export default {
   schema: './src/lib/db/schema.ts',
-  out: './supabase/migrations',
+  out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
     url: process.env.DATABASE_URL!,

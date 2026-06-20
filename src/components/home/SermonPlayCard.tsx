@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import type { Sermon } from '@/lib/types'
 
@@ -9,11 +10,12 @@ export default function SermonPlayCard({ sermon }: { sermon: Sermon }) {
     >
       <div className="relative h-[175px] overflow-hidden bg-surface">
         {sermon.thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={sermon.thumbnailUrl}
             alt={`${sermon.title} 설교 썸네일`}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            fill
+            sizes="(min-width: 960px) 33vw, 100vw"
+            className="object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="h-full w-full bg-[linear-gradient(135deg,rgb(var(--surface)),rgb(var(--paper)))]" />

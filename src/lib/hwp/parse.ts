@@ -4,6 +4,7 @@ import * as CFB from 'cfb'
 import { inflateRawSync } from 'node:zlib'
 
 const paraTextTag = 67
+export const maxHwpDecompressedSize = 25 * 1024 * 1024
 
 export interface HwpParseResult {
   paragraphs: string[]
@@ -56,6 +57,10 @@ function parseSection(data: Buffer) {
   return lines
 }
 
+export function inflateHwpSection(raw: Buffer, maxOutputLength = maxHwpDecompressedSize) {
+  return inflateRawSync(raw, { maxOutputLength })
+}
+
 export function parseHwp(buffer: Buffer): HwpParseResult {
   const cfb = CFB.read(buffer, { type: 'buffer' })
   const header = CFB.find(cfb, 'FileHeader')?.content
@@ -72,7 +77,8 @@ export function parseHwp(buffer: Buffer): HwpParseResult {
   for (const { entry } of sections) {
     try {
       const raw = Buffer.from(entry.content)
-      const data = compressed ? inflateRawSync(raw) : raw
+      if (!compressed && raw.length > maxHwpDecompressedSize) throw new Error('hwp section is too large')
+      const data = compressed ? inflateHwpSection(raw) : raw
       paragraphs.push(...parseSection(data))
     } catch {
       continue

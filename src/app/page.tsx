@@ -10,6 +10,8 @@ import Visit from '@/components/home/Visit'
 import CtaBand from '@/components/home/CtaBand'
 import { getLatestSermons } from '@/lib/data/sermons'
 
+export const revalidate = 3600
+
 export default async function HomePage() {
   const sermons = await getLatestSermons(3)
 

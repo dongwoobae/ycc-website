@@ -3,11 +3,23 @@ import { db } from '@/lib/db'
 import { posts as postsTable, type PostRow } from '@/lib/db/schema'
 import type { Post, PostCategory } from '@/lib/types'
 
+type PostListRow = Pick<PostRow, 'id' | 'title' | 'content' | 'category' | 'isPinned' | 'publishedAt' | 'createdAt'>
+
+const postColumns = {
+  id: postsTable.id,
+  title: postsTable.title,
+  content: postsTable.content,
+  category: postsTable.category,
+  isPinned: postsTable.isPinned,
+  publishedAt: postsTable.publishedAt,
+  createdAt: postsTable.createdAt,
+}
+
 function toDateString(value: Date | null): string {
   return (value ?? new Date()).toISOString().slice(0, 10)
 }
 
-function toPost(row: PostRow): Post {
+function toPost(row: PostListRow): Post {
   return {
     id: row.id,
     title: row.title,
@@ -20,7 +32,7 @@ function toPost(row: PostRow): Post {
 
 export async function getPosts(): Promise<Post[]> {
   const rows = await db
-    .select()
+    .select(postColumns)
     .from(postsTable)
     .where(eq(postsTable.isPublished, true))
     .orderBy(desc(postsTable.isPinned), desc(postsTable.publishedAt))
@@ -29,7 +41,7 @@ export async function getPosts(): Promise<Post[]> {
 
 export async function getPostById(id: string): Promise<Post | undefined> {
   const rows = await db
-    .select()
+    .select(postColumns)
     .from(postsTable)
     .where(and(eq(postsTable.id, id), eq(postsTable.isPublished, true)))
     .limit(1)
@@ -37,6 +49,11 @@ export async function getPostById(id: string): Promise<Post | undefined> {
 }
 
 export async function getLatestPosts(limit = 3): Promise<Post[]> {
-  const sorted = await getPosts()
-  return sorted.slice(0, limit)
+  const rows = await db
+    .select(postColumns)
+    .from(postsTable)
+    .where(eq(postsTable.isPublished, true))
+    .orderBy(desc(postsTable.isPinned), desc(postsTable.publishedAt))
+    .limit(limit)
+  return rows.map(toPost)
 }

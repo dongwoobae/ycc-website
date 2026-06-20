@@ -1,15 +1,14 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { desc, eq } from 'drizzle-orm'
-import { auth } from '@/lib/auth'
+import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { bulletins } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
-import { bulletinHwpKey, deleteFromR2, keyFromUrl, uploadToR2 } from '@/lib/r2'
 import { parseHwp } from '@/lib/hwp/parse'
 import type { BulletinSection } from '@/lib/types'
+import { sniffHwpMime } from '@/lib/upload-sniff'
 
 const maxHwpSize = 10 * 1024 * 1024
 
@@ -20,7 +19,6 @@ export interface BulletinFormInput {
   theme: string
   scripture: string
   sections: BulletinSection[]
-  hwpSourceUrl?: string
 }
 
 function revalidateBulletinPaths(id?: string) {
@@ -34,8 +32,7 @@ function revalidateBulletinPaths(id?: string) {
 }
 
 async function requireSession() {
-  const s = await auth.api.getSession({ headers: await headers() }); if (!s) throw new Error('unauthorized')
-  return s
+  return requireAdmin()
 }
 
 function parseBulletinDate(value: string) {
@@ -115,7 +112,6 @@ function parseInput(input: BulletinFormInput) {
     theme: input.theme.trim() || null,
     scripture: input.scripture.trim() || null,
     sections,
-    hwpSourceUrl: input.hwpSourceUrl?.trim() || null,
   }
 }
 
@@ -131,10 +127,9 @@ export async function parseHwpAction(formData: FormData) {
   await requireSession()
   const file = getHwpFile(formData)
   const buffer = Buffer.from(await file.arrayBuffer())
+  if (!sniffHwpMime(buffer)) throw new Error('invalid hwp file')
   const parsed = parseHwp(buffer)
-  const hwpSourceUrl = await uploadToR2(buffer, bulletinHwpKey(file.name), file.type || 'application/x-hwp')
   return {
-    hwpSourceUrl,
     sections: [{ id: 'draft', title: '추출 내용', body: parsed.paragraphs }] satisfies BulletinSection[],
   }
 }
@@ -155,38 +150,34 @@ export async function createBulletin(input: BulletinFormInput) {
 export async function updateBulletin(id: string, input: BulletinFormInput) {
   const s = await requireSession()
   const values = parseInput(input)
-  const [current] = await db.select().from(bulletins).where(eq(bulletins.id, id)).limit(1)
   const [updated] = await db
     .update(bulletins)
     .set({ ...values, updatedAt: new Date() })
     .where(eq(bulletins.id, id))
     .returning({ id: bulletins.id, title: bulletins.bulletinDate })
   if (!updated) throw new Error('bulletin not found')
-  if (current?.hwpSourceUrl && current.hwpSourceUrl !== values.hwpSourceUrl) {
-    await deleteFromR2(keyFromUrl(current.hwpSourceUrl)).catch(() => undefined)
-  }
   await log('update', 'bulletin', updated.id, updated.title, s.user.id)
   revalidateBulletinPaths(updated.id)
 }
 
 export async function deleteBulletin(id: string) {
   const s = await requireSession()
-  const [current] = await db.select().from(bulletins).where(eq(bulletins.id, id)).limit(1)
   const [deleted] = await db
     .delete(bulletins)
     .where(eq(bulletins.id, id))
     .returning({ id: bulletins.id, title: bulletins.bulletinDate })
   if (!deleted) throw new Error('bulletin not found')
-  await deleteFromR2(keyFromUrl(current?.hwpSourceUrl)).catch(() => undefined)
   await log('delete', 'bulletin', deleted.id, deleted.title, s.user.id)
   revalidateBulletinPaths(deleted.id)
 }
 
 export async function getBulletinForAdmin(id: string) {
+  await requireAdmin()
   const [row] = await db.select().from(bulletins).where(eq(bulletins.id, id)).limit(1)
   return row
 }
 
 export async function getBulletinsForAdmin() {
+  await requireAdmin()
   return db.select().from(bulletins).orderBy(desc(bulletins.bulletinDate))
 }

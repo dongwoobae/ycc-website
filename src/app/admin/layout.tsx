@@ -1,7 +1,5 @@
-import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { auth } from '@/lib/auth'
 import { canViewServerLog } from '@/lib/admin'
+import { verifySession } from '@/lib/dal'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 
 const adminNav = [
@@ -14,8 +12,7 @@ const adminNav = [
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) redirect('/sign-in')
+  const session = await verifySession()
 
   const navItems = canViewServerLog(session.user.email)
     ? adminNav

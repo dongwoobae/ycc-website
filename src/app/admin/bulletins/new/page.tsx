@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import BulletinForm from '@/components/admin/BulletinForm'
 import { createBulletin } from '@/lib/actions/bulletins'
+import { verifySession } from '@/lib/dal'
 
-export default function NewBulletinPage() {
+export default async function NewBulletinPage() {
+  await verifySession()
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between gap-4">

@@ -26,6 +26,11 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Drizzle check
+        run: npm run db:check
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/db
+
       - name: Build
         run: npm run build
 

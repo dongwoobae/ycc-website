@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq } from 'drizzle-orm'
+import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import {
   galleryAlbums as albumsTable,
@@ -8,7 +9,26 @@ import {
 } from '@/lib/db/schema'
 import type { GalleryAlbum, GalleryImage } from '@/lib/types'
 
-function toAlbum(row: GalleryAlbumRow, images: GalleryImage[], imageCount?: number): GalleryAlbum {
+type AlbumListRow = Pick<GalleryAlbumRow, 'id' | 'title' | 'description' | 'coverImgUrl' | 'eventDate' | 'isPublished'>
+type ImageListRow = Pick<GalleryImageRow, 'id' | 'imageUrl' | 'caption' | 'alt'>
+
+const albumColumns = {
+  id: albumsTable.id,
+  title: albumsTable.title,
+  description: albumsTable.description,
+  coverImgUrl: albumsTable.coverImgUrl,
+  eventDate: albumsTable.eventDate,
+  isPublished: albumsTable.isPublished,
+}
+
+const imageColumns = {
+  id: imagesTable.id,
+  imageUrl: imagesTable.imageUrl,
+  caption: imagesTable.caption,
+  alt: imagesTable.alt,
+}
+
+function toAlbum(row: AlbumListRow, images: GalleryImage[], imageCount?: number): GalleryAlbum {
   return {
     id: row.id,
     title: row.title,
@@ -21,7 +41,7 @@ function toAlbum(row: GalleryAlbumRow, images: GalleryImage[], imageCount?: numb
   }
 }
 
-function toImage(row: GalleryImageRow): GalleryImage {
+function toImage(row: ImageListRow): GalleryImage {
   return {
     id: row.id,
     imageUrl: row.imageUrl,
@@ -32,7 +52,7 @@ function toImage(row: GalleryImageRow): GalleryImage {
 
 export async function getGalleryAlbums(): Promise<GalleryAlbum[]> {
   const rows = await db
-    .select()
+    .select(albumColumns)
     .from(albumsTable)
     .where(eq(albumsTable.isPublished, true))
     .orderBy(desc(albumsTable.eventDate))
@@ -46,14 +66,14 @@ export async function getGalleryAlbums(): Promise<GalleryAlbum[]> {
 
 export async function getGalleryAlbumById(id: string): Promise<GalleryAlbum | undefined> {
   const rows = await db
-    .select()
+    .select(albumColumns)
     .from(albumsTable)
     .where(and(eq(albumsTable.id, id), eq(albumsTable.isPublished, true)))
     .limit(1)
   const album = rows[0]
   if (!album) return undefined
   const imageRows = await db
-    .select()
+    .select(imageColumns)
     .from(imagesTable)
     .where(eq(imagesTable.albumId, id))
     .orderBy(asc(imagesTable.sortOrder))
@@ -61,11 +81,12 @@ export async function getGalleryAlbumById(id: string): Promise<GalleryAlbum | un
 }
 
 export async function getAlbumForAdmin(id: string): Promise<GalleryAlbum | undefined> {
-  const rows = await db.select().from(albumsTable).where(eq(albumsTable.id, id)).limit(1)
+  await requireAdmin()
+  const rows = await db.select(albumColumns).from(albumsTable).where(eq(albumsTable.id, id)).limit(1)
   const album = rows[0]
   if (!album) return undefined
   const imageRows = await db
-    .select()
+    .select(imageColumns)
     .from(imagesTable)
     .where(eq(imagesTable.albumId, id))
     .orderBy(asc(imagesTable.sortOrder))

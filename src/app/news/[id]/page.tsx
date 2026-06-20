@@ -1,10 +1,23 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
-import { getPostById } from '@/lib/data/posts'
+import { getPostById, getPosts } from '@/lib/data/posts'
+
+export const revalidate = 3600
 
 interface NewsDetailProps {
   params: Promise<{ id: string }>
+}
+
+export async function generateStaticParams() {
+  const posts = await getPosts()
+  return posts.map((post) => ({ id: post.id }))
+}
+
+function truncateDescription(value: string, maxLength = 160) {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  if (normalized.length <= maxLength) return normalized
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`
 }
 
 export async function generateMetadata({ params }: NewsDetailProps): Promise<Metadata> {
@@ -13,7 +26,7 @@ export async function generateMetadata({ params }: NewsDetailProps): Promise<Met
   if (!post) return { title: '교회소식' }
   return {
     title: post.title,
-    description: post.content,
+    description: truncateDescription(post.content),
   }
 }
 

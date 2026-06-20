@@ -1,13 +1,11 @@
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { auth } from '@/lib/auth'
 import { canViewServerLog } from '@/lib/admin'
+import { verifySession } from '@/lib/dal'
 
-// TODO: Supabase app_logs 테이블 fetch로 교체
 export default async function AdminLogPage() {
   // 방어심층: nav 숨김과 별개로 URL 직접접근도 차단
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!canViewServerLog(session?.user.email)) redirect('/admin')
+  const session = await verifySession()
+  if (!canViewServerLog(session.user.email)) redirect('/admin')
 
   return (
     <div>

@@ -1,25 +1,18 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
-import Reveal from '@/components/ui/Reveal'
-import SermonCard from '@/components/sermons/SermonCard'
-import WorshipFilter from '@/components/sermons/WorshipFilter'
-import { getSermonsByWorshipType } from '@/lib/data/sermons'
-import { isWorshipType, type WorshipFilterValue } from '@/lib/worship'
+import SermonsGrid from '@/components/sermons/SermonsGrid'
+import { getSermons } from '@/lib/data/sermons'
 
 export const metadata: Metadata = {
   title: '예배·설교',
 }
 
-interface SermonsPageProps {
-  searchParams: Promise<{ worship?: string }>
-}
+export const revalidate = 3600
 
-export default async function SermonsPage({ searchParams }: SermonsPageProps) {
-  const { worship } = await searchParams
-  const selected = worship && isWorshipType(worship) ? worship : undefined
-  const sermons = await getSermonsByWorshipType(selected)
-  const current: WorshipFilterValue = selected ?? '전체'
+export default async function SermonsPage() {
+  const sermons = await getSermons()
 
   return (
     <>
@@ -31,16 +24,9 @@ export default async function SermonsPage({ searchParams }: SermonsPageProps) {
       />
       <div className="py-20 sm:py-24">
         <Container size="wide">
-          <div className="mb-9 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-end">
-            <WorshipFilter current={current} />
-          </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {sermons.map((sermon, i) => (
-              <Reveal key={sermon.id} variant="fade-up" delay={(i % 3) * 90}>
-                <SermonCard sermon={sermon} />
-              </Reveal>
-            ))}
-          </div>
+          <Suspense fallback={null}>
+            <SermonsGrid sermons={sermons} />
+          </Suspense>
         </Container>
       </div>
     </>

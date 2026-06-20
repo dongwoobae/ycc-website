@@ -2,9 +2,11 @@
 
 import { FormEvent, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { normalizeBulletinInput } from '@/lib/bulletin-editor'
 import BulletinField from './BulletinField'
 import BulletinHwpUpload from './BulletinHwpUpload'
 import BulletinSectionEditor from './BulletinSectionEditor'
+import SubmitButton from './SubmitButton'
 import type { BulletinFormInput } from '@/lib/actions/bulletins'
 
 interface BulletinFormProps {
@@ -20,7 +22,6 @@ const emptyBulletin: BulletinFormInput = {
   theme: '',
   scripture: '',
   sections: [],
-  hwpSourceUrl: '',
 }
 
 export default function BulletinForm({ initialValue, submitLabel, submitAction }: BulletinFormProps) {
@@ -34,7 +35,7 @@ export default function BulletinForm({ initialValue, submitLabel, submitAction }
     setError('')
     startTransition(async () => {
       try {
-        await submitAction(form)
+        await submitAction(normalizeBulletinInput(form))
         router.push('/admin/bulletins')
         router.refresh()
       } catch (e) {
@@ -45,7 +46,7 @@ export default function BulletinForm({ initialValue, submitLabel, submitAction }
 
   return (
     <div className="space-y-6">
-      <BulletinHwpUpload onParsed={(sections, hwpSourceUrl) => setForm((current) => ({ ...current, sections, hwpSourceUrl }))} />
+      <BulletinHwpUpload onParsed={(sections) => setForm((current) => ({ ...current, sections }))} />
       <form onSubmit={handleSubmit} className="space-y-6">
         <MetaFields form={form} onChange={(patch) => setForm((current) => ({ ...current, ...patch }))} />
         <BulletinSectionEditor sections={form.sections} onChange={(sections) => setForm((current) => ({ ...current, sections }))} />
@@ -77,9 +78,9 @@ function FormActions({ isPending, submitLabel }: { isPending: boolean; submitLab
       <button type="button" onClick={() => router.push('/admin/bulletins')} className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink transition hover:bg-surface">
         취소
       </button>
-      <button type="submit" disabled={isPending} className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-deep disabled:opacity-60">
-        {isPending ? '저장 중...' : submitLabel}
-      </button>
+      <SubmitButton pendingOverride={isPending} pendingLabel="저장 중..." className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-deep disabled:opacity-60">
+        {submitLabel}
+      </SubmitButton>
     </div>
   )
 }

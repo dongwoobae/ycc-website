@@ -1,9 +1,8 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
-import { auth } from '@/lib/auth'
+import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
@@ -48,7 +47,7 @@ function revalidatePostPaths(id?: string) {
 }
 
 export async function createPost(input: PostFormInput) {
-  const s = await auth.api.getSession({ headers: await headers() }); if (!s) throw new Error('unauthorized')
+  const s = await requireAdmin()
   const values = parsePostInput(input)
   const [created] = await db
     .insert(posts)
@@ -65,7 +64,7 @@ export async function createPost(input: PostFormInput) {
 }
 
 export async function updatePost(id: string, input: PostFormInput) {
-  const s = await auth.api.getSession({ headers: await headers() }); if (!s) throw new Error('unauthorized')
+  const s = await requireAdmin()
   const values = parsePostInput(input)
   const [updated] = await db
     .update(posts)
@@ -82,7 +81,7 @@ export async function updatePost(id: string, input: PostFormInput) {
 }
 
 export async function deletePost(id: string) {
-  const s = await auth.api.getSession({ headers: await headers() }); if (!s) throw new Error('unauthorized')
+  const s = await requireAdmin()
   const [deleted] = await db
     .delete(posts)
     .where(eq(posts.id, id))
@@ -94,7 +93,7 @@ export async function deletePost(id: string) {
 }
 
 export async function togglePin(id: string, isPinned: boolean) {
-  const s = await auth.api.getSession({ headers: await headers() }); if (!s) throw new Error('unauthorized')
+  const s = await requireAdmin()
   const [updated] = await db
     .update(posts)
     .set({

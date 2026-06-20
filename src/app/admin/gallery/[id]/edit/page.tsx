@@ -4,12 +4,15 @@ import AlbumForm, { type AlbumFormInitialValue } from '@/components/admin/AlbumF
 import GalleryImageManager from '@/components/admin/GalleryImageManager'
 import { addImage, deleteImage, reorderImages, updateAlbum } from '@/lib/actions/gallery'
 import { getAlbumForAdmin } from '@/lib/data/gallery'
+import { verifySession } from '@/lib/dal'
 
 interface EditGalleryAlbumPageProps {
   params: Promise<{ id: string }>
 }
 
 export default async function EditGalleryAlbumPage({ params }: EditGalleryAlbumPageProps) {
+  await verifySession()
+
   const { id } = await params
   const album = await getAlbumForAdmin(id)
   if (!album) notFound()

@@ -5,6 +5,7 @@ import PostForm from '@/components/admin/PostForm'
 import { updatePost, type PostFormInput } from '@/lib/actions/posts'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
+import { verifySession } from '@/lib/dal'
 import type { PostCategory } from '@/lib/types'
 
 interface EditPostPageProps {
@@ -16,6 +17,8 @@ function toDateInput(value: Date | null) {
 }
 
 export default async function EditPostPage({ params }: EditPostPageProps) {
+  await verifySession()
+
   const { id } = await params
   const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1)
   if (!post) notFound()

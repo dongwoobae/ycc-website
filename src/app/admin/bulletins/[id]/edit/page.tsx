@@ -2,12 +2,15 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import BulletinForm from '@/components/admin/BulletinForm'
 import { getBulletinForAdmin, updateBulletin, type BulletinFormInput } from '@/lib/actions/bulletins'
+import { verifySession } from '@/lib/dal'
 
 interface EditBulletinPageProps {
   params: Promise<{ id: string }>
 }
 
 export default async function EditBulletinPage({ params }: EditBulletinPageProps) {
+  await verifySession()
+
   const { id } = await params
   const bulletin = await getBulletinForAdmin(id)
   if (!bulletin) notFound()
@@ -19,7 +22,6 @@ export default async function EditBulletinPage({ params }: EditBulletinPageProps
     theme: bulletin.theme ?? '',
     scripture: bulletin.scripture ?? '',
     sections: bulletin.sections ?? [],
-    hwpSourceUrl: bulletin.hwpSourceUrl ?? '',
   }
 
   return (

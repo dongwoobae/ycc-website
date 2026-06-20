@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import Link from 'next/link'
 import Container from '@/components/layout/Container'
+import VisitBlock, { VisitInfo } from '@/components/layout/VisitBlock'
 import Reveal from '@/components/ui/Reveal'
 import SectionTitle from '@/components/ui/SectionTitle'
 import { Eyebrow, HomeButton, ImagePlaceholder } from '@/components/home/HomePrimitives'
 import { churchInfo } from '@/lib/church'
+import { adultWorshipSchedule } from '@/lib/worship'
 
 export const metadata: Metadata = {
   title: '처음 오세요',
@@ -243,64 +244,31 @@ function NextGeneration() {
 }
 
 function Visit() {
+  const visitWorshipItems = adultWorshipSchedule.slice(0, 4)
+
   return (
-    <section id="visit" className="bg-surface py-20 min-[960px]:py-28">
-      <Container size="wide">
-        <Reveal>
-          <SectionTitle eyebrow="Visit us" title="오시는 길" description="처음 오시는 길이 어렵지 않도록 예배 시간과 문의 방법을 함께 안내합니다." />
-        </Reveal>
-        <div className="mt-12 grid gap-10 min-[960px]:grid-cols-[1.08fr_0.92fr]">
-          <Reveal>
-            <div className="min-h-[340px] overflow-hidden rounded-[20px] border border-line min-[960px]:min-h-[390px]">
-              <ImagePlaceholder label="지도 이미지 자리" />
-            </div>
-          </Reveal>
-          <Reveal delay={120}>
-            <div className="grid gap-6">
-              <VisitInfo label="Address">
-                <address className="font-serif text-[23px] font-bold not-italic leading-8 text-ink">{churchInfo.address}</address>
-              </VisitInfo>
-              <VisitInfo label="Worship">
-                <dl className="grid gap-2.5 text-sm leading-6">
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-bold text-ink">주일예배</dt>
-                    <dd className="text-ink-muted">주일 오전 11:00</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-bold text-ink">찬양예배</dt>
-                    <dd className="text-ink-muted">주일 오후 2:00</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-bold text-ink">수요예배</dt>
-                    <dd className="text-ink-muted">수요일 오후 7:30</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-bold text-ink">새벽기도</dt>
-                    <dd className="text-ink-muted">월-금 오전 5:00</dd>
-                  </div>
-                </dl>
-              </VisitInfo>
-              <VisitInfo label="Contact" last>
-                <div className="flex flex-wrap gap-3">
-                  <a
-                    href={`tel:${churchInfo.phone}`}
-                    className="motion-hover rounded-full border border-line bg-paper px-5 py-3 text-sm font-bold text-ink transition hover:-translate-y-0.5 hover:border-accent"
-                  >
-                    전화 {churchInfo.phone}
-                  </a>
-                  <Link
-                    href={churchInfo.blog}
-                    className="motion-hover rounded-full border border-[#FEE500] bg-[#FEE500] px-5 py-3 text-sm font-bold text-[#3a2929] transition hover:-translate-y-0.5"
-                  >
-                    카카오톡 문의
-                  </Link>
-                </div>
-              </VisitInfo>
-            </div>
-          </Reveal>
+    <VisitBlock
+      eyebrow="Visit us"
+      title="다시 오시는 길"
+      description="처음 오시는 길이 어렵지 않도록 예배 시간과 문의 방법을 함께 안내합니다."
+      media={
+        <div className="min-h-[340px] overflow-hidden rounded-[20px] border border-line min-[960px]:min-h-[390px]">
+          <ImagePlaceholder label="지도 이미지 자리" />
         </div>
-      </Container>
-    </section>
+      }
+      details={
+        <VisitInfo label="Worship">
+          <dl className="grid gap-2.5 text-sm leading-6">
+            {visitWorshipItems.map((item) => (
+              <div key={item.name} className="flex justify-between gap-4">
+                <dt className="font-bold text-ink">{item.name}</dt>
+                <dd className="text-ink-muted">{item.displayTime}</dd>
+              </div>
+            ))}
+          </dl>
+        </VisitInfo>
+      }
+    />
   )
 }
 
@@ -328,23 +296,6 @@ function Cta() {
         </Reveal>
       </Container>
     </section>
-  )
-}
-
-function VisitInfo({
-  label,
-  children,
-  last = false,
-}: {
-  label: string
-  children: React.ReactNode
-  last?: boolean
-}) {
-  return (
-    <div className={last ? '' : 'border-b border-line pb-6'}>
-      <p className="text-[12.5px] font-bold uppercase tracking-[0.2em] text-accent">{label}</p>
-      <div className="mt-3">{children}</div>
-    </div>
   )
 }
 
