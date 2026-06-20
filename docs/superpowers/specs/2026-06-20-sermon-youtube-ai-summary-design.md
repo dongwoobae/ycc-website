@@ -105,7 +105,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
 ### 3. AI 요약 — `src/lib/ai/sermon-summary.ts`
 - `generateSermonSummary(videoUrl): Promise<{ summary; quickSummary: string[]; chapters: SermonChapter[] }>`
   - Gemini API에 YouTube URL을 `fileData` 파트로 전달 + **구조화 출력(response JSON schema)** 강제.
-  - 한국어 출력, 낮은 temperature. 모델: 최신 Gemini Flash(예: `gemini-2.5-flash`), env/상수로 교체 가능.
+  - 한국어 출력, 낮은 temperature. 모델: **`gemini-3.5-flash`** (2026-05 GA, YouTube URL 영상 입력 지원), env/상수로 교체 가능.
   - 프롬프트 요구사항: ① 한 줄 소개(`summary`) ② 빠른 요약 불릿 ~10개(`quickSummary`)
     ③ 타임스탬프 구간 요약(`chapters`, `startSeconds` 오름차순).
 - 실패 시 throw → 호출부가 `summary_status='failed'`로 기록.
@@ -159,7 +159,8 @@ YT_PLAYLIST_SPECIAL_EVENT=
 
 ## 비용 (참고)
 
-- Gemini Flash: 설교당 1회(≈ 입력 11만 토큰/60분), 수 센트 수준. DB에 1회 저장 후 재사용.
+- Gemini 3.5 Flash: 설교당 1회(≈ 입력 11만 토큰/60분), 수 센트 수준. DB에 1회 저장 후 재사용.
+  - 무료 티어는 YouTube 영상 일 8시간 한도, 유료 티어는 영상 길이 무제한.
 - YouTube Data API: list 호출은 무료 쿼터(일 10k units) 내 충분.
 
 ## 범위 밖 (YAGNI)
