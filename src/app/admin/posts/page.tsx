@@ -3,12 +3,15 @@ import { desc } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { deletePost, togglePin } from '@/lib/actions/posts'
+import { verifySession } from '@/lib/dal'
 
 function formatDate(value: Date | null) {
   return value ? value.toISOString().slice(0, 10) : '-'
 }
 
 export default async function AdminPostsPage() {
+  await verifySession()
+
   const rows = await db.select().from(posts).orderBy(desc(posts.isPinned), desc(posts.createdAt))
 
   return (

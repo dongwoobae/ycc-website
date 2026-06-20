@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq } from 'drizzle-orm'
+import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import {
   galleryAlbums as albumsTable,
@@ -61,6 +62,7 @@ export async function getGalleryAlbumById(id: string): Promise<GalleryAlbum | un
 }
 
 export async function getAlbumForAdmin(id: string): Promise<GalleryAlbum | undefined> {
+  await requireAdmin()
   const rows = await db.select().from(albumsTable).where(eq(albumsTable.id, id)).limit(1)
   const album = rows[0]
   if (!album) return undefined

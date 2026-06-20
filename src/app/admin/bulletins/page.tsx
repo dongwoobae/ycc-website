@@ -1,7 +1,10 @@
 import Link from 'next/link'
 import { deleteBulletin, getBulletinsForAdmin } from '@/lib/actions/bulletins'
+import { verifySession } from '@/lib/dal'
 
 export default async function AdminBulletinsPage() {
+  await verifySession()
+
   const rows = await getBulletinsForAdmin()
 
   return (

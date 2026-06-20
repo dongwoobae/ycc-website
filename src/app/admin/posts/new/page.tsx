@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import PostForm from '@/components/admin/PostForm'
 import { createPost } from '@/lib/actions/posts'
+import { verifySession } from '@/lib/dal'
 
-export default function NewPostPage() {
+export default async function NewPostPage() {
+  await verifySession()
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between gap-4">

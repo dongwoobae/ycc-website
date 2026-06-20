@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import AlbumForm from '@/components/admin/AlbumForm'
 import { createAlbum } from '@/lib/actions/gallery'
+import { verifySession } from '@/lib/dal'
 
-export default function NewGalleryAlbumPage() {
+export default async function NewGalleryAlbumPage() {
+  await verifySession()
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between gap-4">

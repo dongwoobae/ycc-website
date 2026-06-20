@@ -1,9 +1,8 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { desc, eq } from 'drizzle-orm'
-import { auth } from '@/lib/auth'
+import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { bulletins } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
@@ -34,8 +33,7 @@ function revalidateBulletinPaths(id?: string) {
 }
 
 async function requireSession() {
-  const s = await auth.api.getSession({ headers: await headers() }); if (!s) throw new Error('unauthorized')
-  return s
+  return requireAdmin()
 }
 
 function parseBulletinDate(value: string) {
@@ -183,10 +181,12 @@ export async function deleteBulletin(id: string) {
 }
 
 export async function getBulletinForAdmin(id: string) {
+  await requireAdmin()
   const [row] = await db.select().from(bulletins).where(eq(bulletins.id, id)).limit(1)
   return row
 }
 
 export async function getBulletinsForAdmin() {
+  await requireAdmin()
   return db.select().from(bulletins).orderBy(desc(bulletins.bulletinDate))
 }

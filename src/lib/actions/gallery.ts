@@ -1,9 +1,8 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { asc, desc, eq } from 'drizzle-orm'
-import { auth } from '@/lib/auth'
+import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { galleryAlbums, galleryImages } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
@@ -53,8 +52,7 @@ function revalidateGalleryPaths(albumId?: string) {
 }
 
 async function requireSession() {
-  const s = await auth.api.getSession({ headers: await headers() }); if (!s) throw new Error('unauthorized')
-  return s
+  return requireAdmin()
 }
 
 export async function createAlbum(formData: FormData) {

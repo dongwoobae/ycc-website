@@ -3,12 +3,15 @@ import { desc } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { galleryAlbums } from '@/lib/db/schema'
 import { deleteAlbum } from '@/lib/actions/gallery'
+import { verifySession } from '@/lib/dal'
 
 function formatDate(value: string | null) {
   return value || '-'
 }
 
 export default async function AdminGalleryPage() {
+  await verifySession()
+
   const rows = await db.select().from(galleryAlbums).orderBy(desc(galleryAlbums.eventDate), desc(galleryAlbums.createdAt))
 
   return (

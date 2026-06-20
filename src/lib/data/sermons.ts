@@ -42,6 +42,15 @@ export async function getSermons(): Promise<Sermon[]> {
 }
 
 export async function getSermonById(id: string): Promise<Sermon | undefined> {
+  const rows = await db
+    .select()
+    .from(sermonsTable)
+    .where(and(eq(sermonsTable.id, id), eq(sermonsTable.isPublished, true)))
+    .limit(1)
+  return rows[0] ? toSermon(rows[0]) : undefined
+}
+
+export async function getSermonForAdmin(id: string): Promise<Sermon | undefined> {
   const rows = await db.select().from(sermonsTable).where(eq(sermonsTable.id, id)).limit(1)
   return rows[0] ? toSermon(rows[0]) : undefined
 }
