@@ -1,0 +1,80 @@
+import type { ReactNode } from 'react'
+import Container from '@/components/layout/Container'
+import PastorKakaoCard from '@/components/layout/PastorKakaoCard'
+import Reveal from '@/components/ui/Reveal'
+import { churchInfo } from '@/lib/church'
+
+interface VisitBlockProps {
+  eyebrow: ReactNode
+  title: ReactNode
+  description?: ReactNode
+  media: ReactNode
+  details?: ReactNode
+  showPastorKakao?: boolean
+  className?: string
+}
+
+export default function VisitBlock({
+  eyebrow,
+  title,
+  description,
+  media,
+  details,
+  showPastorKakao = false,
+  className = 'bg-surface py-20 min-[960px]:py-28',
+}: VisitBlockProps) {
+  return (
+    <section id="visit" className={className}>
+      <Container size="wide">
+        <Reveal>
+          <div>
+            <p className="text-[12.5px] font-bold uppercase tracking-[0.2em] text-accent">{eyebrow}</p>
+            <h2 className="mt-4 text-[clamp(30px,4.4vw,52px)] font-extrabold leading-tight tracking-tight text-ink">
+              {title}
+            </h2>
+            {description ? <p className="mt-4 max-w-2xl leading-7 text-ink-muted">{description}</p> : null}
+          </div>
+        </Reveal>
+        <div className="mt-12 grid gap-10 min-[960px]:grid-cols-[1.05fr_0.95fr]">
+          <Reveal>{media}</Reveal>
+          <Reveal delay={120}>
+            <div className="grid gap-6">
+              <VisitInfo label="Address">
+                <address className="font-serif text-[23px] font-bold not-italic leading-8 text-ink">{churchInfo.address}</address>
+              </VisitInfo>
+              {details}
+              <VisitInfo label="Contact" last={!showPastorKakao}>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href={`tel:${churchInfo.phone}`}
+                    className="motion-hover rounded-full border border-line bg-paper px-5 py-3 text-sm font-bold text-ink transition hover:border-accent"
+                  >
+                    Phone {churchInfo.phone}
+                  </a>
+                  <a
+                    href={churchInfo.blog}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="motion-hover rounded-full border border-line bg-paper px-5 py-3 text-sm font-bold text-ink transition hover:border-accent"
+                  >
+                    Blog
+                  </a>
+                </div>
+              </VisitInfo>
+              {showPastorKakao ? <PastorKakaoCard /> : null}
+            </div>
+          </Reveal>
+        </div>
+      </Container>
+    </section>
+  )
+}
+
+export function VisitInfo({ label, children, last = false }: { label: string; children: ReactNode; last?: boolean }) {
+  return (
+    <div className={last ? '' : 'border-b border-line pb-6'}>
+      <p className="text-[12.5px] font-bold uppercase tracking-[0.2em] text-accent">{label}</p>
+      <div className="mt-3">{children}</div>
+    </div>
+  )
+}

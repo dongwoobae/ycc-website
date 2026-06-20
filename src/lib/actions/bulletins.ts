@@ -6,7 +6,6 @@ import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { bulletins } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
-import { deleteFromR2, keyFromUrl } from '@/lib/r2'
 import { parseHwp } from '@/lib/hwp/parse'
 import type { BulletinSection } from '@/lib/types'
 import { sniffHwpMime } from '@/lib/upload-sniff'
@@ -20,7 +19,6 @@ export interface BulletinFormInput {
   theme: string
   scripture: string
   sections: BulletinSection[]
-  hwpSourceUrl?: string
 }
 
 function revalidateBulletinPaths(id?: string) {
@@ -35,21 +33,6 @@ function revalidateBulletinPaths(id?: string) {
 
 async function requireSession() {
   return requireAdmin()
-}
-
-async function logR2DeleteFailure(key: string, error: unknown, userId: string) {
-  if (!key) return
-  const message = error instanceof Error ? error.message : String(error)
-  await log('error', 'r2_object', undefined, `failed to delete ${key}: ${message}`, userId)
-}
-
-async function deleteR2BestEffort(key: string, userId: string) {
-  if (!key) return
-  try {
-    await deleteFromR2(key)
-  } catch (error) {
-    await logR2DeleteFailure(key, error, userId)
-  }
 }
 
 function parseBulletinDate(value: string) {
@@ -129,7 +112,6 @@ function parseInput(input: BulletinFormInput) {
     theme: input.theme.trim() || null,
     scripture: input.scripture.trim() || null,
     sections,
-    hwpSourceUrl: input.hwpSourceUrl?.trim() || null,
   }
 }
 
@@ -148,7 +130,6 @@ export async function parseHwpAction(formData: FormData) {
   if (!sniffHwpMime(buffer)) throw new Error('invalid hwp file')
   const parsed = parseHwp(buffer)
   return {
-    hwpSourceUrl: '',
     sections: [{ id: 'draft', title: '추출 내용', body: parsed.paragraphs }] satisfies BulletinSection[],
   }
 }
@@ -169,29 +150,23 @@ export async function createBulletin(input: BulletinFormInput) {
 export async function updateBulletin(id: string, input: BulletinFormInput) {
   const s = await requireSession()
   const values = parseInput(input)
-  const [current] = await db.select().from(bulletins).where(eq(bulletins.id, id)).limit(1)
   const [updated] = await db
     .update(bulletins)
     .set({ ...values, updatedAt: new Date() })
     .where(eq(bulletins.id, id))
     .returning({ id: bulletins.id, title: bulletins.bulletinDate })
   if (!updated) throw new Error('bulletin not found')
-  if (current?.hwpSourceUrl && current.hwpSourceUrl !== values.hwpSourceUrl) {
-    await deleteR2BestEffort(keyFromUrl(current.hwpSourceUrl), s.user.id)
-  }
   await log('update', 'bulletin', updated.id, updated.title, s.user.id)
   revalidateBulletinPaths(updated.id)
 }
 
 export async function deleteBulletin(id: string) {
   const s = await requireSession()
-  const [current] = await db.select().from(bulletins).where(eq(bulletins.id, id)).limit(1)
   const [deleted] = await db
     .delete(bulletins)
     .where(eq(bulletins.id, id))
     .returning({ id: bulletins.id, title: bulletins.bulletinDate })
   if (!deleted) throw new Error('bulletin not found')
-  await deleteR2BestEffort(keyFromUrl(current?.hwpSourceUrl), s.user.id)
   await log('delete', 'bulletin', deleted.id, deleted.title, s.user.id)
   revalidateBulletinPaths(deleted.id)
 }

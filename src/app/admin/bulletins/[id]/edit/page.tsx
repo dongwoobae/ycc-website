@@ -22,7 +22,6 @@ export default async function EditBulletinPage({ params }: EditBulletinPageProps
     theme: bulletin.theme ?? '',
     scripture: bulletin.scripture ?? '',
     sections: bulletin.sections ?? [],
-    hwpSourceUrl: bulletin.hwpSourceUrl ?? '',
   }
 
   return (

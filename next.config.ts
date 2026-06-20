@@ -20,7 +20,7 @@ const r2PublicPattern = remotePatternFromEnv(process.env.R2_PUBLIC_URL)
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb',
+      bodySizeLimit: '12mb',
     },
   },
   images: {

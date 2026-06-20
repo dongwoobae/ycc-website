@@ -14,13 +14,19 @@ export async function generateStaticParams() {
   return posts.map((post) => ({ id: post.id }))
 }
 
+function truncateDescription(value: string, maxLength = 160) {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  if (normalized.length <= maxLength) return normalized
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`
+}
+
 export async function generateMetadata({ params }: NewsDetailProps): Promise<Metadata> {
   const { id } = await params
   const post = await getPostById(id)
   if (!post) return { title: '교회소식' }
   return {
     title: post.title,
-    description: post.content,
+    description: truncateDescription(post.content),
   }
 }
 

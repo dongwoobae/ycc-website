@@ -46,7 +46,6 @@ export const sermons = pgTable('sermons', {
   notesUrl: text('notes_url'),
   thumbnailUrl: text('thumbnail_url'),
   summary: text('summary'),
-  viewCount: integer('view_count').notNull().default(0),
   isPublished: boolean('is_published').notNull().default(false),
   createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -66,7 +65,7 @@ export const posts = pgTable(
     publishedAt: timestamp('published_at', { withTimezone: true }),
     createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   },
   (t) => [
     check('posts_category_check', sql`${t.category} IN ('공지','소식','행사')`),
@@ -82,11 +81,10 @@ export const bulletins = pgTable('bulletins', {
   theme: text('theme'),
   scripture: text('scripture'),
   sections: jsonb('sections').$type<BulletinSection[]>().notNull().default(sql`'[]'::jsonb`),
-  hwpSourceUrl: text('hwp_source_url'),
   isPublished: boolean('is_published').notNull().default(false),
   createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
 }, (t) => [index('bulletins_published_date_idx').on(t.isPublished, t.bulletinDate)])
 
 export const galleryAlbums = pgTable('gallery_albums', {

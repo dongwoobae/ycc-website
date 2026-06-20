@@ -5,7 +5,7 @@ import { parseHwpAction } from '@/lib/actions/bulletins'
 import type { BulletinSection } from '@/lib/types'
 
 interface BulletinHwpUploadProps {
-  onParsed: (sections: BulletinSection[], hwpSourceUrl: string) => void
+  onParsed: (sections: BulletinSection[]) => void
 }
 
 export default function BulletinHwpUpload({ onParsed }: BulletinHwpUploadProps) {
@@ -21,7 +21,7 @@ export default function BulletinHwpUpload({ onParsed }: BulletinHwpUploadProps) 
     startTransition(async () => {
       try {
         const parsed = await parseHwpAction(formData)
-        onParsed(parsed.sections, parsed.hwpSourceUrl)
+        onParsed(parsed.sections)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'hwp 파싱에 실패했습니다.')
       }

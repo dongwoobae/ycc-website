@@ -22,7 +22,6 @@ const emptyBulletin: BulletinFormInput = {
   theme: '',
   scripture: '',
   sections: [],
-  hwpSourceUrl: '',
 }
 
 export default function BulletinForm({ initialValue, submitLabel, submitAction }: BulletinFormProps) {
@@ -47,7 +46,7 @@ export default function BulletinForm({ initialValue, submitLabel, submitAction }
 
   return (
     <div className="space-y-6">
-      <BulletinHwpUpload onParsed={(sections, hwpSourceUrl) => setForm((current) => ({ ...current, sections, hwpSourceUrl }))} />
+      <BulletinHwpUpload onParsed={(sections) => setForm((current) => ({ ...current, sections }))} />
       <form onSubmit={handleSubmit} className="space-y-6">
         <MetaFields form={form} onChange={(patch) => setForm((current) => ({ ...current, ...patch }))} />
         <BulletinSectionEditor sections={form.sections} onChange={(sections) => setForm((current) => ({ ...current, sections }))} />
