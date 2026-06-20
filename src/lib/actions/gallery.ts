@@ -1,12 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { asc, desc, eq } from 'drizzle-orm'
+import { asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { galleryAlbums, galleryImages } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { deleteFromR2, galleryImageKey, keyFromUrl, uploadToR2 } from '@/lib/r2'
+import { sniffImageMime } from '@/lib/upload-sniff'
 
 const maxImageSize = 8 * 1024 * 1024
 
@@ -31,14 +32,15 @@ function getImageFile(formData: FormData, name: string, required: boolean) {
     if (required) throw new Error(`${name} is required`)
     return null
   }
-  if (!value.type.startsWith('image/')) throw new Error('image file only')
   if (value.size > maxImageSize) throw new Error('image must be 8MB or less')
   return value
 }
 
 async function uploadImage(file: File) {
   const buffer = Buffer.from(await file.arrayBuffer())
-  return uploadToR2(buffer, galleryImageKey(file.name), file.type)
+  const contentType = sniffImageMime(buffer)
+  if (!contentType) throw new Error('unsupported image file')
+  return uploadToR2(buffer, galleryImageKey(file.name), contentType)
 }
 
 function revalidateGalleryPaths(albumId?: string) {
@@ -53,6 +55,21 @@ function revalidateGalleryPaths(albumId?: string) {
 
 async function requireSession() {
   return requireAdmin()
+}
+
+async function logR2DeleteFailure(key: string, error: unknown, userId: string) {
+  if (!key) return
+  const message = error instanceof Error ? error.message : String(error)
+  await log('error', 'r2_object', undefined, `failed to delete ${key}: ${message}`, userId)
+}
+
+async function deleteR2BestEffort(key: string, userId: string) {
+  if (!key) return
+  try {
+    await deleteFromR2(key)
+  } catch (error) {
+    await logR2DeleteFailure(key, error, userId)
+  }
 }
 
 export async function createAlbum(formData: FormData) {
@@ -77,7 +94,7 @@ export async function createAlbum(formData: FormData) {
       .returning({ id: galleryAlbums.id, title: galleryAlbums.title })
     created = result[0]
   } catch (e) {
-    await deleteFromR2(keyFromUrl(coverImgUrl)).catch(() => undefined)
+    await deleteR2BestEffort(keyFromUrl(coverImgUrl), s.user.id)
     throw e
   }
 
@@ -112,13 +129,13 @@ export async function updateAlbum(id: string, formData: FormData) {
       .returning({ id: galleryAlbums.id, title: galleryAlbums.title })
     updated = result[0]
   } catch (e) {
-    if (cover) await deleteFromR2(keyFromUrl(nextCoverUrl)).catch(() => undefined)
+    if (cover) await deleteR2BestEffort(keyFromUrl(nextCoverUrl), s.user.id)
     throw e
   }
 
   if (!updated) throw new Error('album not found')
   if (cover && current.coverImgUrl) {
-    await deleteFromR2(keyFromUrl(current.coverImgUrl)).catch(() => undefined)
+    await deleteR2BestEffort(keyFromUrl(current.coverImgUrl), s.user.id)
   }
   await log('update', 'gallery_album', updated.id, updated.title, s.user.id)
   revalidateGalleryPaths(updated.id)
@@ -131,7 +148,6 @@ export async function deleteAlbum(id: string) {
 
   const images = await db.select().from(galleryImages).where(eq(galleryImages.albumId, id))
   const keys = [album.coverImgUrl, ...images.map((image) => image.imageUrl)].map(keyFromUrl).filter(Boolean)
-  await Promise.allSettled(keys.map((key) => deleteFromR2(key)))
 
   const [deleted] = await db
     .delete(galleryAlbums)
@@ -139,6 +155,7 @@ export async function deleteAlbum(id: string) {
     .returning({ id: galleryAlbums.id, title: galleryAlbums.title })
 
   if (!deleted) throw new Error('album not found')
+  await Promise.all(keys.map((key) => deleteR2BestEffort(key, s.user.id)))
   await log('delete', 'gallery_album', deleted.id, deleted.title, s.user.id)
   revalidateGalleryPaths(deleted.id)
 }
@@ -172,7 +189,7 @@ export async function addImage(albumId: string, formData: FormData) {
       .returning({ id: galleryImages.id })
     created = result[0]
   } catch (e) {
-    await deleteFromR2(keyFromUrl(imageUrl)).catch(() => undefined)
+    await deleteR2BestEffort(keyFromUrl(imageUrl), s.user.id)
     throw e
   }
 
@@ -186,13 +203,13 @@ export async function deleteImage(imageId: string) {
   const [image] = await db.select().from(galleryImages).where(eq(galleryImages.id, imageId)).limit(1)
   if (!image) throw new Error('image not found')
 
-  await deleteFromR2(keyFromUrl(image.imageUrl)).catch(() => undefined)
   const [deleted] = await db
     .delete(galleryImages)
     .where(eq(galleryImages.id, imageId))
     .returning({ id: galleryImages.id, albumId: galleryImages.albumId })
 
   if (!deleted) throw new Error('image not found')
+  await deleteR2BestEffort(keyFromUrl(image.imageUrl), s.user.id)
   await normalizeImageOrder(deleted.albumId)
   await log('delete', 'gallery_image', deleted.id, deleted.albumId, s.user.id)
   revalidateGalleryPaths(deleted.albumId)
@@ -212,11 +229,7 @@ export async function reorderImages(albumId: string, imageIds: string[]) {
     if (!orderedIds.includes(image.id)) orderedIds.push(image.id)
   })
 
-  await Promise.all(
-    orderedIds.map((id, index) =>
-      db.update(galleryImages).set({ sortOrder: index }).where(eq(galleryImages.id, id))
-    )
-  )
+  await bulkUpdateImageOrder(orderedIds)
   await log('update', 'gallery_image', undefined, `reorder ${albumId}`, s.user.id)
   revalidateGalleryPaths(albumId)
 }
@@ -227,9 +240,17 @@ async function normalizeImageOrder(albumId: string) {
     .from(galleryImages)
     .where(eq(galleryImages.albumId, albumId))
     .orderBy(asc(galleryImages.sortOrder))
-  await Promise.all(
-    images.map((image, index) =>
-      db.update(galleryImages).set({ sortOrder: index }).where(eq(galleryImages.id, image.id))
-    )
+  await bulkUpdateImageOrder(images.map((image) => image.id))
+}
+
+async function bulkUpdateImageOrder(imageIds: string[]) {
+  if (imageIds.length === 0) return
+  const cases = sql.join(
+    imageIds.map((id, index) => sql`WHEN ${id} THEN ${index}`),
+    sql` `
   )
+  await db
+    .update(galleryImages)
+    .set({ sortOrder: sql`CASE ${galleryImages.id} ${cases} ELSE ${galleryImages.sortOrder} END` })
+    .where(inArray(galleryImages.id, imageIds))
 }

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { isAllowedUploadMime, type UploadMime } from '@/lib/upload-sniff'
 
 const accountId = process.env.R2_ACCOUNT_ID
 const accessKeyId = process.env.R2_ACCESS_KEY_ID
@@ -51,7 +52,8 @@ export function bulletinHwpKey(filename: string) {
   return `bulletins/${crypto.randomUUID()}-${sanitizeR2Filename(filename)}`
 }
 
-export async function uploadToR2(buffer: Buffer, key: string, contentType: string): Promise<string> {
+export async function uploadToR2(buffer: Buffer, key: string, contentType: UploadMime): Promise<string> {
+  if (!isAllowedUploadMime(contentType)) throw new Error('unsupported upload content type')
   await getR2Client().send(
     new PutObjectCommand({
       Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
