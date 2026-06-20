@@ -6,12 +6,17 @@ function youtubeIdFromUrl(videoUrl: string) {
   return url.searchParams.get('v') ?? ''
 }
 
-function sermon(input: Omit<Sermon, 'youtubeId' | 'thumbnailUrl' | 'isPublished'>): Sermon {
+function sermon(
+  input: Omit<Sermon, 'youtubeId' | 'thumbnailUrl' | 'isPublished' | 'summaryStatus'> & {
+    summaryStatus?: Sermon['summaryStatus']
+  }
+): Sermon {
   const youtubeId = youtubeIdFromUrl(input.videoUrl)
   return {
     ...input,
     youtubeId,
     thumbnailUrl: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
+    summaryStatus: input.summaryStatus ?? 'none',
     isPublished: true,
   }
 }
