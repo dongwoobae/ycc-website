@@ -1,11 +1,12 @@
+import Image from 'next/image'
+
 const KAKAO_URL = 'https://qr.kakao.com/talk/AyhAG5qS936F.2Usitr1y420Va4-'
 const KAKAO_ID = 'apple3035'
 
 export default function PastorKakaoCard() {
   return (
     <div className="flex flex-wrap items-center gap-5 rounded-2xl border border-line bg-paper p-5">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src="/images/pastor-kakao-qr.png"
         alt="담임목사 김선찬 카카오톡 QR 코드"
         width={104}

@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   title: '주보',
 }
 
+export const revalidate = 3600
+
 export default async function BulletinsPage() {
   const bulletins = await getBulletins()
 

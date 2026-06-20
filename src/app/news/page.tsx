@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   title: '교회소식',
 }
 
+export const revalidate = 3600
+
 export default async function NewsPage() {
   const posts = await getPosts()
 

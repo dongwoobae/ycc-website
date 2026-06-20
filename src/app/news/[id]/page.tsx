@@ -1,10 +1,17 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
-import { getPostById } from '@/lib/data/posts'
+import { getPostById, getPosts } from '@/lib/data/posts'
+
+export const revalidate = 3600
 
 interface NewsDetailProps {
   params: Promise<{ id: string }>
+}
+
+export async function generateStaticParams() {
+  const posts = await getPosts()
+  return posts.map((post) => ({ id: post.id }))
 }
 
 export async function generateMetadata({ params }: NewsDetailProps): Promise<Metadata> {

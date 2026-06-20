@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Nanum_Myeongjo } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -7,8 +8,40 @@ import { Analytics } from '@vercel/analytics/next'
 
 const nanumMyeongjo = Nanum_Myeongjo({
   weight: ['400', '700', '800'],
-  subsets: ['latin'],
   variable: '--font-nanum-myeongjo',
+  display: 'swap',
+  preload: false,
+})
+
+const pretendard = localFont({
+  src: [
+    {
+      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Medium.woff2',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-ExtraBold.woff2',
+      weight: '800',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-pretendard',
   display: 'swap',
 })
 
@@ -34,7 +67,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ko" className={nanumMyeongjo.variable}>
+    <html lang="ko" className={`${pretendard.variable} ${nanumMyeongjo.variable}`}>
       <body className="flex min-h-screen flex-col bg-bg text-ink antialiased">
         <Header />
         <main className="flex-1">{children}</main>

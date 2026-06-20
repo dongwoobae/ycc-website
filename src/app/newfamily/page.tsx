@@ -6,6 +6,7 @@ import Reveal from '@/components/ui/Reveal'
 import SectionTitle from '@/components/ui/SectionTitle'
 import { Eyebrow, HomeButton, ImagePlaceholder } from '@/components/home/HomePrimitives'
 import { churchInfo } from '@/lib/church'
+import { adultWorshipSchedule } from '@/lib/worship'
 
 export const metadata: Metadata = {
   title: '처음 오세요',
@@ -243,6 +244,8 @@ function NextGeneration() {
 }
 
 function Visit() {
+  const visitWorshipItems = adultWorshipSchedule.slice(0, 4)
+
   return (
     <section id="visit" className="bg-surface py-20 min-[960px]:py-28">
       <Container size="wide">
@@ -262,22 +265,12 @@ function Visit() {
               </VisitInfo>
               <VisitInfo label="Worship">
                 <dl className="grid gap-2.5 text-sm leading-6">
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-bold text-ink">주일예배</dt>
-                    <dd className="text-ink-muted">주일 오전 11:00</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-bold text-ink">찬양예배</dt>
-                    <dd className="text-ink-muted">주일 오후 2:00</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-bold text-ink">수요예배</dt>
-                    <dd className="text-ink-muted">수요일 오후 7:30</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="font-bold text-ink">새벽기도</dt>
-                    <dd className="text-ink-muted">월-금 오전 5:00</dd>
-                  </div>
+                  {visitWorshipItems.map((item) => (
+                    <div key={item.name} className="flex justify-between gap-4">
+                      <dt className="font-bold text-ink">{item.name}</dt>
+                      <dd className="text-ink-muted">{item.displayTime}</dd>
+                    </div>
+                  ))}
                 </dl>
               </VisitInfo>
               <VisitInfo label="Contact" last>

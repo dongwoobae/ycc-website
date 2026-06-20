@@ -2,10 +2,17 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
 import YouTubeEmbed from '@/components/sermons/YouTubeEmbed'
-import { getSermonById } from '@/lib/data/sermons'
+import { getSermonById, getSermons } from '@/lib/data/sermons'
+
+export const revalidate = 3600
 
 interface SermonDetailProps {
   params: Promise<{ id: string }>
+}
+
+export async function generateStaticParams() {
+  const sermons = await getSermons()
+  return sermons.map((sermon) => ({ id: sermon.id }))
 }
 
 export async function generateMetadata({ params }: SermonDetailProps): Promise<Metadata> {

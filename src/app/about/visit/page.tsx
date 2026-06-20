@@ -6,35 +6,18 @@ import KakaoMap from '@/components/layout/KakaoMap'
 import PastorKakaoCard from '@/components/layout/PastorKakaoCard'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
+import { adultWorshipSchedule, nextGenerationWorshipSchedule, type WorshipScheduleItem } from '@/lib/worship'
 
 export const metadata: Metadata = {
   title: '예배시간·오시는 길',
 }
 
-const schedules = [
-  ['주일예배', '본당', '주일 오전 11시'],
-  ['찬양예배', '본당', '주일 오후 2시'],
-  ['수요예배', '본당', '수요일 오후 7시 30분'],
-  ['새벽기도', '본당', '화-주일 오전 5시'],
-  ['청춘교실', '유치부실', '금요일 오전 10시'],
-  ['금요기도회', '본당', '매월 첫째 금요일 오후 7시 30분'],
-]
-
-const schools = [
-  ['영아부', '유치부실', '주일 오전 9시'],
-  ['유치부', '유치부실', '주일 오전 9시'],
-  ['아동부', '선교관 1층', '주일 오전 9시'],
-  ['중등부', '선교관 지하', '주일 오전 9시'],
-  ['고등부', '선교관 지하', '주일 오전 9시'],
-  ['청년부', '청년부실', '주일 오후 2시'],
-]
-
-function ScheduleTable({ title, rows }: { title: string; rows: string[][] }) {
+function ScheduleTable({ title, rows }: { title: string; rows: readonly WorshipScheduleItem[] }) {
   return (
     <section className="h-full rounded-2xl border border-line bg-paper p-8 shadow-subtle">
       <h2 className="font-serif text-[23px] font-extrabold tracking-tight text-ink">{title}</h2>
       <div className="mt-3.5">
-        {rows.map(([name, place, time]) => (
+        {rows.map(({ name, place, displayTime }) => (
           <div
             key={name}
             className="grid items-baseline gap-x-3.5 gap-y-1 border-b border-line py-[15px] last:border-b-0 sm:grid-cols-[7rem_1fr_auto]"
@@ -42,7 +25,7 @@ function ScheduleTable({ title, rows }: { title: string; rows: string[][] }) {
             <strong className="font-serif text-[17px] font-bold text-ink">{name}</strong>
             <span className="text-[14.5px] text-faint">{place}</span>
             <span className="text-[15px] font-bold text-accent-deep sm:justify-self-end sm:whitespace-nowrap">
-              {time}
+              {displayTime}
             </span>
           </div>
         ))}
@@ -67,10 +50,10 @@ export default function VisitPage() {
         <Container size="wide">
           <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
             <Reveal variant="fade-up">
-              <ScheduleTable title="장년부 예배 및 모임" rows={schedules} />
+              <ScheduleTable title="장년부 예배 및 모임" rows={adultWorshipSchedule} />
             </Reveal>
             <Reveal variant="fade-up" delay={120}>
-              <ScheduleTable title="교회학교" rows={schools} />
+              <ScheduleTable title="교회학교" rows={nextGenerationWorshipSchedule} />
             </Reveal>
           </div>
 

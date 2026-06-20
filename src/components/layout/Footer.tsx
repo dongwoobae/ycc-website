@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import Container from './Container'
 import { churchInfo } from '@/lib/church'
-
-const worshipItems = ['주일예배: 주일 오전 11:00', '찬양예배: 주일 오후 2:00', '수요예배: 수요일 오후 7:30', '새벽기도: 매주일 오전 5:00']
+import { adultWorshipSchedule } from '@/lib/worship'
 
 const menuLinks = [
   { label: '처음 오세요', href: '/newfamily' },
@@ -32,8 +31,10 @@ export default function Footer() {
         <div>
           <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-accent">Worship</h3>
           <ul className="mt-4 space-y-2">
-            {worshipItems.map((item) => (
-              <li key={item}>{item}</li>
+            {adultWorshipSchedule.slice(0, 4).map((item) => (
+              <li key={item.name}>
+                {item.name}: {item.displayTime}
+              </li>
             ))}
           </ul>
         </div>

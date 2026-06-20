@@ -2,10 +2,17 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
 import BulletinView from '@/components/bulletins/BulletinView'
-import { getBulletinById } from '@/lib/data/bulletins'
+import { getBulletinById, getBulletins } from '@/lib/data/bulletins'
+
+export const revalidate = 3600
 
 interface BulletinDetailProps {
   params: Promise<{ id: string }>
+}
+
+export async function generateStaticParams() {
+  const bulletins = await getBulletins()
+  return bulletins.map((bulletin) => ({ id: bulletin.id }))
 }
 
 export async function generateMetadata({ params }: BulletinDetailProps): Promise<Metadata> {
@@ -13,10 +20,6 @@ export async function generateMetadata({ params }: BulletinDetailProps): Promise
   const bulletin = await getBulletinById(id)
   return {
     title: bulletin ? `${bulletin.bulletinDate} 주보` : '주보',
-    robots: {
-      index: false,
-      follow: false,
-    },
   }
 }
 
