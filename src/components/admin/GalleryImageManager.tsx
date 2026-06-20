@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import SubmitButton from './SubmitButton'
 import type { GalleryImage } from '@/lib/types'
 
 interface GalleryImageManagerProps {
@@ -20,8 +21,17 @@ export default function GalleryImageManager({
   const router = useRouter()
   const addFormRef = useRef<HTMLFormElement>(null)
   const [orderedImages, setOrderedImages] = useState(images)
+  const [optimisticDeletedIds, setOptimisticDeletedIds] = useState<Set<string>>(new Set())
+  const [prevImages, setPrevImages] = useState(images)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
+
+  if (prevImages !== images) {
+    const nextDeletedIds = new Set([...optimisticDeletedIds].filter((id) => images.some((image) => image.id === id)))
+    setPrevImages(images)
+    setOptimisticDeletedIds(nextDeletedIds)
+    setOrderedImages(images.filter((image) => !nextDeletedIds.has(image.id)))
+  }
 
   function moveImage(index: number, offset: number) {
     const nextIndex = index + offset
@@ -55,6 +65,7 @@ export default function GalleryImageManager({
     startTransition(async () => {
       try {
         await deleteAction(imageId)
+        setOptimisticDeletedIds((current) => new Set(current).add(imageId))
         setOrderedImages((current) => current.filter((image) => image.id !== imageId))
         router.refresh()
       } catch (e) {
@@ -115,13 +126,13 @@ export default function GalleryImageManager({
           </div>
         </div>
         <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={isPending}
+          <SubmitButton
+            pendingOverride={isPending}
+            pendingLabel="처리 중..."
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isPending ? '처리 중...' : '사진 추가'}
-          </button>
+          </SubmitButton>
         </div>
       </form>
 

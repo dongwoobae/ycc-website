@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { deleteBulletin, getBulletinsForAdmin } from '@/lib/actions/bulletins'
 import { verifySession } from '@/lib/dal'
+import SubmitButton from '@/components/admin/SubmitButton'
 
 export default async function AdminBulletinsPage() {
   await verifySession()
@@ -54,9 +55,9 @@ function BulletinRow({ bulletin }: { bulletin: Awaited<ReturnType<typeof getBull
             수정
           </Link>
           <form action={deleteBulletin.bind(null, bulletin.id)}>
-            <button type="submit" className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-surface">
+            <SubmitButton confirmMessage="주보와 원본 파일을 삭제합니다. 계속할까요?" pendingLabel="삭제 중..." className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-surface">
               삭제
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </td>

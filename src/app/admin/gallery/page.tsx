@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { galleryAlbums } from '@/lib/db/schema'
 import { deleteAlbum } from '@/lib/actions/gallery'
 import { verifySession } from '@/lib/dal'
+import SubmitButton from '@/components/admin/SubmitButton'
 
 function formatDate(value: string | null) {
   return value || '-'
@@ -72,12 +73,13 @@ export default async function AdminGalleryPage() {
                         수정
                       </Link>
                       <form action={deleteAlbum.bind(null, album.id)}>
-                        <button
-                          type="submit"
+                        <SubmitButton
+                          confirmMessage="앨범과 모든 사진 파일을 삭제합니다. 계속할까요?"
+                          pendingLabel="삭제 중..."
                           className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-surface"
                         >
                           삭제
-                        </button>
+                        </SubmitButton>
                       </form>
                     </div>
                   </td>
