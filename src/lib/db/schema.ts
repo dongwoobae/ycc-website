@@ -8,6 +8,7 @@ import {
   timestamp,
   jsonb,
   check,
+  index,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import type { BulletinSection } from '../types'
@@ -49,7 +50,7 @@ export const sermons = pgTable('sermons', {
   isPublished: boolean('is_published').notNull().default(false),
   createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-})
+}, (t) => [index('sermons_published_date_idx').on(t.isPublished, t.sermonDate)])
 
 export const posts = pgTable(
   'posts',
@@ -67,7 +68,10 @@ export const posts = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
-  (t) => [check('posts_category_check', sql`${t.category} IN ('공지','소식','행사')`)]
+  (t) => [
+    check('posts_category_check', sql`${t.category} IN ('공지','소식','행사')`),
+    index('posts_published_pinned_at_idx').on(t.isPublished, t.isPinned, t.publishedAt),
+  ]
 )
 
 export const bulletins = pgTable('bulletins', {
@@ -83,7 +87,7 @@ export const bulletins = pgTable('bulletins', {
   createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-})
+}, (t) => [index('bulletins_published_date_idx').on(t.isPublished, t.bulletinDate)])
 
 export const galleryAlbums = pgTable('gallery_albums', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -93,7 +97,7 @@ export const galleryAlbums = pgTable('gallery_albums', {
   eventDate: date('event_date'),
   isPublished: boolean('is_published').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-})
+}, (t) => [index('gallery_albums_published_event_created_idx').on(t.isPublished, t.eventDate, t.createdAt)])
 
 export const galleryImages = pgTable('gallery_images', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -105,7 +109,7 @@ export const galleryImages = pgTable('gallery_images', {
   alt: text('alt'),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-})
+}, (t) => [index('gallery_images_album_sort_idx').on(t.albumId, t.sortOrder)])
 
 export const appLogs = pgTable('app_logs', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
