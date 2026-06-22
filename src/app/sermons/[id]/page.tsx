@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
-import YouTubeEmbed from '@/components/sermons/YouTubeEmbed'
+import SermonSummary from '@/components/sermons/SermonSummary'
 import { getSermonById, getSermons } from '@/lib/data/sermons'
 
 export const revalidate = 3600
@@ -45,15 +45,7 @@ export default async function SermonDetailPage({ params }: SermonDetailProps) {
         <p className="mt-4 text-ink-muted">
           {sermon.preacher} · {sermon.scripture} · {sermon.sermonDate}
         </p>
-        <div className="mt-8">
-          <YouTubeEmbed youtubeId={sermon.youtubeId} title={sermon.title} />
-        </div>
-        {sermon.summary && (
-          <section className="mt-8 rounded-lg border border-line bg-paper p-6 shadow-subtle">
-            <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">설교 요약</h2>
-            <p className="mt-4 leading-8 text-ink-muted">{sermon.summary}</p>
-          </section>
-        )}
+        <SermonSummary sermon={sermon} />
       </Container>
     </div>
   )

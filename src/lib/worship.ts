@@ -1,12 +1,17 @@
 import type { WorshipType } from './types'
 
-export const worshipTypes = ['주일예배', '주일찬양예배', '수요예배', '금요기도회'] as const satisfies readonly WorshipType[]
+export const worshipTypes = [
+  '주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송', '특별행사',
+] as const satisfies readonly WorshipType[]
 
 export const worshipLabels: Record<WorshipType, string> = {
   주일예배: '주일예배',
   주일찬양예배: '주일찬양예배',
   수요예배: '수요예배',
   금요기도회: '금요기도회',
+  시온찬양대: '시온찬양대',
+  특송: '특송',
+  특별행사: '특별행사',
 }
 
 export const worshipFilterItems = [

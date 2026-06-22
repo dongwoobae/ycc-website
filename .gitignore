@@ -43,3 +43,6 @@ next-env.d.ts
 
 #superpower
 .superpowers/*
+
+# claude code local settings (personal, not committed)
+.claude/settings.local.json

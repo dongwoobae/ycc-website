@@ -3,9 +3,23 @@ import { db } from '@/lib/db'
 import { sermons as sermonsTable, type SermonRow } from '@/lib/db/schema'
 import type { Sermon, WorshipType } from '@/lib/types'
 
-type SermonListRow = Pick<
+export type SermonListRow = Pick<
   SermonRow,
-  'id' | 'title' | 'preacher' | 'scripture' | 'worshipType' | 'sermonDate' | 'videoUrl' | 'thumbnailUrl' | 'summary' | 'isPublished'
+  | 'id'
+  | 'title'
+  | 'preacher'
+  | 'scripture'
+  | 'worshipType'
+  | 'sermonDate'
+  | 'videoUrl'
+  | 'thumbnailUrl'
+  | 'summary'
+  | 'isPublished'
+  | 'youtubeVideoId'
+  | 'durationSeconds'
+  | 'quickSummary'
+  | 'chapters'
+  | 'summaryStatus'
 >
 
 const sermonColumns = {
@@ -19,6 +33,11 @@ const sermonColumns = {
   thumbnailUrl: sermonsTable.thumbnailUrl,
   summary: sermonsTable.summary,
   isPublished: sermonsTable.isPublished,
+  youtubeVideoId: sermonsTable.youtubeVideoId,
+  durationSeconds: sermonsTable.durationSeconds,
+  quickSummary: sermonsTable.quickSummary,
+  chapters: sermonsTable.chapters,
+  summaryStatus: sermonsTable.summaryStatus,
 }
 
 function youtubeIdFromUrl(videoUrl: string | null): string {
@@ -32,20 +51,25 @@ function youtubeIdFromUrl(videoUrl: string | null): string {
   }
 }
 
-function toSermon(row: SermonListRow): Sermon {
+export function toSermon(row: SermonListRow): Sermon {
   const youtubeId = youtubeIdFromUrl(row.videoUrl)
   return {
     id: row.id,
     title: row.title,
-    preacher: row.preacher,
+    preacher: row.preacher ?? undefined,
     scripture: row.scripture ?? undefined,
     worshipType: row.worshipType as WorshipType,
     sermonDate: row.sermonDate,
     videoUrl: row.videoUrl ?? '',
     youtubeId,
+    youtubeVideoId: row.youtubeVideoId ?? undefined,
+    durationSeconds: row.durationSeconds ?? undefined,
     thumbnailUrl:
       row.thumbnailUrl ?? (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : undefined),
     summary: row.summary ?? undefined,
+    quickSummary: row.quickSummary ?? undefined,
+    chapters: row.chapters ?? undefined,
+    summaryStatus: (row.summaryStatus ?? 'none') as Sermon['summaryStatus'],
     isPublished: row.isPublished,
   }
 }

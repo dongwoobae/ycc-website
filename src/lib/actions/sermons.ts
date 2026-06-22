@@ -1,0 +1,94 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { desc, eq } from 'drizzle-orm'
+import { requireAdmin } from '@/lib/dal'
+import { db } from '@/lib/db'
+import { sermons } from '@/lib/db/schema'
+import { log } from '@/lib/logger'
+import { syncSermons } from '@/lib/sermons/sync'
+import { generateSummaryForSermon } from '@/lib/sermons/summarize'
+import { isWorshipType } from '@/lib/worship'
+
+export interface SermonEditInput {
+  title: string
+  preacher: string
+  scripture: string
+  worshipType: string
+  sermonDate: string
+}
+
+function revalidateSermonPaths(id?: string) {
+  revalidatePath('/')
+  revalidatePath('/sermons')
+  revalidatePath('/admin/sermons')
+  if (id) {
+    revalidatePath(`/sermons/${id}`)
+    revalidatePath(`/admin/sermons/${id}/edit`)
+  }
+}
+
+export async function getSermonsForAdmin() {
+  await requireAdmin()
+  return db.select().from(sermons).orderBy(desc(sermons.sermonDate))
+}
+
+export async function getSermonForAdmin(id: string) {
+  await requireAdmin()
+  const [row] = await db.select().from(sermons).where(eq(sermons.id, id)).limit(1)
+  return row
+}
+
+export async function syncNowAction() {
+  await requireAdmin()
+  const result = await syncSermons()
+  revalidateSermonPaths()
+  return result
+}
+
+export async function generateSummaryAction(id: string) {
+  await requireAdmin()
+  const status = await generateSummaryForSermon(id)
+  revalidateSermonPaths(id)
+  return status
+}
+
+export async function updateSermonAction(id: string, input: SermonEditInput) {
+  const session = await requireAdmin()
+  if (!input.title.trim()) throw new Error('title is required')
+  if (!isWorshipType(input.worshipType)) throw new Error('invalid worshipType')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.sermonDate)) throw new Error('invalid sermonDate')
+
+  const [updated] = await db
+    .update(sermons)
+    .set({
+      title: input.title.trim(),
+      preacher: input.preacher.trim() || null,
+      scripture: input.scripture.trim() || null,
+      worshipType: input.worshipType,
+      sermonDate: input.sermonDate,
+    })
+    .where(eq(sermons.id, id))
+    .returning({ id: sermons.id, title: sermons.title })
+  if (!updated) throw new Error('sermon not found')
+  await log('update', 'sermon', updated.id, updated.title, session.user.id)
+  revalidateSermonPaths(id)
+}
+
+export async function togglePublishAction(id: string, publish: boolean) {
+  const session = await requireAdmin()
+  if (publish) {
+    const [row] = await db.select({ preacher: sermons.preacher }).from(sermons).where(eq(sermons.id, id)).limit(1)
+    if (!row) throw new Error('sermon not found')
+    if (!row.preacher?.trim()) throw new Error('공개 전 설교자(preacher)를 입력하세요')
+  }
+
+  const [updated] = await db
+    .update(sermons)
+    .set({ isPublished: publish })
+    .where(eq(sermons.id, id))
+    .returning({ id: sermons.id, title: sermons.title })
+  if (!updated) throw new Error('sermon not found')
+  await log('update', 'sermon', updated.id, `publish=${publish}`, session.user.id)
+  revalidateSermonPaths(id)
+}

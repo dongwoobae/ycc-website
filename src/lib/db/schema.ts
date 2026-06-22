@@ -11,7 +11,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
-import type { BulletinSection } from '../types'
+import type { BulletinSection, SermonChapter } from '../types'
 
 // Better Auth 테이블 (user/session/account/verification) — drizzle push 포함용 재노출
 export * from './auth-schema'
@@ -36,7 +36,7 @@ export const sermonSeries = pgTable('sermon_series', {
 export const sermons = pgTable('sermons', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   title: text('title').notNull(),
-  preacher: text('preacher').notNull(),
+  preacher: text('preacher'),
   scripture: text('scripture'),
   seriesId: uuid('series_id').references(() => sermonSeries.id, { onDelete: 'set null' }),
   worshipType: text('worship_type').notNull().default('주일예배'),
@@ -46,6 +46,15 @@ export const sermons = pgTable('sermons', {
   notesUrl: text('notes_url'),
   thumbnailUrl: text('thumbnail_url'),
   summary: text('summary'),
+  youtubeVideoId: text('youtube_video_id').unique(),
+  durationSeconds: integer('duration_seconds'),
+  quickSummary: jsonb('quick_summary').$type<string[]>(),
+  chapters: jsonb('chapters').$type<SermonChapter[]>(),
+  summaryStatus: text('summary_status').notNull().default('none'),
+  summaryAttempts: integer('summary_attempts').notNull().default(0),
+  summaryNextRetryAt: timestamp('summary_next_retry_at', { withTimezone: true }),
+  summaryGeneratedAt: timestamp('summary_generated_at', { withTimezone: true }),
+  summaryModel: text('summary_model'),
   isPublished: boolean('is_published').notNull().default(false),
   createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

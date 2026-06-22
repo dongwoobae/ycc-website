@@ -1,16 +1,29 @@
-export type WorshipType = '주일예배' | '주일찬양예배' | '수요예배' | '금요기도회'
+export type WorshipType =
+  | '주일예배' | '주일찬양예배' | '수요예배' | '금요기도회'
+  | '시온찬양대' | '특송' | '특별행사'
+
+export interface SermonChapter {
+  startSeconds: number
+  title: string
+  summary: string
+}
 
 export interface Sermon {
   id: string
   title: string
-  preacher: string
+  preacher?: string
   scripture?: string
   worshipType: WorshipType
   sermonDate: string
   videoUrl: string
   youtubeId: string
+  youtubeVideoId?: string
+  durationSeconds?: number
   thumbnailUrl?: string
   summary?: string
+  quickSummary?: string[]
+  chapters?: SermonChapter[]
+  summaryStatus: 'none' | 'pending' | 'ready' | 'failed'
   isPublished: boolean
 }
 
