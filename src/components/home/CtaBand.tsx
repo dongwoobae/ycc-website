@@ -8,9 +8,10 @@ export default function CtaBand() {
   return (
     <section className="relative isolate overflow-hidden bg-[oklch(0.22_0.05_259)] py-28 text-center text-white min-[960px]:py-[150px]">
       <Image
-        src="/images/church-cta.jpg"
+        src="/images/church-cta.webp"
         alt=""
         fill
+        unoptimized
         sizes="100vw"
         className="-z-20 object-cover object-[center_32%]"
       />

@@ -7,9 +7,10 @@ export default function FullBleedBand() {
   return (
     <section className="relative isolate flex min-h-[520px] h-[78svh] items-center overflow-hidden bg-[oklch(0.24_0.055_259)] text-white">
       <Image
-        src="/images/church-spire.jpg"
+        src="/images/church-spire.webp"
         alt=""
         fill
+        unoptimized
         sizes="100vw"
         className="-z-20 object-cover object-[center_28%]"
       />
