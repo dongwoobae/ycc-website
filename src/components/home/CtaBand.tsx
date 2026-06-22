@@ -7,7 +7,13 @@ import { HomeButton } from './HomePrimitives'
 export default function CtaBand() {
   return (
     <section className="relative isolate overflow-hidden bg-[oklch(0.22_0.05_259)] py-28 text-center text-white min-[960px]:py-[150px]">
-      <Image src="/images/church-hero.jpg" alt="" fill sizes="100vw" className="-z-20 object-cover" />
+      <Image
+        src="/images/church-cta.jpg"
+        alt=""
+        fill
+        sizes="100vw"
+        className="-z-20 object-cover object-[center_32%]"
+      />
       <div className="absolute inset-0 -z-10 bg-[oklch(0.14_0.055_258/.82)]" />
       <Container size="wide">
         <Reveal>

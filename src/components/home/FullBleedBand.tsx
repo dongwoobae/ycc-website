@@ -6,7 +6,13 @@ import { HomeButton } from './HomePrimitives'
 export default function FullBleedBand() {
   return (
     <section className="relative isolate flex min-h-[520px] h-[78svh] items-center overflow-hidden bg-[oklch(0.24_0.055_259)] text-white">
-      <Image src="/images/church-hero.jpg" alt="" fill sizes="100vw" className="-z-20 object-cover" />
+      <Image
+        src="/images/church-spire.jpg"
+        alt=""
+        fill
+        sizes="100vw"
+        className="-z-20 object-cover object-[center_28%]"
+      />
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,oklch(0.13_0.055_258/.84)_0%,oklch(0.13_0.055_258/.38)_60%,transparent_100%)]" />
       <Container size="wide" className="min-[960px]:px-10">
         <Reveal className="max-w-xl">
