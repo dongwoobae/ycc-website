@@ -33,6 +33,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
   lighthouse:
     name: Lighthouse CI
@@ -50,9 +52,13 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Start server
         run: npm start &
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Wait for server
         run: npx wait-on http://localhost:3000 --timeout 30000
