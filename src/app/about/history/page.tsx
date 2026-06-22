@@ -9,12 +9,14 @@ export const metadata: Metadata = {
 }
 
 const history = [
-  ['2000', '지역 복음화와 다음세대 사역을 위한 교육 부서 사역 정비'],
-  ['2006', '창립 50주년 감사예배 및 지역 섬김 사역 확대'],
-  ['2016', '창립 60주년 감사예배, 선교 후원 사역 재정비'],
-  ['2020', '온라인 예배와 영상 설교 사역 시작'],
-  ['2024', '교회학교와 청춘교실 사역 강화'],
-  ['2026', '구역이 살아나고 지역 사회를 섬기는 교회 표어로 사역 진행'],
+  ['1958', '5월 3일, 현재의 위치에 예배당을 신축하고 영천중앙교회로 개명하였습니다.'],
+  ['1976', '3월 30일, 성전 증축을 시작하였습니다.'],
+  ['1978', '8월 31일, 현재의 본당을 완공하였습니다.'],
+  ['1997', '12월 30일, 교육관을 준공하여 다음 세대를 위한 교육 사역의 기반을 마련하였습니다.'],
+  ['2006', '11월 5일, 창립 50주년을 맞아 하나님께 감사하며 새로운 도약을 준비하였습니다.'],
+  ['2012', '1월 8일, 분립개척하여 영성교회를 세웠습니다.'],
+  ['2013', '2월 3일, 분립개척하여 사랑의교회를 세워 복음 확장에 힘써 왔습니다.'],
+  ['2025', '9월 7일, 창립 70주년을 바라보며 교육관 외관 리모델링으로 다음 세대를 위한 사역 환경을 정비하고 있습니다.'],
 ]
 
 export default function HistoryPage() {
@@ -27,7 +29,39 @@ export default function HistoryPage() {
         image="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80"
       />
       <AboutSubnav />
-      <div className="py-20 sm:py-24">
+      <section className="py-20 sm:py-24">
+        <Container className="max-w-3xl">
+          <Reveal variant="fade">
+            <p className="text-[13px] font-bold text-accent-deep">OUR STORY</p>
+          </Reveal>
+          <Reveal variant="fade" delay={120}>
+            <h2 className="mt-3 font-serif text-3xl font-extrabold leading-snug tracking-tight text-ink sm:text-4xl">
+              영천중앙교회의 시작 이야기
+            </h2>
+          </Reveal>
+          <Reveal variant="fade" delay={200}>
+            <div className="mt-7 space-y-5 text-[17.5px] leading-9 text-ink-muted">
+              <p>
+                영천중앙교회의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다.
+              </p>
+              <p>
+                19세기 미국의 부흥과 선교의 불씨는 조선 땅으로 이어졌고, 대구·경북 지역에 복음의
+                씨앗이 심겨졌습니다. 그 복음의 흐름은 영천 땅에도 닿아 영천제일교회를 거쳐
+                주남기도처로 이어졌고, 마침내 오늘의 영천중앙교회로 자라났습니다.
+              </p>
+              <p>
+                작은 기도의 자리에서 시작된 교회는 오랜 세월 예배와 말씀, 섬김의 발걸음을 이어 오며
+                이 지역 가운데 복음의 빛을 비추어 왔습니다.
+              </p>
+              <p>
+                영천중앙교회는 지금도 그 은혜의 뿌리 위에 서서, 다음 세대와 이웃을 향해 복음의
+                이야기를 이어가고 있습니다.
+              </p>
+            </div>
+          </Reveal>
+        </Container>
+      </section>
+      <div className="border-t border-line pb-20 pt-20 sm:pb-24 sm:pt-24">
         <Container className="max-w-4xl">
           <ol className="relative">
             <div className="absolute left-1/2 top-2 hidden h-[calc(100%-1rem)] w-px -translate-x-1/2 bg-line sm:block" />

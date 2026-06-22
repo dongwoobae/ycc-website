@@ -1,18 +1,18 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import Container from '@/components/layout/Container'
-import PageHero from '@/components/layout/PageHero'
-import AboutSubnav from '@/components/about/AboutSubnav'
-import Reveal from '@/components/ui/Reveal'
+import type { Metadata } from "next";
+import Link from "next/link";
+import Container from "@/components/layout/Container";
+import PageHero from "@/components/layout/PageHero";
+import AboutSubnav from "@/components/about/AboutSubnav";
+import Reveal from "@/components/ui/Reveal";
 
 export const metadata: Metadata = {
-  title: '교회소개',
-}
+  title: "교회소개",
+};
 
 const visions = [
   {
-    title: '말씀과 예배',
-    body: '예배 안에서 하나님을 만나고, 삶에 적용되는 말씀으로 한 주를 살아갑니다.',
+    title: "말씀과 예배",
+    body: "예배 안에서 하나님을 만나고, 삶에 적용되는 말씀으로 한 주를 살아갑니다.",
     icon: (
       <>
         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
@@ -21,8 +21,8 @@ const visions = [
     ),
   },
   {
-    title: '구역과 다음세대',
-    body: '작은 모임이 살아나고, 다음세대가 신앙 안에서 자라도록 함께 세웁니다.',
+    title: "구역과 다음세대",
+    body: "작은 모임이 살아나고, 다음세대가 신앙 안에서 자라도록 함께 세웁니다.",
     icon: (
       <>
         <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
@@ -33,8 +33,8 @@ const visions = [
     ),
   },
   {
-    title: '지역을 섬김',
-    body: '영천의 이웃 곁으로 다가가 복음의 소망을 나누고 선교의 자리를 넓혀갑니다.',
+    title: "지역을 섬김",
+    body: "이웃 곁으로 다가가 복음의 소망을 나누고 선교의 자리를 넓혀갑니다.",
     icon: (
       <>
         <path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z" />
@@ -42,14 +42,14 @@ const visions = [
       </>
     ),
   },
-]
+];
 
 const stats = [
-  { n: '1956', unit: null, label: '창립 연도' },
-  { n: '70', unit: '년', label: '함께 걸어온 시간' },
-  { n: '6', unit: '개', label: '교회학교 부서' },
-  { n: '4', unit: '곳', label: '국내외 선교지' },
-]
+  { n: "1956", unit: null, label: "창립 연도" },
+  { n: "70", unit: "년", label: "함께 걸어온 시간" },
+  { n: "6", unit: "개", label: "교회학교 부서" },
+  { n: "4", unit: "곳", label: "국내외 선교지" },
+];
 
 export default function AboutPage() {
   return (
@@ -70,22 +70,21 @@ export default function AboutPage() {
             </Reveal>
             <Reveal variant="fade" delay={120}>
               <h2 className="mt-3 font-serif text-3xl font-extrabold leading-snug tracking-tight text-ink sm:text-4xl">
-                처음 오신 분도 편안히
+                하나님의 은혜에서
                 <br />
-                머물 수 있는 교회
+                시작된 교회
               </h2>
             </Reveal>
             <Reveal variant="fade" delay={200}>
               <div className="mt-7 space-y-5 text-[17.5px] leading-9 text-ink-muted">
                 <p>
-                  삶의 무게가 가볍지 않은 시대에 교회는 다시 복음의 소망을 붙들고 이웃 곁으로
-                  다가가야 합니다. 영천중앙교회는 예배 안에서 하나님을 만나고, 구역과 다음세대를
-                  세우며, 지역 사회를 섬기는 공동체가 되기를 소망합니다.
+                  영천중앙교회의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다. 대구·경북에 닿은
+                  복음의 흐름은 영천제일교회를 거쳐 주남기도처로 이어졌고, 마침내 오늘의 영천중앙교회로 자라났습니다.
                 </p>
                 <p>
-                  처음 방문하시는 분도 예배와 교제 안에서 따뜻하게 환대받을 수 있도록 준비하고
-                  있습니다. 주일예배, 교회학교, 청춘교실과 여러 모임을 통해 함께 믿음의 길을
-                  걸어가겠습니다.
+                  작은 기도의 자리에서 시작된 교회는 오랜 세월 예배와 말씀, 섬김의 발걸음을 이어 오며 이 지역 가운데
+                  복음의 빛을 비추어 왔습니다. 처음 오신 분도 예배와 교제 안에서 따뜻하게 환대받으실 수 있도록 준비하고
+                  있습니다.
                 </p>
               </div>
             </Reveal>
@@ -165,5 +164,5 @@ export default function AboutPage() {
         </Container>
       </section>
     </>
-  )
+  );
 }
