@@ -2,7 +2,7 @@ import type { Bulletin, BulletinSection } from '@/lib/types'
 
 function SectionBlock({ section }: { section: BulletinSection }) {
   return (
-    <section className="rounded-lg border border-line bg-paper p-5 shadow-subtle">
+    <section className="min-w-0 rounded-lg border border-line bg-paper p-5 shadow-subtle">
       <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">{section.title}</h2>
       {section.body && (
         <div className="mt-4 space-y-1 text-sm leading-6 text-ink-muted">
