@@ -16,10 +16,29 @@ export function parseIso8601Duration(iso: string): number {
   return Number(h ?? 0) * 3600 + Number(min ?? 0) * 60 + Number(s ?? 0)
 }
 
-async function getJson(url: string): Promise<any> {
+interface PlaylistItemsResponse {
+  items?: Array<{
+    contentDetails?: { videoId?: string }
+    snippet?: {
+      title?: string
+      publishedAt?: string
+      thumbnails?: Record<string, { url?: string } | undefined>
+    }
+  }>
+  nextPageToken?: string
+}
+
+interface VideosResponse {
+  items?: Array<{
+    id: string
+    contentDetails?: { duration?: string }
+  }>
+}
+
+async function getJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`youtube api ${res.status}`)
-  return res.json()
+  return res.json() as Promise<T>
 }
 
 export async function listPlaylistVideos(playlistId: string, apiKey: string): Promise<YouTubeVideo[]> {
@@ -32,7 +51,7 @@ export async function listPlaylistVideos(playlistId: string, apiKey: string): Pr
     url.searchParams.set('playlistId', playlistId)
     url.searchParams.set('key', apiKey)
     if (pageToken) url.searchParams.set('pageToken', pageToken)
-    const data = await getJson(url.toString())
+    const data = await getJson<PlaylistItemsResponse>(url.toString())
     for (const it of data.items ?? []) {
       const videoId = it.contentDetails?.videoId
       if (!videoId) continue
@@ -66,7 +85,7 @@ async function fetchDurations(ids: string[], apiKey: string): Promise<Map<string
     url.searchParams.set('part', 'contentDetails')
     url.searchParams.set('id', batch.join(','))
     url.searchParams.set('key', apiKey)
-    const data = await getJson(url.toString())
+    const data = await getJson<VideosResponse>(url.toString())
     for (const it of data.items ?? []) {
       result.set(it.id, parseIso8601Duration(it.contentDetails?.duration ?? ''))
     }
