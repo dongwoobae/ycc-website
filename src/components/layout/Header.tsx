@@ -6,22 +6,23 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Container from './Container'
 
 const aboutLinks = [
-  { label: '소개', href: '/about' },
-  { label: '연혁', href: '/about/history' },
-  { label: '섬기는 분들', href: '/about/serving' },
-  { label: '예배시간·오시는 길', href: '/about/visit' },
+  { label: '소개', href: '/about', desc: '교회를 소개합니다' },
+  { label: '인사말', href: '/about/greeting', desc: '담임목사 인사' },
+  { label: '연혁', href: '/about/history', desc: '걸어온 발자취' },
+  { label: '섬기는 분들', href: '/about/serving', desc: '함께 섬기는 이들' },
+  { label: '예배시간·오시는 길', href: '/about/visit', desc: '예배 안내와 위치' },
 ]
 
 const newsLinks = [
-  { label: '소식', href: '/news' },
-  { label: '갤러리', href: '/gallery' },
+  { label: '소식', href: '/news', desc: '교회 소식과 공지' },
+  { label: '갤러리', href: '/gallery', desc: '사진으로 보는 일상' },
 ]
 
 const navLinks = [
-  { label: '교회소개', href: '/about', section: '/about', children: aboutLinks },
+  { label: '교회소개', href: '/about', section: '/about', eyebrow: 'Church', children: aboutLinks },
   { label: '예배·설교', href: '/sermons', section: '/sermons' },
   { label: '주보', href: '/bulletins', section: '/bulletins' },
-  { label: '교회소식', href: '/news', section: '/news', children: newsLinks },
+  { label: '교회소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
 ]
 
 export default function Header() {
@@ -137,16 +138,23 @@ export default function Header() {
                 >
                   {link.label}
                 </Link>
-                <div className="invisible absolute left-0 top-full pt-3 opacity-0 transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                  <div className="w-56 translate-y-1 rounded-lg border border-line bg-paper p-2 shadow-soft transition group-focus-within:translate-y-0 group-hover:translate-y-0">
+                <div className="invisible absolute left-0 top-full pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                  <div className="w-64 origin-top translate-y-1 scale-[0.98] rounded-xl border border-line bg-paper/95 p-2.5 shadow-soft backdrop-blur transition duration-200 group-focus-within:translate-y-0 group-focus-within:scale-100 group-hover:translate-y-0 group-hover:scale-100">
+                    <p className="px-3.5 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-accent">
+                      {link.eyebrow}
+                    </p>
                     {link.children.map((child) => (
                       <Link
                         key={child.href}
                         href={child.href}
-                        className="block rounded-md px-3 py-2 text-sm font-medium text-ink-muted transition hover:bg-surface hover:text-ink"
+                        className="group/item relative flex flex-col rounded-lg px-3.5 py-2.5 transition hover:bg-surface"
                         onClick={(e) => e.currentTarget.blur()}
                       >
-                        {child.label}
+                        <span className="absolute left-0 top-1/2 h-0 w-[3px] -translate-y-1/2 rounded-full bg-accent transition-all duration-200 group-hover/item:h-7" />
+                        <span className="text-[14px] font-bold text-ink transition group-hover/item:text-accent-deep">
+                          {child.label}
+                        </span>
+                        <span className="mt-0.5 text-[12px] font-medium text-ink-muted">{child.desc}</span>
                       </Link>
                     ))}
                   </div>

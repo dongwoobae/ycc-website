@@ -1,6 +1,6 @@
-import Container from '@/components/layout/Container'
-import Reveal from '@/components/ui/Reveal'
-import { Eyebrow } from './HomePrimitives'
+import Container from "@/components/layout/Container";
+import Reveal from "@/components/ui/Reveal";
+import { Eyebrow } from "./HomePrimitives";
 
 export default function Manifesto() {
   return (
@@ -18,11 +18,11 @@ export default function Manifesto() {
         </Reveal>
         <Reveal delay={240}>
           <p className="mx-auto mt-8 max-w-[50ch] text-[17px] leading-8 text-ink-muted">
-            화려한 무엇보다 진실한 예배와 서로를 돌보는 사람들. 영천중앙교회는 영천의 이웃과 함께 걸으며
-            삶의 자리에 닿는 공동체를 꿈꿉니다.
+            화려한 무엇보다 진실한 예배와 서로를 돌보는 사람들. 영천중앙교회는 이웃과 함께 걸으며 삶의 자리에 닿는
+            공동체를 꿈꿉니다.
           </p>
         </Reveal>
       </Container>
     </section>
-  )
+  );
 }
