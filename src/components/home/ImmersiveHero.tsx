@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Container from "@/components/layout/Container";
 import Reveal from "@/components/ui/Reveal";
 import { Eyebrow, HomeButton } from "./HomePrimitives";
@@ -6,14 +5,18 @@ import { Eyebrow, HomeButton } from "./HomePrimitives";
 export default function ImmersiveHero() {
   return (
     <section className="relative isolate flex min-h-[620px] h-[100svh] items-end overflow-hidden bg-[linear-gradient(160deg,oklch(0.32_0.07_256),oklch(0.2_0.05_260))] text-white">
-      <Image
-        src="/images/church-hero.jpg"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="ken-burns -z-20 object-cover"
-      />
+      <video
+        className="absolute inset-0 -z-20 h-full w-full object-cover"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        poster="/videos/church-hero-poster.jpg"
+        aria-hidden="true"
+      >
+        <source src="/videos/church-hero.mp4" type="video/mp4" />
+      </video>
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,oklch(0.15_0.05_258/.45)_0%,transparent_28%,oklch(0.14_0.05_258/.55)_70%,oklch(0.13_0.055_258/.94)_100%)]" />
       <Container size="wide" className="pb-24 pt-32 min-[960px]:px-10 min-[960px]:pb-28">
         <Reveal>
@@ -21,7 +24,7 @@ export default function ImmersiveHero() {
         </Reveal>
         <Reveal delay={120}>
           <h1 className="mt-6 text-[clamp(48px,9vw,118px)] font-extrabold leading-[1.02] tracking-tight text-white [text-shadow:0_4px_50px_oklch(0.1_0.05_258/.6)]">
-            지친 영혼이,
+            지친 영혼이
             <br />
             <span className="text-accent">쉼</span>을 얻는 곳
           </h1>
