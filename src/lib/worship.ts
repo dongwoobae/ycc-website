@@ -6,6 +6,8 @@ export const worshipTypes = [
   '주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송', '특별행사',
 ] as const satisfies readonly WorshipType[]
 
+export type PublicWorshipType = (typeof worshipTypes)[number]
+
 export const worshipLabels: Record<WorshipType, string> = {
   주일예배: '주일예배',
   주일찬양예배: '주일찬양예배',
@@ -29,12 +31,12 @@ export function isWorshipType(value: string): value is WorshipType {
 }
 
 /** 공개 필터/배지에 노출할 worshipType인지. '미분류'는 숨긴다. */
-export function isPublicWorshipType(value: string): boolean {
-  return value !== '미분류' && isWorshipType(value)
+export function isPublicWorshipType(value: string): value is PublicWorshipType {
+  return worshipTypes.includes(value as PublicWorshipType)
 }
 
 export function expectsAutoSummary(value: string): boolean {
-  return autoSummaryTypes.includes(value as WorshipType)
+  return (autoSummaryTypes as readonly string[]).includes(value)
 }
 
 export interface WorshipScheduleItem {

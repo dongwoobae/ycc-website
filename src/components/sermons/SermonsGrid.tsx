@@ -4,13 +4,13 @@ import { useSearchParams } from 'next/navigation'
 import Reveal from '@/components/ui/Reveal'
 import SermonCard from '@/components/sermons/SermonCard'
 import WorshipFilter from '@/components/sermons/WorshipFilter'
-import { isWorshipType, type WorshipFilterValue } from '@/lib/worship'
+import { isPublicWorshipType, type WorshipFilterValue } from '@/lib/worship'
 import type { Sermon } from '@/lib/types'
 
 export default function SermonsGrid({ sermons }: { sermons: Sermon[] }) {
   const searchParams = useSearchParams()
   const worship = searchParams.get('worship')
-  const selected = worship && isWorshipType(worship) ? worship : undefined
+  const selected = worship && isPublicWorshipType(worship) ? worship : undefined
   const current: WorshipFilterValue = selected ?? '전체'
   const filteredSermons = selected ? sermons.filter((sermon) => sermon.worshipType === selected) : sermons
 
