@@ -35,6 +35,14 @@ interface VideosResponse {
   }>
 }
 
+interface VideoSnippetResponse {
+  items?: Array<{
+    id: string
+    snippet?: { title?: string; publishedAt?: string; thumbnails?: Record<string, { url?: string } | undefined> }
+    contentDetails?: { duration?: string }
+  }>
+}
+
 async function getJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`youtube api ${res.status}`)
@@ -91,4 +99,24 @@ async function fetchDurations(ids: string[], apiKey: string): Promise<Map<string
     }
   }
   return result
+}
+
+/** 단일 videoId의 메타데이터를 조회한다. 없으면 null을 반환한다. */
+export async function getVideoById(videoId: string, apiKey: string): Promise<YouTubeVideo | null> {
+  const url = new URL(`${API}/videos`)
+  url.searchParams.set('part', 'snippet,contentDetails')
+  url.searchParams.set('id', videoId)
+  url.searchParams.set('key', apiKey)
+  const data = await getJson<VideoSnippetResponse>(url.toString())
+  const it = data.items?.[0]
+  if (!it) return null
+  const thumbs = it.snippet?.thumbnails ?? {}
+  const thumb = thumbs.maxres ?? thumbs.high ?? thumbs.medium ?? thumbs.default
+  return {
+    videoId: it.id,
+    title: it.snippet?.title ?? '',
+    publishedAt: it.snippet?.publishedAt ?? '',
+    thumbnailUrl: thumb?.url ?? null,
+    durationSeconds: parseIso8601Duration(it.contentDetails?.duration ?? ''),
+  }
 }
