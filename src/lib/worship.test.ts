@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { adultWorshipSchedule, getWorshipScheduleItem, nextGenerationWorshipSchedule, worshipLabels, worshipTypes } from './worship'
+import {
+  adultWorshipSchedule,
+  expectsAutoSummary,
+  getWorshipScheduleItem,
+  isPublicWorshipType,
+  nextGenerationWorshipSchedule,
+  worshipLabels,
+  worshipTypes,
+} from './worship'
 
 describe('worship schedule', () => {
   it('keeps public worship schedules complete and displayable', () => {
@@ -27,6 +35,24 @@ describe('worship types (7종)', () => {
     for (const t of ['주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송', '특별행사']) {
       expect(worshipTypes).toContain(t)
       expect(worshipLabels[t as (typeof worshipTypes)[number]]).toBe(t)
+    }
+  })
+})
+
+describe('미분류 worship type', () => {
+  it('has a label but is excluded from public filter items', () => {
+    expect(worshipLabels.미분류).toBe('미분류')
+    expect(worshipTypes).not.toContain('미분류')
+    expect(isPublicWorshipType('미분류')).toBe(false)
+    expect(isPublicWorshipType('주일예배')).toBe(true)
+  })
+
+  it('uses worshipType as the auto-summary source of truth', () => {
+    for (const t of ['주일예배', '주일찬양예배', '수요예배', '금요기도회']) {
+      expect(expectsAutoSummary(t)).toBe(true)
+    }
+    for (const t of ['시온찬양대', '특송', '특별행사', '미분류']) {
+      expect(expectsAutoSummary(t)).toBe(false)
     }
   })
 })
