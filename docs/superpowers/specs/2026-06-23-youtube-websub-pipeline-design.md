@@ -24,7 +24,9 @@
 | 요약 산출물 | secondbrain.ai 스타일: **빠른 요약 불릿 + 타임스탬프 챕터**(클릭 시 영상 seek) |
 | 새 영상 판별 | **DB `youtube_video_id` 비교가 단일 권위 기준** (시간 컷오프 폐기) |
 | 요약 중복 방지 | **`summary_status='pending'` 원자적 conditional UPDATE claim** (+ stale 회수) |
-| 검수 흐름 | 자동 생성(draft, `isPublished=false`) → **관리자 수동 공개** |
+| 공개 흐름 | **자동 즉시 공개**(ingest 시 `isPublished=true`). 관리자는 사후 편집·비공개만 |
+| 설교자 | YouTube에서 못 얻음 → **기본값 `김선찬 담임목사`**(담임목사가 항상 설교자, `DEFAULT_PREACHER` 상수) |
+| 미분류 표시 | worshipType `미분류`는 영상은 공개하되 **필터·뱃지에서만 숨김**, 관리자 지정 시 표시 |
 | DB 마이그레이션 | **불필요** — 기존 `sermons` 스키마가 그대로 지원 |
 
 ## 아키텍처 / 데이터 흐름
@@ -45,7 +47,8 @@
       + 설정 재생목록 순회로 소속 확인 → worshipType + autoSummary 결정
    c. 재생목록 아직 미등록? → 30분 delay로 재발행(최대 INGEST_MAX_RETRY).
       한도 초과 시 worshipType='미분류'로 진행
-   d. sermons에 draft upsert (youtube_video_id unique, isPublished=false, summary_status='none')
+   d. sermons에 upsert — **isPublished=true(즉시 공개)**, preacher=DEFAULT_PREACHER,
+      youtube_video_id unique, summary_status='none'
    e. autoSummary 대상이면 → QStash "transcript" 메시지 발행
         │
         ▼
@@ -66,7 +69,8 @@
       실패 → summary_status='failed' + summary_next_retry_at 백오프
         │
         ▼
-⑤ Admin 검수(preacher 등 보강) → 공개 토글 → 공개페이지(IFrame seekTo 점프)
+⑤ ingest 시점에 이미 공개됨 → 공개페이지(IFrame seekTo 점프). 요약은 ④ 완료 후 채워짐.
+   Admin은 사후 편집(worshipType 지정 등)·비공개 전환만 담당(검수 게이트 아님).
 
 [별도] QStash Schedule(하루 1회) → /api/jobs/websub-renew → Google 허브에 재구독(임대 갱신)
 ```
@@ -102,6 +106,17 @@ RETURNING *;
 - 0건 반환 = 이미 다른 워커가 점유 → 현재 워커 종료. Gemini는 1회만 호출.
 - 크래시로 `pending` 고착 시 10분 경과 후 재claim 가능.
 
+## 공개 표시 정책 (자동 즉시 공개에 따른 처리)
+
+검수 게이트가 없으므로 ingest 시점에 바로 공개되고, 빈틈은 공개 페이지에서 다음과 같이 흡수한다.
+
+- **요약 섹션 상태별 표시** (`SermonSummary`):
+  - `summary_status='ready'` → 빠른요약·챕터 정상 표시.
+  - 진행중(`none`/`pending`, 자막·요약 대기) → **"설교 요약 대기중.."** placeholder 표시.
+  - `failed`(재시도 소진) → 요약 섹션 **숨김**(영상·메타데이터는 정상 노출).
+- **설교자 기본값**: ingest 시 `preacher = DEFAULT_PREACHER`(상수 `'김선찬 담임목사'`). 담임목사가 항상 설교자이므로 null 공백 문제 없음. 향후 변경 대비 코드 상수 1곳에서 관리(특별 설교자는 관리자가 사후 수정).
+- **`미분류` worshipType 노출 정책**: 영상 자체는 공개. 단 `WorshipFilter`(필터 탭)·`SermonCard`/상세 **뱃지에서는 `미분류`를 제외**해 노출하지 않음. 관리자가 worshipType를 지정하면 그때부터 필터·뱃지에 표시. (영상을 숨기는 것이 아님.)
+
 ## 데이터 모델
 
 **마이그레이션 불필요.** 기존 `sermons`(`src/lib/db/schema.ts`)가 이미 보유:
@@ -122,6 +137,9 @@ RETURNING *;
 ### 변경
 - `src/lib/ai/sermon-summary.ts` — `generateSermonSummary` 시그니처를 **영상 URL(fileData) → 자막 원고 텍스트 + 세그먼트 타임스탬프**로 교체. 프롬프트도 "영상 시청" → "자막 원고 요약, 주어진 타임스탬프로 챕터 startSeconds 산정"으로 수정. `parseSermonSummary`/Zod는 유지.
 - `src/lib/sermons/summarize.ts` — claim 쿼리 유지, 요약 입력만 자막 텍스트로. QStash 워커가 호출.
+- `src/components/sermons/SermonSummary.tsx` — `ready`/진행중/`failed` 3상태 분기(진행중 시 "설교 요약 대기중.." 표시).
+- `src/components/sermons/WorshipFilter.tsx`·`SermonCard.tsx`(및 상세 뱃지) — worshipType `미분류` 제외 렌더.
+- ingest 워커(신규) — `preacher = DEFAULT_PREACHER`, `isPublished=true`로 upsert.
 
 ### 신규
 - `src/lib/youtube/websub.ts` — 구독/갱신(허브 subscribe POST), Atom 파싱(videoId·published), HMAC 검증.
