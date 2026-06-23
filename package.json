@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio",
     "db:reset": "tsx scripts/reset-db.ts",
     "db:seed": "tsx scripts/seed.ts",
+    "websub:subscribe": "tsx scripts/websub-subscribe.ts",
     "create-admin": "tsx scripts/create-admin.ts",
     "delete-user": "tsx scripts/delete-user.ts"
   },
