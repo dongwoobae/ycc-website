@@ -11,7 +11,7 @@ export default function HomeScrollController() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
 
     let locked = false
-    let unlockTimer: ReturnType<typeof window.setTimeout> | undefined
+    let unlockTimer: number | undefined
 
     const unlock = () => {
       locked = false

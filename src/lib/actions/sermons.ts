@@ -6,8 +6,8 @@ import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { sermons } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
-import { syncSermons } from '@/lib/sermons/sync'
-import { generateSummaryForSermon } from '@/lib/sermons/summarize'
+import { resyncAllSermons } from '@/lib/sermons/sync'
+import { manualSummarize } from '@/lib/sermons/summarize'
 import { isWorshipType } from '@/lib/worship'
 
 export interface SermonEditInput {
@@ -41,14 +41,14 @@ export async function getSermonForAdmin(id: string) {
 
 export async function syncNowAction() {
   await requireAdmin()
-  const result = await syncSermons()
+  const result = await resyncAllSermons()
   revalidateSermonPaths()
   return result
 }
 
 export async function generateSummaryAction(id: string) {
   await requireAdmin()
-  const status = await generateSummaryForSermon(id)
+  const status = await manualSummarize(id)
   revalidateSermonPaths(id)
   return status
 }
