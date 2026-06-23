@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import BrandLogo from './BrandLogo'
 import Container from './Container'
 
 const aboutLinks = [
@@ -109,9 +110,8 @@ export default function Header() {
     <>
       <header className={headerClassName}>
       <Container size="wide" className="flex h-20 items-center justify-between px-6 min-[960px]:px-10">
-        <Link href="/" className="group inline-flex flex-col leading-none" aria-label="영천중앙교회 홈">
-          <span className="font-serif text-[21px] font-extrabold tracking-tight">영천중앙교회</span>
-          <span className="mt-1 text-[10px] font-semibold tracking-[0.24em] text-accent">YEONGCHEON CENTRAL</span>
+        <Link href="/" className="group inline-flex leading-none" aria-label="영천중앙교회 홈">
+          <BrandLogo />
         </Link>
 
         <nav className="hidden items-center gap-1 min-[960px]:flex" aria-label="주요 메뉴">

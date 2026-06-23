@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="영천중앙교회">
+  <defs>
+    <linearGradient id="sky" x1="18" x2="80" y1="16" y2="84" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3C82E6"/>
+      <stop offset="1" stop-color="#1F4C9C"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="25" x2="72" y1="73" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8C56B"/>
+      <stop offset="1" stop-color="#C99634"/>
+    </linearGradient>
+  </defs>
+  <rect width="96" height="96" rx="28" fill="#F8FBFF"/>
+  <path d="M20 55c11.8 13.9 43.7 13.9 56 0-2.5 17.4-14.6 29-28 29S22.5 72.4 20 55Z" fill="url(#gold)"/>
+  <path d="M48 12c15.9 11 27.3 27.5 28 43-12.3 8-43.7 8-56 0 .7-15.5 12.1-32 28-43Z" fill="url(#sky)"/>
+  <path d="M43.5 27h9v17h16v8.5h-16V73h-9V52.5h-16V44h16V27Z" fill="#fff"/>
+  <path d="M29 66.5c7.7 4.6 15.8 6.9 24.6 6.9 5.1 0 9.6-.7 13.4-2.2" fill="none" stroke="#FFF4CF" stroke-width="4" stroke-linecap="round"/>
+</svg>

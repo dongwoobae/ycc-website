@@ -29,7 +29,7 @@ export default function ImmersiveHero() {
   const [videoEnded, setVideoEnded] = useState(false)
 
   return (
-    <section className="relative isolate flex min-h-[620px] h-[100svh] items-end overflow-hidden bg-[linear-gradient(160deg,oklch(0.32_0.07_256),oklch(0.2_0.05_260))] text-white">
+    <section data-home-hero className="relative isolate flex min-h-[620px] h-[100svh] items-end overflow-hidden bg-[linear-gradient(160deg,oklch(0.32_0.07_256),oklch(0.2_0.05_260))] text-white">
       <Image
         src="/images/church-hero-still.webp"
         alt=""

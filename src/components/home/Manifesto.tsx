@@ -4,7 +4,7 @@ import { Eyebrow } from "./HomePrimitives";
 
 export default function Manifesto() {
   return (
-    <section className="bg-bg py-24 min-[960px]:py-32">
+    <section data-home-after-hero className="bg-bg py-24 min-[960px]:py-32">
       <Container size="wide" className="text-center">
         <Reveal>
           <Eyebrow>Our heart</Eyebrow>

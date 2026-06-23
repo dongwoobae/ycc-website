@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
+import BrandLogo from './BrandLogo'
 
 const aboutChildren = [
   { label: '소개', href: '/about' },
@@ -146,15 +147,7 @@ export default function Sidebar() {
     <aside className="ycc-side" aria-label="주요 메뉴" data-pinned={pinned ? 'true' : undefined}>
       <div className="ycc-panel">
         <Link href="/" className="ycc-logo" aria-label="영천중앙교회 홈">
-          <span className="ycc-mark">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M13.6 2h-3.2v6.4H4v3.2h6.4V22h3.2V11.6H20V8.4h-6.4z" />
-            </svg>
-          </span>
-          <span className="ycc-wordmark">
-            <b>영천중앙교회</b>
-            <small>YEONGCHEON CENTRAL</small>
-          </span>
+          <BrandLogo variant="sidebar" />
         </Link>
 
         <button
