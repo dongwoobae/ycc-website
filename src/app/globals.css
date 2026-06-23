@@ -37,12 +37,12 @@ html {
 }
 
 @supports selector(:has(*)) {
-  html:has(.home-snap-page) [data-home-after-hero] {
+  html:has(.home-scroll-page) [data-home-after-hero] {
     scroll-margin-top: 80px;
   }
 
   @media (min-width: 960px) {
-    html:has(.home-snap-page) [data-home-after-hero] {
+    html:has(.home-scroll-page) [data-home-after-hero] {
       scroll-margin-top: 0;
     }
   }

@@ -8,6 +8,7 @@ import RecentSermons from '@/components/home/RecentSermons'
 import Verse from '@/components/home/Verse'
 import Visit from '@/components/home/Visit'
 import CtaBand from '@/components/home/CtaBand'
+import HomeScrollController from '@/components/home/HomeScrollController'
 import { getLatestSermons } from '@/lib/data/sermons'
 
 export const revalidate = 3600
@@ -16,7 +17,8 @@ export default async function HomePage() {
   const sermons = await getLatestSermons(3)
 
   return (
-    <>
+    <div className="home-scroll-page">
+      <HomeScrollController />
       <ImmersiveHero />
       <Manifesto />
       <FullBleedBand />
@@ -27,6 +29,6 @@ export default async function HomePage() {
       <Verse />
       <Visit />
       <CtaBand />
-    </>
+    </div>
   )
 }
