@@ -34,11 +34,14 @@ export function parseSermonSummary(raw: unknown, durationSeconds: number | null)
 }
 
 const PROMPT = `당신은 한국어 설교 영상을 요약하는 도우미입니다.
-이 영상을 보고 아래를 한국어로 작성하세요.
+아래의 "[MM:SS] 발화" 형식 설교 자막 원고를 읽고 한국어로 작성하세요.
 1) summary: 한 줄 소개 (한 문장)
 2) quickSummary: 핵심 요점 8~12개 (각 한 문장)
 3) chapters: 영상 흐름을 시간 구간으로 나눈 각 구간의 시작 시각(초, startSeconds), 제목(title), 요약(summary).
-startSeconds는 0부터 시작해 오름차순이어야 하며 영상 길이를 넘지 않습니다.`
+startSeconds는 원고에 표기된 [MM:SS] 타임스탬프를 초로 환산해 사용하고, 0부터 오름차순이어야 합니다.
+
+[자막 원고]
+`
 
 const responseSchema = {
   type: Type.OBJECT,
@@ -62,11 +65,12 @@ const responseSchema = {
 }
 
 export async function generateSermonSummary(
-  videoUrl: string,
+  transcriptText: string,
   durationSeconds: number | null
 ): Promise<SermonSummaryResult> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
+  if (!transcriptText.trim()) throw new Error('empty transcript')
   const model = process.env.GEMINI_MODEL ?? 'gemini-3.5-flash'
 
   const ai = new GoogleGenAI({ apiKey })
@@ -75,7 +79,7 @@ export async function generateSermonSummary(
     contents: [
       {
         role: 'user',
-        parts: [{ fileData: { fileUri: videoUrl } }, { text: PROMPT }],
+        parts: [{ text: PROMPT + transcriptText }],
       },
     ],
     config: {
