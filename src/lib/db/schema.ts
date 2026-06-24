@@ -126,7 +126,7 @@ export const appLogs = pgTable('app_logs', {
   entityType: text('entity_type').notNull(),
   entityId: uuid('entity_id'),
   message: text('message'),
-  createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+  createdBy: text('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 })
 
