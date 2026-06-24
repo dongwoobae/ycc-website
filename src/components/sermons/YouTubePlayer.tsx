@@ -45,7 +45,10 @@ function loadApi(): Promise<void> {
 export default function YouTubePlayer({ youtubeId, title, seekToRef, rootRef, onEngaged }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const onEngagedRef = useRef(onEngaged)
-  onEngagedRef.current = onEngaged
+
+  useEffect(() => {
+    onEngagedRef.current = onEngaged
+  }, [onEngaged])
 
   useEffect(() => {
     let player: YouTubePlayerInstance | null = null
