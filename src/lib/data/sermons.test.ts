@@ -6,6 +6,7 @@ vi.mock('@/lib/db', () => ({ db: {} }))
 const base: SermonListRow = {
   id: 'id1',
   title: 't',
+  displayTitle: null,
   preacher: '김목사',
   worshipType: '주일예배',
   sermonDate: '2026-01-01',

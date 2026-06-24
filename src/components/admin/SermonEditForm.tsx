@@ -37,6 +37,15 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
           />
         </label>
         <label className="block">
+          <span className="text-sm text-ink-muted">목록 표시 제목 (선택 — 비우면 자동 정리)</span>
+          <input
+            className="mt-1 w-full rounded-md border border-line px-3 py-2"
+            value={form.displayTitle}
+            placeholder="목록에 표시할 제목"
+            onChange={(event) => set('displayTitle', event.target.value)}
+          />
+        </label>
+        <label className="block">
           <span className="text-sm text-ink-muted">설교자 (공개 전 필수)</span>
           <input
             className="mt-1 w-full rounded-md border border-line px-3 py-2"
