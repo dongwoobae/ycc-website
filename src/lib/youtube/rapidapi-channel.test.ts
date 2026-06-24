@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeChannelItems, parseLengthText, pickThumbnail } from './rapidapi-channel'
+import { normalizeChannelItems, parseLengthText, thumbnailUrlFor } from './rapidapi-channel'
 
 describe('parseLengthText', () => {
   it('parses h:mm:ss and m:ss', () => {
@@ -14,18 +14,9 @@ describe('parseLengthText', () => {
   })
 })
 
-describe('pickThumbnail', () => {
-  it('picks the widest url', () => {
-    expect(
-      pickThumbnail([
-        { url: 'a', width: 168 },
-        { url: 'b', width: 336 },
-      ])
-    ).toBe('b')
-  })
-  it('returns null when empty/invalid', () => {
-    expect(pickThumbnail([])).toBeNull()
-    expect(pickThumbnail(null)).toBeNull()
+describe('thumbnailUrlFor', () => {
+  it('builds a stable img.youtube.com url from videoId', () => {
+    expect(thumbnailUrlFor('abc')).toBe('https://img.youtube.com/vi/abc/hqdefault.jpg')
   })
 })
 
@@ -37,7 +28,6 @@ describe('normalizeChannelItems', () => {
         videoId: 'abc',
         title: '영천중앙교회 260621 주일예배',
         publishedAt: '2026-06-21T00:00:00Z',
-        thumbnail: [{ url: 'x', width: 480 }],
         lengthText: '1:16:44',
       },
       { type: 'shorts', videoId: 'zzz', title: 'short' },
@@ -48,7 +38,7 @@ describe('normalizeChannelItems', () => {
         videoId: 'abc',
         title: '영천중앙교회 260621 주일예배',
         publishedAt: '2026-06-21T00:00:00Z',
-        thumbnailUrl: 'x',
+        thumbnailUrl: 'https://img.youtube.com/vi/abc/hqdefault.jpg',
         durationSeconds: 4604,
       },
     ])

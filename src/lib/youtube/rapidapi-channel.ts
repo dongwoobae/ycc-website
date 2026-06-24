@@ -9,22 +9,9 @@ export function parseLengthText(text: unknown): number {
   return parts.reduce((acc, n) => acc * 60 + n, 0)
 }
 
-interface RawThumb {
-  url?: unknown
-  width?: unknown
-}
-
-/** 썸네일 배열에서 가장 큰 해상도의 url을 고른다. */
-export function pickThumbnail(thumbnails: unknown): string | null {
-  if (!Array.isArray(thumbnails) || thumbnails.length === 0) return null
-  let best: { url: string; width: number } | null = null
-  for (const t of thumbnails as RawThumb[]) {
-    const url = typeof t.url === 'string' ? t.url : ''
-    if (!url) continue
-    const width = Number(t.width) || 0
-    if (!best || width >= best.width) best = { url, width }
-  }
-  return best?.url ?? null
+/** videoId로 안정적인 YouTube 썸네일 URL을 만든다. (서명 없는 고정 주소) */
+export function thumbnailUrlFor(videoId: string): string {
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
 }
 
 interface RawChannelItem {
@@ -33,7 +20,6 @@ interface RawChannelItem {
   title?: unknown
   publishedAt?: unknown
   publishDate?: unknown
-  thumbnail?: unknown
   lengthText?: unknown
 }
 
@@ -53,7 +39,7 @@ export function normalizeChannelItems(items: unknown): YouTubeVideo[] {
       videoId,
       title: typeof it.title === 'string' ? it.title : '',
       publishedAt,
-      thumbnailUrl: pickThumbnail(it.thumbnail),
+      thumbnailUrl: thumbnailUrlFor(videoId),
       durationSeconds: parseLengthText(it.lengthText),
     })
   }
@@ -76,6 +62,9 @@ export async function fetchChannelVideos(channelId: string, maxPages = 4): Promi
   for (let page = 0; page < maxPages; page++) {
     const url = new URL(`https://${host}/channel/videos`)
     url.searchParams.set('id', channelId)
+    // 한국어 원본 제목을 받기 위해 한국 로케일을 지정한다(일부 영상은 영어 번역 제목이 등록돼 있음).
+    url.searchParams.set('geo', 'KR')
+    url.searchParams.set('lang', 'ko')
     if (token) url.searchParams.set('token', token)
 
     const res = await fetch(url.toString(), { headers })
