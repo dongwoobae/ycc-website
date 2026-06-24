@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import YouTubePlayer from './YouTubePlayer'
 import { formatTimestamp } from '@/lib/sermons/format'
+import { sermonListTitle } from '@/lib/sermons/list-title'
 import type { Sermon } from '@/lib/types'
 import { expectsAutoSummary } from '@/lib/worship'
 
@@ -15,10 +16,27 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
   const ready = sermon.summaryStatus === 'ready'
   const inProgress = isSummaryInProgress(sermon)
   const hasSummary = ready && Boolean(sermon.quickSummary?.length || sermon.chapters?.length)
+  const header = (
+    <header>
+      {sermon.worshipType !== '미분류' ? (
+        <p className="text-sm font-semibold text-accent-deep">{sermon.worshipType}</p>
+      ) : null}
+      <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
+        {sermonListTitle(sermon)}
+      </h1>
+      <p className="mt-4 text-ink-muted">
+        {sermon.preacher} · {sermon.sermonDate}
+      </p>
+      {sermon.summary ? (
+        <p className="mt-4 max-w-3xl leading-7 text-ink-muted">{sermon.summary}</p>
+      ) : null}
+    </header>
+  )
 
   if (!hasSummary) {
     return (
-      <div className="mx-auto mt-8 max-w-5xl space-y-8">
+      <div className="mx-auto max-w-5xl space-y-8">
+        {header}
         <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
         {inProgress ? (
           <section className="rounded-lg border border-line bg-paper p-6 text-ink-muted shadow-subtle">
@@ -30,12 +48,15 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
   }
 
   return (
-    <div className="mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
-      <div className="sticky top-0 z-10 bg-bg pb-4 lg:top-[50vh] lg:-translate-y-1/2 lg:bg-transparent lg:pb-0">
-        <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
+    <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
+      <div>
+        {header}
+        <div className="sticky top-0 z-10 mt-8 bg-bg pb-4 lg:mt-[clamp(5rem,18vh,12rem)] lg:top-[50vh] lg:-translate-y-1/2 lg:bg-transparent lg:pb-0">
+          <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
+        </div>
       </div>
 
-      <div className="mt-8 space-y-8 lg:mt-0">
+      <div className="mt-8 space-y-8 lg:mt-14">
         {ready && sermon.quickSummary?.length ? (
           <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
             <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">빠른 요약</h2>

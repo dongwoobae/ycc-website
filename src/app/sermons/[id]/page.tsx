@@ -40,18 +40,6 @@ export default async function SermonDetailPage({ params }: SermonDetailProps) {
   return (
     <div className="py-16">
       <Container className="max-w-[1600px]">
-        {sermon.worshipType !== '미분류' ? (
-          <p className="text-sm font-semibold text-accent-deep">{sermon.worshipType}</p>
-        ) : null}
-        <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
-          {sermonListTitle(sermon)}
-        </h1>
-        <p className="mt-4 text-ink-muted">
-          {sermon.preacher} · {sermon.sermonDate}
-        </p>
-        {sermon.summary ? (
-          <p className="mt-4 max-w-3xl leading-7 text-ink-muted">{sermon.summary}</p>
-        ) : null}
         <SermonSummary sermon={sermon} />
       </Container>
     </div>
