@@ -47,7 +47,7 @@ const pretendard = localFont({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ycch.kr'),
+  metadataBase: new URL('https://ycjc.kr'),
   title: {
     default: '영천중앙교회',
     template: '%s | 영천중앙교회',
