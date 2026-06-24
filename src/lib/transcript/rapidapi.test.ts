@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decodeEntities, parseTimedTextXml, pickKoreanTrackUrl } from './rapidapi'
+import { decodeEntities, normalizeDirectTranscript, parseTimedTextXml, pickKoreanTrackUrl } from './rapidapi'
 
 describe('decodeEntities', () => {
   it('decodes named and numeric entities', () => {
@@ -43,5 +43,22 @@ describe('pickKoreanTrackUrl', () => {
   it('returns null when no korean track', () => {
     expect(pickKoreanTrackUrl([{ languageCode: 'en', url: 'en' }])).toBeNull()
     expect(pickKoreanTrackUrl(undefined)).toBeNull()
+  })
+})
+
+describe('normalizeDirectTranscript', () => {
+  it('maps youtube-transcript3 transcript rows to segments', () => {
+    expect(
+      normalizeDirectTranscript({
+        success: true,
+        transcript: [
+          { text: '  hello   world ', duration: 3.24, offset: 0.04, lang: 'en' },
+          { text: 'second line', duration: 2, offset: 65.9, lang: 'en' },
+        ],
+      })
+    ).toEqual([
+      { startSeconds: 0, text: 'hello world' },
+      { startSeconds: 65, text: 'second line' },
+    ])
   })
 })

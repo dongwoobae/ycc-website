@@ -1,4 +1,3 @@
-import { rapidApiConfig, rapidApiHeaders } from '@/lib/rapidapi'
 import type { TranscriptSegment } from './prompt'
 
 const ENTITIES: Record<string, string> = {
@@ -69,6 +68,61 @@ interface SubtitlesResponse {
   subtitles?: SubtitleTrack[]
 }
 
+interface DirectTranscriptResponse {
+  success?: boolean
+  transcript?: unknown
+  data?: unknown
+}
+
+interface DirectTranscriptItem {
+  text?: unknown
+  offset?: unknown
+  start?: unknown
+  startSeconds?: unknown
+}
+
+function transcriptRapidApiConfig(): { key: string; host: string } {
+  const key = process.env.RAPIDAPI_KEY
+  const host = process.env.RAPIDAPI_TRANSCRIPT_HOST ?? process.env.RAPIDAPI_HOST
+  if (!key || !host) throw new Error('RAPIDAPI_KEY / RAPIDAPI_TRANSCRIPT_HOST not set')
+  return { key, host }
+}
+
+function rapidApiHeaders(key: string, host: string): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    'x-rapidapi-key': key,
+    'x-rapidapi-host': host,
+  }
+}
+
+function numberFrom(value: unknown): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+  if (typeof value === 'string') {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : 0
+  }
+  return 0
+}
+
+export function normalizeDirectTranscript(input: unknown): TranscriptSegment[] {
+  const items = Array.isArray(input)
+    ? input
+    : typeof input === 'object' && input !== null
+      ? ((input as DirectTranscriptResponse).transcript ?? (input as DirectTranscriptResponse).data)
+      : null
+  if (!Array.isArray(items)) return []
+
+  const out: TranscriptSegment[] = []
+  for (const item of items as DirectTranscriptItem[]) {
+    const text = typeof item.text === 'string' ? item.text.replace(/\s+/g, ' ').trim() : ''
+    if (!text) continue
+    const start = numberFrom(item.offset ?? item.startSeconds ?? item.start)
+    out.push({ startSeconds: Math.max(0, Math.floor(start)), text })
+  }
+  return out
+}
+
 /** 자막 트랙 목록에서 한국어 트랙의 url을 고른다. */
 export function pickKoreanTrackUrl(subtitles: SubtitleTrack[] | undefined): string | null {
   if (!Array.isArray(subtitles)) return null
@@ -78,14 +132,27 @@ export function pickKoreanTrackUrl(subtitles: SubtitleTrack[] | undefined): stri
   return ko?.url ?? null
 }
 
-/**
- * yt-api에서 한국어 자막을 가져온다.
- * 자막 미준비/없음은 빈 배열로 처리한다(상위에서 재시도/포기 판단).
- */
-export async function fetchTranscript(videoId: string): Promise<TranscriptSegment[]> {
-  const { host } = rapidApiConfig()
-  const headers = rapidApiHeaders()
+async function fetchTranscriptFromYoutubeTranscript3(
+  videoId: string,
+  host: string,
+  headers: Record<string, string>
+): Promise<TranscriptSegment[]> {
+  const url = new URL(`https://${host}/api/transcript`)
+  url.searchParams.set('videoId', videoId)
 
+  const res = await fetch(url.toString(), { headers })
+  if (res.status === 404) return []
+  if (!res.ok) throw new Error(`youtube-transcript3 transcript ${res.status}`)
+  const data = (await res.json()) as DirectTranscriptResponse
+  if (data.success === false) return []
+  return normalizeDirectTranscript(data)
+}
+
+async function fetchTranscriptFromYtApi(
+  videoId: string,
+  host: string,
+  headers: Record<string, string>
+): Promise<TranscriptSegment[]> {
   const listUrl = new URL(`https://${host}/subtitles`)
   listUrl.searchParams.set('id', videoId)
   listUrl.searchParams.set('lang', 'ko')
@@ -98,8 +165,22 @@ export async function fetchTranscript(videoId: string): Promise<TranscriptSegmen
   const trackUrl = pickKoreanTrackUrl(list.subtitles)
   if (!trackUrl) return []
 
-  // 트랙 url은 YouTube timedtext 직접 주소라 RapidAPI 쿼터를 쓰지 않는다.
   const xml = await fetchTimedText(trackUrl)
   if (!xml) return []
   return parseTimedTextXml(xml)
+}
+
+/**
+ * yt-api에서 한국어 자막을 가져온다.
+ * 자막 미준비/없음은 빈 배열로 처리한다(상위에서 재시도/포기 판단).
+ */
+export async function fetchTranscript(videoId: string): Promise<TranscriptSegment[]> {
+  const { key, host } = transcriptRapidApiConfig()
+  const headers = rapidApiHeaders(key, host)
+
+  if (host === 'youtube-transcript3.p.rapidapi.com') {
+    return fetchTranscriptFromYoutubeTranscript3(videoId, host, headers)
+  }
+
+  return fetchTranscriptFromYtApi(videoId, host, headers)
 }
