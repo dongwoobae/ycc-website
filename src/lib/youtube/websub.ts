@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { absoluteUrl } from '../site-origin'
 
 export type WebSubNotification =
   | { kind: 'upload'; videoId: string; published: string }
@@ -6,6 +7,14 @@ export type WebSubNotification =
   | { kind: 'unknown' }
 
 const HUB = 'https://pubsubhubbub.appspot.com/subscribe'
+
+/** WebSub 알림을 수신하는 라우트 경로 (src/app/api/youtube/websub/route.ts). */
+export const WEBSUB_CALLBACK_PATH = '/api/youtube/websub'
+
+/** 표준 사이트 origin + 콜백 경로로 절대 콜백 URL을 만든다. */
+export function getWebSubCallbackUrl(): string {
+  return absoluteUrl(WEBSUB_CALLBACK_PATH)
+}
 
 const tag = (xml: string, name: string): string | null => {
   const m = new RegExp(`<${name}>([^<]+)</${name}>`).exec(xml)

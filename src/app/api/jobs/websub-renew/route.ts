@@ -1,5 +1,5 @@
 import { verifyQStash } from '@/lib/qstash'
-import { subscribeToChannel } from '@/lib/youtube/websub'
+import { getWebSubCallbackUrl, subscribeToChannel } from '@/lib/youtube/websub'
 
 export async function POST(req: Request) {
   const raw = await req.text()
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   }
   await subscribeToChannel({
     channelId: process.env.YOUTUBE_CHANNEL_ID!,
-    callbackUrl: process.env.WEBSUB_CALLBACK_URL!,
+    callbackUrl: getWebSubCallbackUrl(),
     secret: process.env.WEBSUB_SECRET!,
   })
   return Response.json({ ok: true })
