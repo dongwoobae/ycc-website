@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Reveal from '@/components/ui/Reveal'
 import SermonCard from '@/components/sermons/SermonCard'
@@ -19,7 +19,7 @@ export default function SermonsGrid({ sermons }: { sermons: Sermon[] }) {
   const current: WorshipFilterValue = selected ?? '전체'
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOrder>('newest')
-  const [page, setPage] = useState(1)
+  const [pageState, setPageState] = useState({ key: '', page: 1 })
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -32,7 +32,9 @@ export default function SermonsGrid({ sermons }: { sermons: Sermon[] }) {
   }, [sermons, selected, query, sort])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  useEffect(() => setPage(1), [selected, query, sort])
+  const pageKey = `${selected ?? ''}|${query}|${sort}`
+  const page = pageState.key === pageKey ? Math.min(pageState.page, totalPages) : 1
+  const setPage = (nextPage: number) => setPageState({ key: pageKey, page: nextPage })
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
