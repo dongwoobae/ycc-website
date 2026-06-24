@@ -38,6 +38,28 @@ export function parseTimedTextXml(xml: unknown): TranscriptSegment[] {
   return out
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * YouTube timedtext 직접 주소를 가져온다. 429/5xx는 백오프 재시도 후에도 실패하면 throw(자막 없음과 구분).
+ * 그 외 비정상 응답(404 등)은 자막 없음으로 보고 빈 문자열을 반환한다.
+ */
+async function fetchTimedText(url: string, maxAttempts = 4): Promise<string> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const res = await fetch(url)
+    if (res.ok) return res.text()
+    if (res.status === 429 || res.status >= 500) {
+      if (attempt < maxAttempts - 1) {
+        await sleep(1000 * 2 ** attempt + Math.floor(Math.random() * 500))
+        continue
+      }
+      throw new Error(`timedtext rate-limited (${res.status})`)
+    }
+    return ''
+  }
+  return ''
+}
+
 interface SubtitleTrack {
   languageCode?: string
   url?: string
@@ -77,7 +99,7 @@ export async function fetchTranscript(videoId: string): Promise<TranscriptSegmen
   if (!trackUrl) return []
 
   // 트랙 url은 YouTube timedtext 직접 주소라 RapidAPI 쿼터를 쓰지 않는다.
-  const xmlRes = await fetch(trackUrl)
-  if (!xmlRes.ok) return []
-  return parseTimedTextXml(await xmlRes.text())
+  const xml = await fetchTimedText(trackUrl)
+  if (!xml) return []
+  return parseTimedTextXml(xml)
 }

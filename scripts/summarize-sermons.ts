@@ -2,6 +2,7 @@ import { and, desc, inArray, isNotNull } from 'drizzle-orm'
 import { db } from '../src/lib/db'
 import { sermons } from '../src/lib/db/schema'
 import { manualSummarize } from '../src/lib/sermons/summarize'
+import { autoSummaryTypes } from '../src/lib/worship'
 
 function parseLimit(argv: string[]): number {
   const i = argv.indexOf('--limit')
@@ -12,6 +13,16 @@ function parseLimit(argv: string[]): number {
   return 5
 }
 
+/** throw된 에러 메시지를 사유 카테고리로 분류한다(전부 claim 전 단계 — DB status는 'none' 유지). */
+function classifyError(msg: string): string {
+  if (/rate-limited|timedtext|\b429\b/i.test(msg)) return 'rate-limited(429)·자막fetch'
+  if (/yt-api subtitles/i.test(msg)) return 'subtitles-api-error'
+  if (msg.includes('자막 미준비')) return 'no-caption·자막없음'
+  if (/not claimable/i.test(msg)) return 'not-claimable'
+  if (/not found|YouTube video id/i.test(msg)) return 'no-video-id'
+  return `other: ${msg}`
+}
+
 async function main() {
   const limit = parseLimit(process.argv)
   console.log(`[summarize] picking up to ${limit} sermon(s) needing a summary`)
@@ -19,28 +30,52 @@ async function main() {
   const targets = await db
     .select({ id: sermons.id, title: sermons.title })
     .from(sermons)
-    .where(and(isNotNull(sermons.youtubeVideoId), inArray(sermons.summaryStatus, ['none', 'failed'])))
+    .where(
+      and(
+        isNotNull(sermons.youtubeVideoId),
+        inArray(sermons.summaryStatus, ['none', 'failed']),
+        inArray(sermons.worshipType, [...autoSummaryTypes]),
+      ),
+    )
     .orderBy(desc(sermons.sermonDate))
     .limit(limit)
 
   console.log(`[summarize] ${targets.length} target(s)`)
 
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
   let ready = 0
-  let failed = 0
-  for (const t of targets) {
+  const tally: Record<string, number> = {}
+  const bump = (key: string) => {
+    tally[key] = (tally[key] ?? 0) + 1
+  }
+
+  for (const [i, t] of targets.entries()) {
+    if (i > 0) await sleep(5000) // YouTube timedtext rate-limit 회피용 페이싱
     process.stdout.write(`[summarize] ${t.title.slice(0, 40)} ... `)
     try {
       const status = await manualSummarize(t.id)
-      console.log(status)
-      if (status === 'ready') ready++
-      else failed++
+      if (status === 'ready') {
+        ready++
+        bump('ready')
+        console.log('ready')
+      } else {
+        bump('gemini-failed(DB=failed)')
+        console.log('failed')
+      }
     } catch (e) {
-      failed++
-      console.log('error:', e instanceof Error ? e.message : e)
+      const msg = e instanceof Error ? e.message : String(e)
+      bump(classifyError(msg))
+      console.log('error:', msg)
     }
   }
 
-  console.log(`[summarize] done. ready=${ready}, failed=${failed}`)
+  const failed = targets.length - ready
+  console.log(`\n[summarize] done. ready=${ready}, failed=${failed} / total=${targets.length}`)
+  console.log('[summarize] 사유별 집계:')
+  for (const [reason, count] of Object.entries(tally).sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${reason}: ${count}`)
+  }
 }
 
 main().catch((e) => {
