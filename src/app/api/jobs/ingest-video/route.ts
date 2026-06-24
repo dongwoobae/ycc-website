@@ -4,6 +4,8 @@ import { classifyByTitle } from '@/lib/sermons/classify-title'
 import { expectsAutoSummary } from '@/lib/worship'
 import { fetchChannelVideos } from '@/lib/youtube/rapidapi-channel'
 
+export const maxDuration = 60
+
 const MAX_INGEST_RETRY = 12
 
 export async function POST(req: Request) {

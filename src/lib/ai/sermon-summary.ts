@@ -2,6 +2,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
 import type { SermonChapter } from "@/lib/types";
 
+/** Gemini 모델 미지정 시 폴백. summarize.ts의 summaryModel 기록과 일치시키기 위해 공유한다. */
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash";
+
 export interface SermonSummaryResult {
   summary: string;
   quickSummary: string[];
@@ -74,7 +77,7 @@ export async function generateSermonSummary(
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
   if (!transcriptText.trim()) throw new Error("empty transcript");
-  const model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
+  const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL;
 
   const ai = new GoogleGenAI({ apiKey });
   const res = await ai.models.generateContent({

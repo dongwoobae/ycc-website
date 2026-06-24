@@ -5,6 +5,8 @@ import { publishJob, RETRY_DELAY_SECONDS, verifyQStash } from '@/lib/qstash'
 import { buildTranscriptText } from '@/lib/transcript/prompt'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 
+export const maxDuration = 60
+
 const MAX_TRANSCRIPT_RETRY = 12
 
 export async function POST(req: Request) {
@@ -34,6 +36,6 @@ export async function POST(req: Request) {
     .set({ transcriptText, transcriptFetchedAt: new Date() })
     .where(eq(sermons.id, sermonId))
 
-  await publishJob('summarize', { sermonId, transcriptText })
+  await publishJob('summarize', { sermonId })
   return Response.json({ ok: true, segments: segments.length })
 }

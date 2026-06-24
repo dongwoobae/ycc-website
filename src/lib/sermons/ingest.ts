@@ -3,23 +3,8 @@ import { DEFAULT_PREACHER } from '@/lib/constants'
 import { db } from '@/lib/db'
 import { sermons } from '@/lib/db/schema'
 import type { WorshipType } from '@/lib/types'
-import type { WorshipResolution } from '@/lib/sermons/classify'
 import { sermonDateFromTitle } from '@/lib/sermons/sermon-date'
 import type { YouTubeVideo } from '@/lib/youtube/client'
-
-export const INGEST_MAX_RETRY = 3
-
-export type IngestDecision =
-  | { action: 'skip' }
-  | { action: 'retry' }
-  | { action: 'insert'; worshipType: WorshipType; autoSummary: boolean }
-
-export function decideIngest(input: { exists: boolean; worship: WorshipResolution | null; attempt: number }): IngestDecision {
-  if (input.exists) return { action: 'skip' }
-  if (input.worship) return { action: 'insert', worshipType: input.worship.worshipType, autoSummary: input.worship.autoSummary }
-  if (input.attempt < INGEST_MAX_RETRY) return { action: 'retry' }
-  return { action: 'insert', worshipType: '미분류', autoSummary: false }
-}
 
 export async function sermonExists(videoId: string): Promise<boolean> {
   const [row] = await db.select({ id: sermons.id }).from(sermons).where(eq(sermons.youtubeVideoId, videoId)).limit(1)

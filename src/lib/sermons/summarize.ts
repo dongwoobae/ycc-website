@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { sermons } from '@/lib/db/schema'
-import { generateSermonSummary } from '@/lib/ai/sermon-summary'
+import { generateSermonSummary, DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 import { buildTranscriptText } from '@/lib/transcript/prompt'
 import { autoSummaryTypes } from '@/lib/worship'
@@ -97,7 +97,7 @@ export async function summarizeClaimed(
   durationSeconds: number | null,
   transcriptText: string
 ): Promise<'ready' | 'failed'> {
-  const model = process.env.GEMINI_MODEL ?? 'gemini-3.5-flash'
+  const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
   try {
     const result = await generateSermonSummary(transcriptText, durationSeconds)
     await db

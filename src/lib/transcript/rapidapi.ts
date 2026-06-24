@@ -117,6 +117,8 @@ export function normalizeDirectTranscript(input: unknown): TranscriptSegment[] {
   for (const item of items as DirectTranscriptItem[]) {
     const text = typeof item.text === 'string' ? item.text.replace(/\s+/g, ' ').trim() : ''
     if (!text) continue
+    // 현재 제공자(youtube-transcript3)는 offset/start를 '초' 단위로 반환한다.
+    // ms로 반환하는 제공자로 교체하면 타임스탬프가 1000배 어긋나므로 환산 보정이 필요하다.
     const start = numberFrom(item.offset ?? item.startSeconds ?? item.start)
     out.push({ startSeconds: Math.max(0, Math.floor(start)), text })
   }
