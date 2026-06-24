@@ -45,14 +45,6 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
           />
         </label>
         <label className="block">
-          <span className="text-sm text-ink-muted">본문</span>
-          <input
-            className="mt-1 w-full rounded-md border border-line px-3 py-2"
-            value={form.scripture}
-            onChange={(event) => set('scripture', event.target.value)}
-          />
-        </label>
-        <label className="block">
           <span className="text-sm text-ink-muted">예배 종류</span>
           <select
             className="mt-1 w-full rounded-md border border-line px-3 py-2"

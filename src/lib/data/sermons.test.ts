@@ -7,7 +7,6 @@ const base: SermonListRow = {
   id: 'id1',
   title: 't',
   preacher: '김목사',
-  scripture: '요 3:16',
   worshipType: '주일예배',
   sermonDate: '2026-01-01',
   videoUrl: 'https://youtu.be/abc',

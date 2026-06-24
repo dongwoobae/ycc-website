@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: SermonDetailProps): Promise<M
   if (!sermon) return { title: '설교' }
   return {
     title: sermon.title,
-    description: `${sermon.preacher} · ${sermon.scripture ?? sermon.worshipType}`,
+    description: sermon.summary ?? `${sermon.preacher} · ${sermon.worshipType}`,
     openGraph: {
       title: sermon.title,
       description: sermon.summary,
@@ -45,7 +45,7 @@ export default async function SermonDetailPage({ params }: SermonDetailProps) {
           {sermon.title}
         </h1>
         <p className="mt-4 text-ink-muted">
-          {sermon.preacher} · {sermon.scripture} · {sermon.sermonDate}
+          {sermon.preacher} · {sermon.sermonDate}
         </p>
         <SermonSummary sermon={sermon} />
       </Container>

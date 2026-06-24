@@ -1,0 +1,1 @@
+ALTER TABLE "sermons" DROP COLUMN "scripture";

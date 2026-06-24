@@ -12,7 +12,6 @@ export interface Sermon {
   id: string
   title: string
   preacher?: string
-  scripture?: string
   worshipType: WorshipType
   sermonDate: string
   videoUrl: string

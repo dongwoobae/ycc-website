@@ -13,7 +13,6 @@ import { isWorshipType } from '@/lib/worship'
 export interface SermonEditInput {
   title: string
   preacher: string
-  scripture: string
   worshipType: string
   sermonDate: string
 }
@@ -64,7 +63,6 @@ export async function updateSermonAction(id: string, input: SermonEditInput) {
     .set({
       title: input.title.trim(),
       preacher: input.preacher.trim() || null,
-      scripture: input.scripture.trim() || null,
       worshipType: input.worshipType,
       sermonDate: input.sermonDate,
     })
