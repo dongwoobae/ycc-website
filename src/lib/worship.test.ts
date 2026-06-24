@@ -29,10 +29,10 @@ describe('worship schedule', () => {
   })
 })
 
-describe('worship types (7종)', () => {
-  it('includes all seven categories', () => {
-    expect(worshipTypes).toHaveLength(7)
-    for (const t of ['주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송', '특별행사']) {
+describe('worship types (8종)', () => {
+  it('includes all eight public categories', () => {
+    expect(worshipTypes).toHaveLength(8)
+    for (const t of ['주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송', '특별행사', '기타']) {
       expect(worshipTypes).toContain(t)
       expect(worshipLabels[t as (typeof worshipTypes)[number]]).toBe(t)
     }
@@ -51,7 +51,7 @@ describe('미분류 worship type', () => {
     for (const t of ['주일예배', '주일찬양예배', '수요예배', '금요기도회']) {
       expect(expectsAutoSummary(t)).toBe(true)
     }
-    for (const t of ['시온찬양대', '특송', '특별행사', '미분류']) {
+    for (const t of ['시온찬양대', '특송', '특별행사', '기타', '미분류']) {
       expect(expectsAutoSummary(t)).toBe(false)
     }
   })

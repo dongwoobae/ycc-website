@@ -3,7 +3,7 @@ import type { WorshipType } from './types'
 export const autoSummaryTypes = ['주일예배', '주일찬양예배', '수요예배', '금요기도회'] as const satisfies readonly WorshipType[]
 
 export const worshipTypes = [
-  '주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송', '특별행사',
+  '주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송', '특별행사', '기타',
 ] as const satisfies readonly WorshipType[]
 
 export type PublicWorshipType = (typeof worshipTypes)[number]
@@ -16,6 +16,7 @@ export const worshipLabels: Record<WorshipType, string> = {
   시온찬양대: '시온찬양대',
   특송: '특송',
   특별행사: '특별행사',
+  기타: '기타',
   미분류: '미분류',
 }
 
@@ -30,7 +31,7 @@ export function isWorshipType(value: string): value is WorshipType {
   return value in worshipLabels
 }
 
-/** 공개 필터/배지에 노출할 worshipType인지. '미분류'는 숨긴다. */
+/** 공개 필터/배지에 노출할 worshipType인지. '미분류'는 이전 데이터 호환용으로 숨긴다. */
 export function isPublicWorshipType(value: string): value is PublicWorshipType {
   return worshipTypes.includes(value as PublicWorshipType)
 }

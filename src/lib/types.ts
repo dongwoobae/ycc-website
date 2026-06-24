@@ -1,6 +1,6 @@
 export type WorshipType =
   | '주일예배' | '주일찬양예배' | '수요예배' | '금요기도회'
-  | '시온찬양대' | '특송' | '특별행사' | '미분류'
+  | '시온찬양대' | '특송' | '특별행사' | '기타' | '미분류'
 
 export interface SermonChapter {
   startSeconds: number
