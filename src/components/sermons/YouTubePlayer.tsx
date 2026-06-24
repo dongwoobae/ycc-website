@@ -6,6 +6,9 @@ interface Props {
   youtubeId: string
   title: string
   seekToRef?: MutableRefObject<((seconds: number) => void) | null>
+  rootRef?: MutableRefObject<HTMLDivElement | null>
+  /** 영상이 한 번이라도 재생/일시정지/버퍼링 상태가 되면 호출 (사용자 진입 감지) */
+  onEngaged?: () => void
 }
 
 type YouTubePlayerInstance = {
@@ -39,8 +42,10 @@ function loadApi(): Promise<void> {
   })
 }
 
-export default function YouTubePlayer({ youtubeId, title, seekToRef }: Props) {
+export default function YouTubePlayer({ youtubeId, title, seekToRef, rootRef, onEngaged }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
+  const onEngagedRef = useRef(onEngaged)
+  onEngagedRef.current = onEngaged
 
   useEffect(() => {
     let player: YouTubePlayerInstance | null = null
@@ -53,6 +58,12 @@ export default function YouTubePlayer({ youtubeId, title, seekToRef }: Props) {
         height: '100%',
         videoId: youtubeId,
         playerVars: { rel: 0 },
+        events: {
+          onStateChange: (event: { data: number }) => {
+            // 1=재생, 2=일시정지, 3=버퍼링 → 사용자가 영상에 진입한 것으로 간주
+            if (event.data === 1 || event.data === 2 || event.data === 3) onEngagedRef.current?.()
+          },
+        },
       })
       if (seekToRef) {
         seekToRef.current = (seconds: number) => {
@@ -69,7 +80,7 @@ export default function YouTubePlayer({ youtubeId, title, seekToRef }: Props) {
   }, [youtubeId, seekToRef])
 
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-subtle">
+    <div ref={rootRef} className="overflow-hidden rounded-lg border border-line bg-surface shadow-subtle">
       <div className="aspect-video w-full" aria-label={title}>
         <div ref={hostRef} className="h-full w-full" />
       </div>

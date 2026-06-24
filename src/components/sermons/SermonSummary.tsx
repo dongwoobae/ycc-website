@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import YouTubePlayer from './YouTubePlayer'
+import { useStickyVideoBleed } from './useStickyVideoBleed'
 import { formatTimestamp } from '@/lib/sermons/format'
 import { sermonListTitle } from '@/lib/sermons/list-title'
 import type { Sermon } from '@/lib/types'
@@ -13,6 +14,9 @@ export function isSummaryInProgress(sermon: Pick<Sermon, 'summaryStatus' | 'wors
 
 export default function SermonSummary({ sermon }: { sermon: Sermon }) {
   const seekRef = useRef<((seconds: number) => void) | null>(null)
+  const [engaged, setEngaged] = useState(false)
+  const handleEngaged = useCallback(() => setEngaged(true), [])
+  const { sentinelRef, videoRef, frameRef } = useStickyVideoBleed(engaged)
   const ready = sermon.summaryStatus === 'ready'
   const inProgress = isSummaryInProgress(sermon)
   const hasSummary = ready && Boolean(sermon.quickSummary?.length || sermon.chapters?.length)
@@ -48,17 +52,27 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
   }
 
   return (
-    <div className="lg:grid lg:grid-cols-2 lg:gap-10">
-      <div className="lg:flex lg:min-h-screen lg:flex-col">
-        {header}
-        <div className="mt-8 lg:relative lg:mt-[var(--sermon-video-offset)] lg:min-h-[calc(100vh-2rem)] lg:flex-1 lg:[--sermon-video-offset:calc((((min(100vw,1600px)-4rem-2.5rem)/2)*9/32)+2rem)]">
-          <div className="lg:sticky lg:top-[50vh] lg:z-10 lg:-translate-y-1/2">
-            <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
-          </div>
+    <div className="lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-10">
+      <div className="lg:col-start-1 lg:row-start-1">{header}</div>
+
+      <div ref={sentinelRef} aria-hidden className="mt-8 h-0 lg:hidden" />
+
+      <div
+        ref={videoRef}
+        className={`${engaged ? 'sticky top-20 z-30 ' : ''}lg:static lg:col-start-1 lg:row-start-2 lg:mt-[var(--sermon-video-offset)] lg:min-h-[calc(100vh-2rem)] lg:[--sermon-video-offset:calc((((min(100vw,1600px)-4rem-2.5rem)/2)*9/32)+2rem)]`}
+      >
+        <div className="lg:sticky lg:top-[50vh] lg:z-10 lg:-translate-y-1/2">
+          <YouTubePlayer
+            youtubeId={sermon.youtubeId}
+            title={sermon.title}
+            seekToRef={seekRef}
+            rootRef={frameRef}
+            onEngaged={handleEngaged}
+          />
         </div>
       </div>
 
-      <div className="mt-8 space-y-8 lg:mt-14">
+      <div className="mt-8 space-y-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-14">
         {ready && sermon.quickSummary?.length ? (
           <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
             <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">빠른 요약</h2>
