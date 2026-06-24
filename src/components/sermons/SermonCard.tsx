@@ -30,7 +30,7 @@ export default function SermonCard({ sermon }: { sermon: Sermon }) {
       </div>
       <div className="px-6 pb-6 pt-7">
         <div className="flex items-center justify-between gap-3 text-[13px] font-semibold text-accent-deep">
-          <span>{sermon.worshipType}</span>
+          <span>{sermon.worshipType === '미분류' ? '' : sermon.worshipType}</span>
           <time dateTime={sermon.sermonDate}>{sermon.sermonDate}</time>
         </div>
         <h3 className="mt-3 line-clamp-2 font-serif text-xl font-extrabold leading-snug tracking-tight text-ink">

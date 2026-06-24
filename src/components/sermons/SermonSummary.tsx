@@ -4,14 +4,26 @@ import { useRef } from 'react'
 import YouTubePlayer from './YouTubePlayer'
 import { formatTimestamp } from '@/lib/sermons/format'
 import type { Sermon } from '@/lib/types'
+import { expectsAutoSummary } from '@/lib/worship'
+
+export function isSummaryInProgress(sermon: Pick<Sermon, 'summaryStatus' | 'worshipType'>): boolean {
+  return (sermon.summaryStatus === 'none' || sermon.summaryStatus === 'pending') && expectsAutoSummary(sermon.worshipType)
+}
 
 export default function SermonSummary({ sermon }: { sermon: Sermon }) {
   const seekRef = useRef<((seconds: number) => void) | null>(null)
   const ready = sermon.summaryStatus === 'ready'
+  const inProgress = isSummaryInProgress(sermon)
 
   return (
     <div className="mt-8 space-y-8">
       <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
+
+      {inProgress ? (
+        <section className="rounded-lg border border-line bg-paper p-6 text-ink-muted shadow-subtle">
+          <p className="leading-7">설교 요약 대기중..</p>
+        </section>
+      ) : null}
 
       {ready && sermon.quickSummary?.length ? (
         <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">

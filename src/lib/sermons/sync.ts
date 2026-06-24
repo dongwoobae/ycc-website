@@ -2,7 +2,11 @@ import { db } from '@/lib/db'
 import { sermons } from '@/lib/db/schema'
 import type { WorshipType } from '@/lib/types'
 import { listPlaylistVideos, type YouTubeVideo } from '@/lib/youtube/client'
+import { insertSermon } from './ingest'
 import { resolvePlaylists } from './playlists'
+import { fetchTranscript } from '@/lib/transcript/rapidapi'
+import { buildTranscriptText } from '@/lib/transcript/prompt'
+import { claimSermonById, summarizeClaimed } from './summarize'
 
 export interface PlaylistVideo extends YouTubeVideo {
   worshipType: WorshipType
@@ -39,26 +43,36 @@ export function planSermonInserts(existingIds: Set<string>, videos: PlaylistVide
   return out
 }
 
-export async function syncSermons(): Promise<{ inserted: number }> {
+export async function resyncAllSermons(): Promise<{ inserted: number; summarized: number }> {
   const apiKey = process.env.YOUTUBE_API_KEY
   if (!apiKey) throw new Error('YOUTUBE_API_KEY is not set')
 
   const playlists = resolvePlaylists(process.env as Record<string, string | undefined>)
-  const collected: PlaylistVideo[] = []
+  let inserted = 0
+  let summarized = 0
+  const existing = await db.select({ id: sermons.youtubeVideoId }).from(sermons)
+  const existingIds = new Set(existing.map((r) => r.id).filter((x): x is string => !!x))
+
   for (const p of playlists) {
     try {
       const videos = await listPlaylistVideos(p.playlistId, apiKey)
-      for (const v of videos) collected.push({ ...v, worshipType: p.worshipType })
+      for (const video of videos) {
+        if (existingIds.has(video.videoId)) continue
+        existingIds.add(video.videoId)
+        const sermonId = await insertSermon(video, p.worshipType)
+        if (!sermonId) continue
+        inserted++
+        if (!p.autoSummary) continue
+        const segments = await fetchTranscript(video.videoId)
+        if (segments.length === 0) continue
+        const claimed = await claimSermonById(sermonId)
+        if (!claimed) continue
+        const status = await summarizeClaimed(claimed.id, claimed.durationSeconds, buildTranscriptText(segments))
+        if (status === 'ready') summarized++
+      }
     } catch (e) {
       console.error(`[sync] playlist ${p.playlistId} failed`, e)
     }
   }
-
-  const existing = await db.select({ id: sermons.youtubeVideoId }).from(sermons)
-  const existingIds = new Set(existing.map((r) => r.id).filter((x): x is string => !!x))
-  const rows = planSermonInserts(existingIds, collected)
-  if (rows.length === 0) return { inserted: 0 }
-
-  await db.insert(sermons).values(rows.map((r) => ({ ...r, isPublished: false, summaryStatus: 'none' as const })))
-  return { inserted: rows.length }
+  return { inserted, summarized }
 }
