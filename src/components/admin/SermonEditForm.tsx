@@ -132,11 +132,12 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
           </ul>
         )}
         {chapters.length > 0 && (
-          <ul className="mt-3 space-y-1 text-sm">
+          <ul className="mt-3 space-y-3 text-sm">
             {chapters.map((chapter, i) => (
               <li key={i}>
                 <span className="font-mono text-accent-deep">{formatTimestamp(chapter.startSeconds)}</span> ·{' '}
-                {chapter.title}
+                <span className="font-semibold text-ink">{chapter.title}</span>
+                <p className="mt-1 leading-6 text-ink-muted">{chapter.summary}</p>
               </li>
             ))}
           </ul>
