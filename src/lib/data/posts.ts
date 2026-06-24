@@ -1,6 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { posts as postsTable, type PostRow } from '@/lib/db/schema'
+import { formatKstDate } from '@/lib/date'
 import type { Post, PostCategory } from '@/lib/types'
 
 type PostListRow = Pick<PostRow, 'id' | 'title' | 'content' | 'category' | 'isPinned' | 'publishedAt' | 'createdAt'>
@@ -15,10 +16,6 @@ const postColumns = {
   createdAt: postsTable.createdAt,
 }
 
-function toDateString(value: Date | null): string {
-  return (value ?? new Date()).toISOString().slice(0, 10)
-}
-
 function toPost(row: PostListRow): Post {
   return {
     id: row.id,
@@ -26,7 +23,7 @@ function toPost(row: PostListRow): Post {
     content: row.content ?? '',
     category: row.category as PostCategory,
     isPinned: row.isPinned,
-    publishedAt: toDateString(row.publishedAt ?? row.createdAt),
+    publishedAt: formatKstDate(row.publishedAt ?? row.createdAt),
   }
 }
 

@@ -4,10 +4,7 @@ import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { deletePost, togglePin } from '@/lib/actions/posts'
 import { verifySession } from '@/lib/dal'
-
-function formatDate(value: Date | null) {
-  return value ? value.toISOString().slice(0, 10) : '-'
-}
+import { formatKstDate } from '@/lib/date'
 
 export default async function AdminPostsPage() {
   await verifySession()
@@ -48,7 +45,7 @@ export default async function AdminPostsPage() {
               rows.map((post) => (
                 <tr key={post.id} className="border-t border-line">
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
-                    {formatDate(post.publishedAt ?? post.createdAt)}
+                    {formatKstDate(post.publishedAt ?? post.createdAt)}
                   </td>
                   <td className="px-4 py-3 font-medium text-ink">{post.title}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{post.category}</td>
