@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Tailwind v4 preflight는 버튼 기본 커서를 제거함 — 활성 버튼/역할요소에 pointer 복원 */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 :root {
   --bg: 228 236 246;
   --surface: 215 227 242;
