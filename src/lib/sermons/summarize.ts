@@ -1,9 +1,10 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { sermons } from '@/lib/db/schema'
 import { generateSermonSummary } from '@/lib/ai/sermon-summary'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 import { buildTranscriptText } from '@/lib/transcript/prompt'
+import { autoSummaryTypes } from '@/lib/worship'
 
 export const MAX_SUMMARY_ATTEMPTS = 3
 export const STALE_PENDING_MS = 10 * 60 * 1000
@@ -13,9 +14,38 @@ export function computeNextRetry(attempts: number, now: Date): Date {
   return new Date(now.getTime() + minutes * 60 * 1000)
 }
 
+export interface RetryTarget {
+  id: string
+}
+
+/**
+ * 요약(Gemini) 단계에서 실패한 설교를 재시도 대상으로 고른다(스케줄 스위퍼용).
+ * - 자동요약 예배유형, status='failed', 자막(transcript_text)이 이미 캐시된 건만
+ *   → 자막 단계 영구실패(자막 없음)는 제외해 fetch 무한반복/쿼터소진을 막는다.
+ * - summary_attempts < MAX (횟수 소진분 제외) AND next_retry 비었거나 경과 (백오프 존중)
+ * 실제 요약 중복은 claimSermonById가 차단하므로 여기선 단순 후보 선별만 한다.
+ */
+export async function selectRetryTargets(limit = 10, now: Date = new Date()): Promise<RetryTarget[]> {
+  return db
+    .select({ id: sermons.id })
+    .from(sermons)
+    .where(
+      and(
+        eq(sermons.summaryStatus, 'failed'),
+        isNotNull(sermons.transcriptText),
+        inArray(sermons.worshipType, [...autoSummaryTypes]),
+        lt(sermons.summaryAttempts, MAX_SUMMARY_ATTEMPTS),
+        or(isNull(sermons.summaryNextRetryAt), lte(sermons.summaryNextRetryAt, now)),
+      ),
+    )
+    .orderBy(desc(sermons.sermonDate))
+    .limit(limit)
+}
+
 interface ClaimedSermon {
   id: string
   durationSeconds: number | null
+  transcriptText: string | null
 }
 
 export async function claimSermonById(id: string, now: Date = new Date()): Promise<ClaimedSermon | null> {
@@ -32,7 +62,7 @@ export async function claimSermonById(id: string, now: Date = new Date()): Promi
         OR (summary_status = 'pending' AND summary_generated_at IS NULL
           AND summary_next_retry_at IS NULL AND created_at <= ${staleBefore.toISOString()})
       )
-    RETURNING id, duration_seconds AS "durationSeconds"
+    RETURNING id, duration_seconds AS "durationSeconds", transcript_text AS "transcriptText"
   `)
   const rows = Array.isArray(result) ? result : result.rows
   return (rows[0] as ClaimedSermon | undefined) ?? null
@@ -45,7 +75,7 @@ export async function forceClaimSermonById(id: string): Promise<ClaimedSermon | 
       summary_attempts = summary_attempts + 1,
       summary_next_retry_at = NULL
     WHERE id = ${id}
-    RETURNING id, duration_seconds AS "durationSeconds"
+    RETURNING id, duration_seconds AS "durationSeconds", transcript_text AS "transcriptText"
   `)
   const rows = Array.isArray(result) ? result : result.rows
   return (rows[0] as ClaimedSermon | undefined) ?? null

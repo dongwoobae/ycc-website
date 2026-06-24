@@ -18,6 +18,7 @@
     "seed:rapidapi": "tsx --env-file=.env.local scripts/seed-from-rapidapi.ts",
     "summarize:sermons": "tsx --env-file=.env.local scripts/summarize-sermons.ts",
     "websub:subscribe": "tsx scripts/websub-subscribe.ts",
+    "qstash:schedules": "tsx scripts/qstash-schedules.ts",
     "create-admin": "tsx scripts/create-admin.ts",
     "delete-user": "tsx scripts/delete-user.ts"
   },
