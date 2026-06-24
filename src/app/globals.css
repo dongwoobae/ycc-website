@@ -168,6 +168,17 @@ a {
   display: none;
 }
 
+/* /admin 화면은 자체 레이아웃(AdminSidebar) 사용 — 공개 헤더·사이드바·푸터와 레일 여백 제거 */
+body:has(.admin-shell) {
+  padding-left: 0;
+}
+
+body:has(.admin-shell) > .site-chrome,
+body:has(.admin-shell) > .ycc-side,
+body:has(.admin-shell) > footer {
+  display: none;
+}
+
 @media (min-width: 960px) {
   /* 본문을 레일 폭만큼 밀어 사이드바와 겹치지 않게 (히어로는 100vh 유지, 폭만 줄어듦) */
   body {
