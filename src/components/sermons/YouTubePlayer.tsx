@@ -49,6 +49,8 @@ export default function YouTubePlayer({ youtubeId, title, seekToRef }: Props) {
     loadApi().then(() => {
       if (cancelled || !hostRef.current || !window.YT) return
       player = new window.YT.Player(hostRef.current, {
+        width: '100%',
+        height: '100%',
         videoId: youtubeId,
         playerVars: { rel: 0 },
       })
@@ -68,7 +70,9 @@ export default function YouTubePlayer({ youtubeId, title, seekToRef }: Props) {
 
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-subtle">
-      <div ref={hostRef} className="aspect-video w-full" aria-label={title} />
+      <div className="aspect-video w-full" aria-label={title}>
+        <div ref={hostRef} className="h-full w-full" />
+      </div>
     </div>
   )
 }

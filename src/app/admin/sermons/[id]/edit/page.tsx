@@ -16,8 +16,8 @@ export default async function EditSermonPage({ params }: { params: Promise<{ id:
         id={row.id}
         initial={{
           title: row.title,
+          displayTitle: row.displayTitle ?? '',
           preacher: row.preacher ?? '',
-          scripture: row.scripture ?? '',
           worshipType: row.worshipType,
           sermonDate: row.sermonDate,
         }}

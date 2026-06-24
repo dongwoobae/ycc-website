@@ -14,50 +14,66 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
   const seekRef = useRef<((seconds: number) => void) | null>(null)
   const ready = sermon.summaryStatus === 'ready'
   const inProgress = isSummaryInProgress(sermon)
+  const hasSummary = ready && Boolean(sermon.quickSummary?.length || sermon.chapters?.length)
+
+  if (!hasSummary) {
+    return (
+      <div className="mx-auto mt-8 max-w-5xl space-y-8">
+        <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
+        {inProgress ? (
+          <section className="rounded-lg border border-line bg-paper p-6 text-ink-muted shadow-subtle">
+            <p className="leading-7">설교 요약 준비중...</p>
+          </section>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
-    <div className="mt-8 space-y-8">
-      <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
+    <div className="mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
+      <div className="sticky top-0 z-10 bg-bg pb-4 lg:top-[50vh] lg:-translate-y-1/2 lg:bg-transparent lg:pb-0">
+        <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
+      </div>
 
-      {inProgress ? (
-        <section className="rounded-lg border border-line bg-paper p-6 text-ink-muted shadow-subtle">
-          <p className="leading-7">설교 요약 대기중..</p>
-        </section>
-      ) : null}
+      <div className="mt-8 space-y-8 lg:mt-0">
+        {ready && sermon.quickSummary?.length ? (
+          <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
+            <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">빠른 요약</h2>
+            <ul className="mt-4 list-disc space-y-2 pl-5 leading-7 text-ink-muted">
+              {sermon.quickSummary.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
-      {ready && sermon.quickSummary?.length ? (
-        <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
-          <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">빠른 요약</h2>
-          <ul className="mt-4 list-disc space-y-2 pl-5 leading-7 text-ink-muted">
-            {sermon.quickSummary.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {ready && sermon.chapters?.length ? (
-        <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
-          <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">타임라인 요약</h2>
-          <ul className="mt-4 space-y-4">
-            {sermon.chapters.map((chapter, i) => (
-              <li key={i} className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => seekRef.current?.(chapter.startSeconds)}
-                  className="shrink-0 font-mono text-sm font-semibold text-accent-deep hover:underline"
-                >
-                  {formatTimestamp(chapter.startSeconds)}
-                </button>
-                <div>
-                  <p className="font-semibold text-ink">{chapter.title}</p>
+        {ready && sermon.chapters?.length ? (
+          <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
+            <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">타임라인 요약</h2>
+            <div className="mt-4">
+              {sermon.chapters.map((chapter, i) => (
+                <div key={i}>
+                  {i > 0 ? (
+                    <>
+                      <br />
+                      <br />
+                    </>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => seekRef.current?.(chapter.startSeconds)}
+                    className="font-mono text-sm font-semibold text-accent-deep hover:underline"
+                  >
+                    {formatTimestamp(chapter.startSeconds)}
+                  </button>
+                  <p className="mt-1 font-semibold text-ink">{chapter.title}</p>
                   <p className="mt-1 leading-7 text-ink-muted">{chapter.summary}</p>
                 </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
     </div>
   )
 }

@@ -1,14 +1,10 @@
 ﻿import { verifySession } from '@/lib/dal'
+import { getAdminDashboardStats } from '@/lib/data/admin-dashboard'
+import DashboardView from '@/components/admin/DashboardView'
 
 export default async function AdminDashboard() {
   await verifySession()
+  const stats = await getAdminDashboardStats()
 
-  return (
-    <div>
-      <h1 className="mb-6 text-xl font-bold text-ink">Dashboard</h1>
-      <div className="rounded-xl bg-paper p-5 text-sm leading-6 text-ink-muted shadow-sm">
-        Use the sidebar to manage posts, bulletins, gallery albums, and logs.
-      </div>
-    </div>
-  )
+  return <DashboardView stats={stats} />
 }

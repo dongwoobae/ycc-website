@@ -36,8 +36,8 @@ export const sermonSeries = pgTable('sermon_series', {
 export const sermons = pgTable('sermons', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   title: text('title').notNull(),
+  displayTitle: text('display_title'),
   preacher: text('preacher'),
-  scripture: text('scripture'),
   seriesId: uuid('series_id').references(() => sermonSeries.id, { onDelete: 'set null' }),
   worshipType: text('worship_type').notNull().default('주일예배'),
   sermonDate: date('sermon_date').notNull(),

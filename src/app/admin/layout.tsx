@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     : adminNav.filter((item) => item.href !== '/admin/log')
 
   return (
-    <div className="min-h-screen bg-bg lg:flex">
+    <div className="admin-shell min-h-screen bg-bg lg:flex">
       <AdminSidebar navItems={navItems} email={session.user.email} />
       <div className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</div>
     </div>

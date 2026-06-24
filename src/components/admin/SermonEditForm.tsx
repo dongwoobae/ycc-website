@@ -37,19 +37,20 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
           />
         </label>
         <label className="block">
+          <span className="text-sm text-ink-muted">목록 표시 제목 (선택 — 비우면 자동 정리)</span>
+          <input
+            className="mt-1 w-full rounded-md border border-line px-3 py-2"
+            value={form.displayTitle}
+            placeholder="목록에 표시할 제목"
+            onChange={(event) => set('displayTitle', event.target.value)}
+          />
+        </label>
+        <label className="block">
           <span className="text-sm text-ink-muted">설교자 (공개 전 필수)</span>
           <input
             className="mt-1 w-full rounded-md border border-line px-3 py-2"
             value={form.preacher}
             onChange={(event) => set('preacher', event.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm text-ink-muted">본문</span>
-          <input
-            className="mt-1 w-full rounded-md border border-line px-3 py-2"
-            value={form.scripture}
-            onChange={(event) => set('scripture', event.target.value)}
           />
         </label>
         <label className="block">
@@ -131,11 +132,12 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
           </ul>
         )}
         {chapters.length > 0 && (
-          <ul className="mt-3 space-y-1 text-sm">
+          <ul className="mt-3 space-y-3 text-sm">
             {chapters.map((chapter, i) => (
               <li key={i}>
                 <span className="font-mono text-accent-deep">{formatTimestamp(chapter.startSeconds)}</span> ·{' '}
-                {chapter.title}
+                <span className="font-semibold text-ink">{chapter.title}</span>
+                <p className="mt-1 leading-6 text-ink-muted">{chapter.summary}</p>
               </li>
             ))}
           </ul>

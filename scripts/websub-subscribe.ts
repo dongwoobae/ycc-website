@@ -1,10 +1,10 @@
 import 'dotenv/config'
-import { subscribeToChannel } from '../src/lib/youtube/websub'
+import { getWebSubCallbackUrl, subscribeToChannel } from '../src/lib/youtube/websub'
 
 async function main() {
   await subscribeToChannel({
     channelId: process.env.YOUTUBE_CHANNEL_ID!,
-    callbackUrl: process.env.WEBSUB_CALLBACK_URL!,
+    callbackUrl: getWebSubCallbackUrl(),
     secret: process.env.WEBSUB_SECRET!,
   })
   console.log('subscribe request sent (hub will verify via callback)')

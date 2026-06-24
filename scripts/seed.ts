@@ -22,7 +22,6 @@ async function main() {
     await db.insert(schema.sermons).values({
       title: s.title,
       preacher: s.preacher,
-      scripture: s.scripture ?? null,
       worshipType: s.worshipType,
       sermonDate: s.sermonDate,
       videoUrl: s.videoUrl,

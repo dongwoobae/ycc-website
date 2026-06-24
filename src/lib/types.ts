@@ -11,8 +11,8 @@ export interface SermonChapter {
 export interface Sermon {
   id: string
   title: string
+  displayTitle?: string
   preacher?: string
-  scripture?: string
   worshipType: WorshipType
   sermonDate: string
   videoUrl: string

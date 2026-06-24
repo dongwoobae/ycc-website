@@ -1,0 +1,1 @@
+ALTER TABLE "sermons" ADD COLUMN "display_title" text;

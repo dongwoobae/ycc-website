@@ -99,7 +99,7 @@ export default function RootLayout({
           Skip to content
         </a>
         {/* 데스크톱(≥960px)에서는 사이드바가 헤더를 대체, 모바일은 기존 헤더(버거) 유지 */}
-        <div className="min-[960px]:hidden">
+        <div className="site-chrome min-[960px]:hidden">
           <Header />
         </div>
         <Sidebar />

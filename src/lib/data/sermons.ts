@@ -7,8 +7,8 @@ export type SermonListRow = Pick<
   SermonRow,
   | 'id'
   | 'title'
+  | 'displayTitle'
   | 'preacher'
-  | 'scripture'
   | 'worshipType'
   | 'sermonDate'
   | 'videoUrl'
@@ -25,8 +25,8 @@ export type SermonListRow = Pick<
 const sermonColumns = {
   id: sermonsTable.id,
   title: sermonsTable.title,
+  displayTitle: sermonsTable.displayTitle,
   preacher: sermonsTable.preacher,
-  scripture: sermonsTable.scripture,
   worshipType: sermonsTable.worshipType,
   sermonDate: sermonsTable.sermonDate,
   videoUrl: sermonsTable.videoUrl,
@@ -56,8 +56,8 @@ export function toSermon(row: SermonListRow): Sermon {
   return {
     id: row.id,
     title: row.title,
+    displayTitle: row.displayTitle ?? undefined,
     preacher: row.preacher ?? undefined,
-    scripture: row.scripture ?? undefined,
     worshipType: row.worshipType as WorshipType,
     sermonDate: row.sermonDate,
     videoUrl: row.videoUrl ?? '',

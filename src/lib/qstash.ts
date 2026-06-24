@@ -1,11 +1,10 @@
 import { Client, Receiver } from '@upstash/qstash'
+import { getCanonicalSiteOrigin } from './site-origin'
 
 export type JobName = 'ingest-video' | 'fetch-transcript' | 'summarize'
 
 function baseUrl(): string {
-  const cb = process.env.WEBSUB_CALLBACK_URL
-  if (!cb) throw new Error('WEBSUB_CALLBACK_URL not set')
-  return new URL(cb).origin
+  return getCanonicalSiteOrigin()
 }
 
 const client = () => new Client({ token: process.env.QSTASH_TOKEN! })
