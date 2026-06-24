@@ -38,6 +38,30 @@ export async function claimSermonById(id: string, now: Date = new Date()): Promi
   return (rows[0] as ClaimedSermon | undefined) ?? null
 }
 
+export async function forceClaimSermonById(id: string): Promise<ClaimedSermon | null> {
+  const result = await db.execute(sql`
+    UPDATE sermons SET
+      summary_status = 'pending',
+      summary_attempts = summary_attempts + 1,
+      summary_next_retry_at = NULL
+    WHERE id = ${id}
+    RETURNING id, duration_seconds AS "durationSeconds"
+  `)
+  const rows = Array.isArray(result) ? result : result.rows
+  return (rows[0] as ClaimedSermon | undefined) ?? null
+}
+
+export async function fetchAndStoreTranscript(sermonId: string, videoId: string): Promise<string> {
+  const segments = await fetchTranscript(videoId)
+  if (segments.length === 0) throw new Error('자막 미준비')
+  const transcriptText = buildTranscriptText(segments)
+  await db
+    .update(sermons)
+    .set({ transcriptText, transcriptFetchedAt: new Date() })
+    .where(eq(sermons.id, sermonId))
+  return transcriptText
+}
+
 export async function summarizeClaimed(
   id: string,
   durationSeconds: number | null,
@@ -74,16 +98,20 @@ export async function summarizeClaimed(
 
 export async function manualSummarize(id: string): Promise<'ready' | 'failed'> {
   const [row] = await db
-    .select({ id: sermons.id, youtubeVideoId: sermons.youtubeVideoId, durationSeconds: sermons.durationSeconds })
+    .select({
+      id: sermons.id,
+      youtubeVideoId: sermons.youtubeVideoId,
+      durationSeconds: sermons.durationSeconds,
+      transcriptText: sermons.transcriptText,
+    })
     .from(sermons)
     .where(eq(sermons.id, id))
     .limit(1)
   if (!row || !row.youtubeVideoId) throw new Error('sermon not found or has no YouTube video id')
 
-  const segments = await fetchTranscript(row.youtubeVideoId)
-  if (segments.length === 0) throw new Error('자막 미준비')
+  const transcriptText = row.transcriptText?.trim() || (await fetchAndStoreTranscript(row.id, row.youtubeVideoId))
 
-  const claimed = await claimSermonById(row.id)
+  const claimed = await forceClaimSermonById(row.id)
   if (!claimed) throw new Error('summary is not claimable')
-  return summarizeClaimed(claimed.id, claimed.durationSeconds, buildTranscriptText(segments))
+  return summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText)
 }

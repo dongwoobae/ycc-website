@@ -46,6 +46,8 @@ export const sermons = pgTable('sermons', {
   notesUrl: text('notes_url'),
   thumbnailUrl: text('thumbnail_url'),
   summary: text('summary'),
+  transcriptText: text('transcript_text'),
+  transcriptFetchedAt: timestamp('transcript_fetched_at', { withTimezone: true }),
   youtubeVideoId: text('youtube_video_id').unique(),
   durationSeconds: integer('duration_seconds'),
   quickSummary: jsonb('quick_summary').$type<string[]>(),

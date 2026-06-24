@@ -28,6 +28,12 @@ export async function POST(req: Request) {
     return Response.json({ ok: true, gaveUp: true })
   }
 
-  await publishJob('summarize', { sermonId, transcriptText: buildTranscriptText(segments) })
+  const transcriptText = buildTranscriptText(segments)
+  await db
+    .update(sermons)
+    .set({ transcriptText, transcriptFetchedAt: new Date() })
+    .where(eq(sermons.id, sermonId))
+
+  await publishJob('summarize', { sermonId, transcriptText })
   return Response.json({ ok: true, segments: segments.length })
 }
