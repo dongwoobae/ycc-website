@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Reveal from '@/components/ui/Reveal'
 import SermonCard from '@/components/sermons/SermonCard'
@@ -20,6 +20,7 @@ export default function SermonsGrid({ sermons }: { sermons: Sermon[] }) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOrder>('newest')
   const [pageState, setPageState] = useState({ key: '', page: 1 })
+  const topRef = useRef<HTMLDivElement>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -34,11 +35,15 @@ export default function SermonsGrid({ sermons }: { sermons: Sermon[] }) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageKey = `${selected ?? ''}|${query}|${sort}`
   const page = pageState.key === pageKey ? Math.min(pageState.page, totalPages) : 1
-  const setPage = (nextPage: number) => setPageState({ key: pageKey, page: nextPage })
+  const setPage = (nextPage: number) => {
+    setPageState({ key: pageKey, page: nextPage })
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <>
+      <div ref={topRef} aria-hidden className="scroll-mt-24" />
       <SermonsToolbar current={current} query={query} onQuery={setQuery} sort={sort} onSort={setSort} />
       {pageItems.length === 0 ? (
         <p className="py-16 text-center text-ink-muted">검색 결과가 없습니다.</p>
