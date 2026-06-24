@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
 import SermonSummary from '@/components/sermons/SermonSummary'
 import { getSermonById, getSermons } from '@/lib/data/sermons'
+import { sermonListTitle } from '@/lib/sermons/list-title'
 
 export const revalidate = 3600
 
@@ -19,11 +20,12 @@ export async function generateMetadata({ params }: SermonDetailProps): Promise<M
   const { id } = await params
   const sermon = await getSermonById(id)
   if (!sermon) return { title: '설교' }
+  const displayTitle = sermonListTitle(sermon)
   return {
-    title: sermon.title,
+    title: displayTitle,
     description: sermon.summary ?? `${sermon.preacher} · ${sermon.worshipType}`,
     openGraph: {
-      title: sermon.title,
+      title: displayTitle,
       description: sermon.summary,
       images: sermon.thumbnailUrl ? [sermon.thumbnailUrl] : undefined,
     },
@@ -37,16 +39,19 @@ export default async function SermonDetailPage({ params }: SermonDetailProps) {
 
   return (
     <div className="py-16">
-      <Container className="max-w-4xl">
+      <Container className="max-w-[1600px]">
         {sermon.worshipType !== '미분류' ? (
           <p className="text-sm font-semibold text-accent-deep">{sermon.worshipType}</p>
         ) : null}
         <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
-          {sermon.title}
+          {sermonListTitle(sermon)}
         </h1>
         <p className="mt-4 text-ink-muted">
           {sermon.preacher} · {sermon.sermonDate}
         </p>
+        {sermon.summary ? (
+          <p className="mt-4 max-w-3xl leading-7 text-ink-muted">{sermon.summary}</p>
+        ) : null}
         <SermonSummary sermon={sermon} />
       </Container>
     </div>
