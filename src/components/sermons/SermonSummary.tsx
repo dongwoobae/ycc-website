@@ -39,23 +39,27 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
       {ready && sermon.chapters?.length ? (
         <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
           <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">타임라인 요약</h2>
-          <ul className="mt-4 space-y-4">
+          <div className="mt-4">
             {sermon.chapters.map((chapter, i) => (
-              <li key={i} className="flex gap-3">
+              <div key={i}>
+                {i > 0 ? (
+                  <>
+                    <br />
+                    <br />
+                  </>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => seekRef.current?.(chapter.startSeconds)}
-                  className="shrink-0 font-mono text-sm font-semibold text-accent-deep hover:underline"
+                  className="font-mono text-sm font-semibold text-accent-deep hover:underline"
                 >
                   {formatTimestamp(chapter.startSeconds)}
                 </button>
-                <div>
-                  <p className="font-semibold text-ink">{chapter.title}</p>
-                  <p className="mt-1 leading-7 text-ink-muted">{chapter.summary}</p>
-                </div>
-              </li>
+                <p className="mt-1 font-semibold text-ink">{chapter.title}</p>
+                <p className="mt-1 leading-7 text-ink-muted">{chapter.summary}</p>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       ) : null}
     </div>
