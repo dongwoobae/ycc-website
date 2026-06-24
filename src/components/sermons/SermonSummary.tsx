@@ -48,11 +48,13 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
   }
 
   return (
-    <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
-      <div>
+    <div className="lg:grid lg:grid-cols-2 lg:gap-10">
+      <div className="lg:flex lg:min-h-screen lg:flex-col">
         {header}
-        <div className="sticky top-0 z-10 mt-8 bg-bg pb-4 lg:mt-[clamp(5rem,18vh,12rem)] lg:top-[50vh] lg:-translate-y-1/2 lg:bg-transparent lg:pb-0">
-          <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
+        <div className="mt-8 lg:relative lg:mt-[var(--sermon-video-offset)] lg:min-h-[calc(100vh-2rem)] lg:flex-1 lg:[--sermon-video-offset:calc((((min(100vw,1600px)-4rem-2.5rem)/2)*9/32)+2rem)]">
+          <div className="lg:sticky lg:top-[50vh] lg:z-10 lg:-translate-y-1/2">
+            <YouTubePlayer youtubeId={sermon.youtubeId} title={sermon.title} seekToRef={seekRef} />
+          </div>
         </div>
       </div>
 
