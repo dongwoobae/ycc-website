@@ -40,6 +40,7 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
         <button
           type="button"
           disabled={pending}
+          title="YouTube 플레이리스트에서 새 영상만 가져와 즉시 공개 등록합니다. 예배(주일·수요·금요·찬양)는 자막 요약까지 자동 생성됩니다."
           onClick={() =>
             run(async () => {
               const result = await syncNowAction()
@@ -60,6 +61,10 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
         />
         {msg && <span className="text-sm text-ink-muted">{msg}</span>}
       </div>
+      <p className="mb-4 text-xs leading-5 text-ink-muted">
+        <strong className="font-semibold text-ink">지금 동기화</strong> — YouTube 플레이리스트에서 새 영상만 가져와 즉시 공개
+        등록합니다. 예배(주일·수요·금요·찬양)는 자막이 있으면 요약까지 자동 생성돼요. 기존 설교는 변경되지 않습니다.
+      </p>
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
         <table className="min-w-[48rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
