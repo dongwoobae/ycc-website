@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { sermons } from '@/lib/db/schema'
 import type { WorshipType } from '@/lib/types'
 import type { WorshipResolution } from '@/lib/sermons/classify'
+import { sermonDateFromTitle } from '@/lib/sermons/sermon-date'
 import type { YouTubeVideo } from '@/lib/youtube/client'
 
 export const INGEST_MAX_RETRY = 3
@@ -33,7 +34,7 @@ export async function insertSermon(video: YouTubeVideo, worshipType: WorshipType
       title: video.title,
       preacher: DEFAULT_PREACHER,
       worshipType,
-      sermonDate: (video.publishedAt || '').slice(0, 10),
+      sermonDate: sermonDateFromTitle(video.title) ?? (video.publishedAt || '').slice(0, 10),
       videoUrl: `https://youtu.be/${video.videoId}`,
       thumbnailUrl: video.thumbnailUrl,
       youtubeVideoId: video.videoId,
