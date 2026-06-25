@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { applyThumbnailAction, resetThumbnailAction } from '@/lib/actions/thumbnails'
+import { composeAndApplyThumbnailAction, resetThumbnailAction } from '@/lib/actions/thumbnails'
 import {
   THUMBNAIL_STYLES,
   THUMBNAIL_STYLE_LABELS,
-  type ThumbnailCandidate,
+  type ThumbnailRenderOptions,
   type ThumbnailStyle,
+  type ThumbnailText,
 } from '@/lib/thumbnails/types'
 import ThumbnailStyleTab from './ThumbnailStyleTab'
 
@@ -19,22 +20,18 @@ const DESCRIPTIONS: Record<ThumbnailStyle, string> = {
 
 interface Props {
   sermonId: string
-  candidates: ThumbnailCandidate[]
+  backgrounds: Partial<Record<ThumbnailStyle, string>>
   onClose: () => void
 }
 
-function latest(candidates: ThumbnailCandidate[], style: ThumbnailStyle) {
-  return [...candidates].reverse().find((c) => c.style === style)
-}
-
-export default function ThumbnailModal({ sermonId, candidates, onClose }: Props) {
+export default function ThumbnailModal({ sermonId, backgrounds, onClose }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<ThumbnailStyle>('classic')
   const [pending, start] = useTransition()
 
-  function apply(url: string) {
+  function apply(text: ThumbnailText, options: ThumbnailRenderOptions) {
     start(async () => {
-      await applyThumbnailAction(sermonId, url)
+      await composeAndApplyThumbnailAction(sermonId, tab, text, options)
       router.refresh()
       onClose()
     })
@@ -79,7 +76,7 @@ export default function ThumbnailModal({ sermonId, candidates, onClose }: Props)
           sermonId={sermonId}
           style={tab}
           description={DESCRIPTIONS[tab]}
-          existing={latest(candidates, tab)}
+          background={backgrounds[tab]}
           onApply={apply}
           applying={pending}
         />

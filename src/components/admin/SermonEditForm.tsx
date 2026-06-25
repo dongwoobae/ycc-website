@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { generateSummaryAction, updateSermonAction, type SermonEditInput } from '@/lib/actions/sermons'
 import { formatTimestamp } from '@/lib/sermons/format'
 import type { SermonChapter } from '@/lib/types'
-import type { ThumbnailCandidate } from '@/lib/thumbnails/types'
+import type { ThumbnailStyle } from '@/lib/thumbnails/types'
 import { worshipTypes } from '@/lib/worship'
 import ThumbnailModal from './ThumbnailModal'
 
@@ -15,10 +15,10 @@ interface Props {
   summaryStatus: string
   quickSummary: string[]
   chapters: SermonChapter[]
-  candidates: ThumbnailCandidate[]
+  backgrounds: Partial<Record<ThumbnailStyle, string>>
 }
 
-export default function SermonEditForm({ id, initial, summaryStatus, quickSummary, chapters, candidates }: Props) {
+export default function SermonEditForm({ id, initial, summaryStatus, quickSummary, chapters, backgrounds }: Props) {
   const router = useRouter()
   const [form, setForm] = useState<SermonEditInput>(initial)
   const [msg, setMsg] = useState('')
@@ -156,7 +156,7 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
       </div>
 
       {thumbOpen && (
-        <ThumbnailModal sermonId={id} candidates={candidates} onClose={() => setThumbOpen(false)} />
+        <ThumbnailModal sermonId={id} backgrounds={backgrounds} onClose={() => setThumbOpen(false)} />
       )}
     </div>
   )

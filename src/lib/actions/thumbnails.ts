@@ -16,7 +16,6 @@ import {
   DEFAULT_THUMBNAIL_COLORS,
   DEFAULT_THUMBNAIL_POSITION,
   isThumbnailPosition,
-  type ThumbnailCandidate,
   type ThumbnailColors,
   type ThumbnailPosition,
   type ThumbnailRenderOptions,
@@ -63,7 +62,7 @@ export async function suggestThumbnailTextAction(id: string, style: ThumbnailSty
 }
 
 export interface GenerateThumbnailResult {
-  candidate: ThumbnailCandidate
+  backgroundUrl: string
 }
 
 /**
@@ -88,42 +87,34 @@ async function resolveBgKeywords(id: string): Promise<string> {
   return keywords
 }
 
+/**
+ * 배경 이미지를 생성·저장하고 그 URL을 반환한다(gpt-image-2 호출 → 비용 발생).
+ * 텍스트 합성은 클라이언트 CSS 미리보기가 담당하고, PNG 저장은 적용 시점으로 미룬다.
+ */
 export async function generateThumbnailAction(
   id: string,
-  style: ThumbnailStyle,
-  text: ThumbnailText,
-  options?: ThumbnailRenderOptions
+  style: ThumbnailStyle
 ): Promise<GenerateThumbnailResult> {
   const session = await requireAdmin()
   if (style === 'cutout') throw new Error('인물컷형 누끼 생성은 다음 단계에서 지원됩니다')
 
   const keywords = await resolveBgKeywords(id)
   const background = await generateBackground(style, keywords)
-  await storeBackground(id, style, background)
-  const png = await renderThumbnail({
-    headline: text.headline,
-    scripture: text.scripture,
-    backgroundDataUrl: toDataUrl(background),
-    position: coercePosition(options?.position),
-    colors: coerceColors(options?.colors),
-  })
-
-  const candidate = await storeCandidate(id, style, png)
-  await log('create', 'sermon', id, `thumbnail:${style}`, session.user.id)
-  revalidate(id)
-  return { candidate }
+  const backgroundUrl = await storeBackground(id, style, background)
+  await log('create', 'sermon', id, `thumbnail:bg:${style}`, session.user.id)
+  return { backgroundUrl }
 }
 
 /**
- * 저장된 배경을 재사용해 텍스트만 새 위치·색상으로 재합성한다(gpt-image-2 미호출 → 무비용).
- * 배경이 아직 없으면(생성 이력 없음) 에러로 안내한다.
+ * 저장된 배경을 재사용해 현재 문구·위치·색상으로 PNG를 합성·저장하고 설교 썸네일로 적용한다.
+ * 배경이 아직 없으면(생성 이력 없음) 에러로 안내한다. (gpt-image-2 미호출 → 무비용)
  */
-export async function recomposeThumbnailAction(
+export async function composeAndApplyThumbnailAction(
   id: string,
   style: ThumbnailStyle,
   text: ThumbnailText,
   options: ThumbnailRenderOptions
-): Promise<GenerateThumbnailResult> {
+): Promise<void> {
   const session = await requireAdmin()
   if (style === 'cutout') throw new Error('인물컷형 누끼 생성은 다음 단계에서 지원됩니다')
 
@@ -134,7 +125,7 @@ export async function recomposeThumbnailAction(
     .limit(1)
   if (!row) throw new Error('sermon not found')
   const backgroundUrl = row.backgrounds?.[style]
-  if (!backgroundUrl) throw new Error('재배치할 배경이 없습니다. 먼저 썸네일을 생성하세요.')
+  if (!backgroundUrl) throw new Error('적용할 배경이 없습니다. 먼저 썸네일을 생성하세요.')
 
   const res = await fetch(backgroundUrl)
   if (!res.ok) throw new Error(`배경 이미지를 불러오지 못했습니다: ${res.status}`)
@@ -149,25 +140,8 @@ export async function recomposeThumbnailAction(
   })
 
   const candidate = await storeCandidate(id, style, png)
-  await log('update', 'sermon', id, `thumbnail:recompose:${style}`, session.user.id)
-  revalidate(id)
-  return { candidate }
-}
-
-export async function applyThumbnailAction(id: string, url: string): Promise<void> {
-  const session = await requireAdmin()
-
-  const [row] = await db
-    .select({ candidates: sermons.thumbnailCandidates })
-    .from(sermons)
-    .where(eq(sermons.id, id))
-    .limit(1)
-  if (!row) throw new Error('sermon not found')
-  const allowed = (row.candidates ?? []).some((candidate) => candidate.url === url)
-  if (!allowed) throw new Error('이 설교의 생성된 후보 URL만 적용할 수 있습니다')
-
-  await db.update(sermons).set({ customThumbnailUrl: url }).where(eq(sermons.id, id))
-  await log('update', 'sermon', id, 'thumbnail:apply', session.user.id)
+  await db.update(sermons).set({ customThumbnailUrl: candidate.url }).where(eq(sermons.id, id))
+  await log('update', 'sermon', id, `thumbnail:apply:${style}`, session.user.id)
   revalidate(id)
 }
 

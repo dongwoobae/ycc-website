@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import {
-  generateThumbnailAction,
-  recomposeThumbnailAction,
-  suggestThumbnailTextAction,
-} from "@/lib/actions/thumbnails";
+import { generateThumbnailAction, suggestThumbnailTextAction } from "@/lib/actions/thumbnails";
 import {
   DEFAULT_THUMBNAIL_COLORS,
   DEFAULT_THUMBNAIL_POSITION,
-  type ThumbnailCandidate,
   type ThumbnailColors,
   type ThumbnailPosition,
   type ThumbnailRenderOptions,
@@ -18,19 +13,20 @@ import {
 } from "@/lib/thumbnails/types";
 import ThumbnailPositionGrid from "./ThumbnailPositionGrid";
 import ThumbnailColorControls from "./ThumbnailColorControls";
+import ThumbnailPreview from "./ThumbnailPreview";
 
 interface Props {
   sermonId: string;
   style: ThumbnailStyle;
   description: string;
-  existing?: ThumbnailCandidate;
-  onApply: (url: string) => void;
+  background?: string;
+  onApply: (text: ThumbnailText, options: ThumbnailRenderOptions) => void;
   applying: boolean;
 }
 
-export default function ThumbnailStyleTab({ sermonId, style, description, existing, onApply, applying }: Props) {
+export default function ThumbnailStyleTab({ sermonId, style, description, background: initialBackground, onApply, applying }: Props) {
   const [text, setText] = useState<ThumbnailText>({ headline: "", scripture: "" });
-  const [preview, setPreview] = useState<string | undefined>(existing?.url);
+  const [background, setBackground] = useState<string | undefined>(initialBackground);
   const [position, setPosition] = useState<ThumbnailPosition>(DEFAULT_THUMBNAIL_POSITION);
   const [colors, setColors] = useState<ThumbnailColors>(DEFAULT_THUMBNAIL_COLORS);
   const [loadingText, setLoadingText] = useState(false);
@@ -52,35 +48,17 @@ export default function ThumbnailStyleTab({ sermonId, style, description, existi
     });
   }
 
+  // 배경 생성(OpenAI 비용 발생). 텍스트 합성은 아래 미리보기가 클라이언트에서 즉시 처리한다.
   function generate() {
     setMsg("");
     start(async () => {
       try {
-        const { candidate } = await generateThumbnailAction(sermonId, style, text, { position, colors });
-        setPreview(candidate.url);
+        const { backgroundUrl } = await generateThumbnailAction(sermonId, style);
+        setBackground(backgroundUrl);
       } catch (e) {
         setMsg(e instanceof Error ? e.message : String(e));
       }
     });
-  }
-
-  // 배경이 이미 있으면(=미리보기 존재) 저장된 배경 재사용해 텍스트만 재합성(무비용). 없으면 무시.
-  function recompose(options: ThumbnailRenderOptions) {
-    if (!preview) return;
-    setMsg("");
-    start(async () => {
-      try {
-        const { candidate } = await recomposeThumbnailAction(sermonId, style, text, options);
-        setPreview(candidate.url);
-      } catch (e) {
-        setMsg(e instanceof Error ? e.message : String(e));
-      }
-    });
-  }
-
-  function changePosition(next: ThumbnailPosition) {
-    setPosition(next);
-    recompose({ position: next, colors });
   }
 
   return (
@@ -110,22 +88,10 @@ export default function ThumbnailStyleTab({ sermonId, style, description, existi
           onChange={(e) => setText((t) => ({ ...t, scripture: e.target.value }))}
         />
       </div>
-      <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-surface">
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="썸네일 미리보기" className="h-full w-full object-cover" />
-        ) : (
-          <span className="text-sm text-faint">아직 생성되지 않음</span>
-        )}
-      </div>
+      <ThumbnailPreview background={background} text={text} position={position} colors={colors} />
       <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
-        <ThumbnailPositionGrid value={position} onChange={changePosition} disabled={pending} />
-        <ThumbnailColorControls
-          value={colors}
-          onChange={setColors}
-          onCommit={() => recompose({ position, colors })}
-          disabled={pending}
-        />
+        <ThumbnailPositionGrid value={position} onChange={setPosition} disabled={pending} />
+        <ThumbnailColorControls value={colors} onChange={setColors} disabled={pending} />
       </div>
       <p className="text-xs text-amber-600">⚠ 생성 시 OpenAI 이미지 비용이 발생합니다. (위치·색상 변경은 무비용)</p>
       <div className="flex gap-2">
@@ -135,13 +101,13 @@ export default function ThumbnailStyleTab({ sermonId, style, description, existi
           disabled={pending}
           className="rounded-md bg-accent-deep px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {preview ? "재생성" : "썸네일 생성"}
+          {background ? "배경 재생성" : "썸네일 생성"}
         </button>
-        {preview && (
+        {background && (
           <button
             type="button"
-            onClick={() => onApply(preview)}
-            disabled={applying}
+            onClick={() => onApply(text, { position, colors })}
+            disabled={applying || pending}
             className="rounded-md border border-line px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
           >
             이 썸네일로 적용
