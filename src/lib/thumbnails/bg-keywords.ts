@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
+import { generateContentWithFallback } from '@/lib/ai/gemini'
 
 export interface BgKeywordsInput {
   summary?: string | null
@@ -19,11 +19,9 @@ Sermon summary:
 export async function geminiBgKeywords(input: BgKeywordsInput): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
-  const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
   const ai = new GoogleGenAI({ apiKey })
   const body = [input.summary, ...(input.quickSummary ?? [])].filter(Boolean).join('\n')
-  const res = await ai.models.generateContent({
-    model,
+  const res = await generateContentWithFallback(ai, {
     contents: [{ role: 'user', parts: [{ text: PROMPT + body }] }],
     config: { temperature: 0.6 },
   })

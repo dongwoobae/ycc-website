@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
+import { generateContentWithFallback } from '@/lib/ai/gemini'
 import type { ComposeSermonInput, HeadlineFn } from './compose-text'
 
 const PROMPT = `당신은 한국 교회 설교 영상의 유튜브 썸네일 카피라이터입니다.
@@ -12,11 +12,9 @@ const PROMPT = `당신은 한국 교회 설교 영상의 유튜브 썸네일 카
 export const geminiHeadline: HeadlineFn = async (sermon: ComposeSermonInput) => {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
-  const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
   const ai = new GoogleGenAI({ apiKey })
   const body = [sermon.summary, ...(sermon.quickSummary ?? [])].filter(Boolean).join('\n')
-  const res = await ai.models.generateContent({
-    model,
+  const res = await generateContentWithFallback(ai, {
     contents: [{ role: 'user', parts: [{ text: PROMPT + body }] }],
     config: { temperature: 0.7 },
   })
