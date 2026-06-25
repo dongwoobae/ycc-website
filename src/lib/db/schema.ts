@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import type { BulletinSection, SermonChapter } from '../types'
+import type { ThumbnailCandidate } from '@/lib/thumbnails/types'
 
 // Better Auth 테이블 (user/session/account/verification) — drizzle push 포함용 재노출
 export * from './auth-schema'
@@ -45,6 +46,8 @@ export const sermons = pgTable('sermons', {
   audioUrl: text('audio_url'),
   notesUrl: text('notes_url'),
   thumbnailUrl: text('thumbnail_url'),
+  customThumbnailUrl: text('custom_thumbnail_url'),
+  thumbnailCandidates: jsonb('thumbnail_candidates').$type<ThumbnailCandidate[]>(),
   summary: text('summary'),
   transcriptText: text('transcript_text'),
   transcriptFetchedAt: timestamp('transcript_fetched_at', { withTimezone: true }),
