@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { canViewServerLog } from '@/lib/admin'
 import { verifySession } from '@/lib/dal'
+import AdminPageHero from '@/components/admin/AdminPageHero'
 
 export default async function AdminLogPage() {
   // 방어심층: nav 숨김과 별개로 URL 직접접근도 차단
@@ -9,7 +10,10 @@ export default async function AdminLogPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-xl font-bold text-ink">서버 로그</h1>
+      <AdminPageHero
+        title="서버 로그"
+        image="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80"
+      />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <select className="rounded-lg border border-line bg-paper px-3 py-1.5 text-sm">
           <option>전체 액션</option>

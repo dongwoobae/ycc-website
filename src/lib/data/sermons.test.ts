@@ -12,6 +12,7 @@ const base: SermonListRow = {
   sermonDate: '2026-01-01',
   videoUrl: 'https://youtu.be/abc',
   thumbnailUrl: null,
+  customThumbnailUrl: null,
   summary: 's',
   isPublished: true,
   youtubeVideoId: 'abc',
@@ -34,5 +35,25 @@ describe('toSermon', () => {
     expect(toSermon({ ...base, thumbnailUrl: null }).thumbnailUrl).toBe(
       'https://img.youtube.com/vi/abc/hqdefault.jpg'
     )
+  })
+
+  it('uses customThumbnailUrl first when present', () => {
+    expect(
+      toSermon({
+        ...base,
+        thumbnailUrl: 'https://img.youtube.com/vi/abc/hqdefault.jpg',
+        customThumbnailUrl: 'https://r2.example/thumbnails/x.png',
+      }).thumbnailUrl
+    ).toBe('https://r2.example/thumbnails/x.png')
+  })
+
+  it('uses stored thumbnailUrl when customThumbnailUrl is absent', () => {
+    expect(
+      toSermon({
+        ...base,
+        thumbnailUrl: 'https://img.youtube.com/vi/abc/hqdefault.jpg',
+        customThumbnailUrl: null,
+      }).thumbnailUrl
+    ).toBe('https://img.youtube.com/vi/abc/hqdefault.jpg')
   })
 })

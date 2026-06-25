@@ -1,0 +1,1 @@
+ALTER TABLE "sermons" ADD COLUMN "thumbnail_backgrounds" jsonb;

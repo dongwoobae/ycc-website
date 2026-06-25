@@ -30,7 +30,19 @@ function revalidateSermonPaths(id?: string) {
 
 export async function getSermonsForAdmin() {
   await requireAdmin()
-  return db.select().from(sermons).orderBy(desc(sermons.sermonDate))
+  return db
+    .select({
+      id: sermons.id,
+      sermonDate: sermons.sermonDate,
+      title: sermons.title,
+      displayTitle: sermons.displayTitle,
+      preacher: sermons.preacher,
+      worshipType: sermons.worshipType,
+      isPublished: sermons.isPublished,
+      summaryStatus: sermons.summaryStatus,
+    })
+    .from(sermons)
+    .orderBy(desc(sermons.sermonDate))
 }
 
 export async function getSermonForAdmin(id: string) {

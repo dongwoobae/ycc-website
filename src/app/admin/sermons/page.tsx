@@ -1,4 +1,5 @@
 import SermonAdminTable from '@/components/admin/SermonAdminTable'
+import AdminPageHero from '@/components/admin/AdminPageHero'
 import { getSermonsForAdmin } from '@/lib/actions/sermons'
 import { verifySession } from '@/lib/dal'
 
@@ -8,14 +9,16 @@ export default async function AdminSermonsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold text-ink">Sermons</h1>
-      </div>
+      <AdminPageHero
+        title="설교 관리"
+        image="https://images.unsplash.com/photo-1473773508845-188df298d2d1?auto=format&fit=crop&w=1600&q=80"
+      />
       <SermonAdminTable
         rows={rows.map((row) => ({
           id: row.id,
           sermonDate: row.sermonDate,
           title: row.title,
+          displayTitle: row.displayTitle,
           preacher: row.preacher,
           worshipType: row.worshipType,
           isPublished: row.isPublished,

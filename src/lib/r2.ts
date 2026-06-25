@@ -8,7 +8,7 @@ const accessKeyId = process.env.R2_ACCESS_KEY_ID
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY
 const bucket = process.env.R2_BUCKET_NAME
 const publicUrl = process.env.R2_PUBLIC_URL
-const allowedKeyPrefixes = ['bulletins/', 'gallery/'] as const
+const allowedKeyPrefixes = ['bulletins/', 'gallery/', 'thumbnails/'] as const
 
 let r2Client: S3Client | undefined
 

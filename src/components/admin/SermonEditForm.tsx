@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { generateSummaryAction, updateSermonAction, type SermonEditInput } from '@/lib/actions/sermons'
 import { formatTimestamp } from '@/lib/sermons/format'
 import type { SermonChapter } from '@/lib/types'
+import type { ThumbnailStyle } from '@/lib/thumbnails/types'
 import { worshipTypes } from '@/lib/worship'
+import ThumbnailModal from './ThumbnailModal'
 
 interface Props {
   id: string
@@ -13,12 +15,14 @@ interface Props {
   summaryStatus: string
   quickSummary: string[]
   chapters: SermonChapter[]
+  backgrounds: Partial<Record<ThumbnailStyle, string>>
 }
 
-export default function SermonEditForm({ id, initial, summaryStatus, quickSummary, chapters }: Props) {
+export default function SermonEditForm({ id, initial, summaryStatus, quickSummary, chapters, backgrounds }: Props) {
   const router = useRouter()
   const [form, setForm] = useState<SermonEditInput>(initial)
   const [msg, setMsg] = useState('')
+  const [thumbOpen, setThumbOpen] = useState(false)
   const [pending, startTransition] = useTransition()
 
   function set<K extends keyof SermonEditInput>(key: K, value: string) {
@@ -117,6 +121,13 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
         >
           요약 재생성
         </button>
+        <button
+          type="button"
+          onClick={() => setThumbOpen(true)}
+          className="rounded-md border border-line px-4 py-2 text-sm font-semibold"
+        >
+          썸네일 생성
+        </button>
         {msg && <span className="self-center text-sm text-ink-muted">{msg}</span>}
       </div>
 
@@ -143,6 +154,10 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
           </ul>
         )}
       </div>
+
+      {thumbOpen && (
+        <ThumbnailModal sermonId={id} backgrounds={backgrounds} onClose={() => setThumbOpen(false)} />
+      )}
     </div>
   )
 }
