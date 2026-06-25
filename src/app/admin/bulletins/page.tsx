@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { deleteBulletin, getBulletinsForAdmin } from '@/lib/actions/bulletins'
 import { verifySession } from '@/lib/dal'
 import SubmitButton from '@/components/admin/SubmitButton'
+import AdminPageHero from '@/components/admin/AdminPageHero'
 
 export default async function AdminBulletinsPage() {
   await verifySession()
@@ -10,12 +11,15 @@ export default async function AdminBulletinsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold text-ink">주보 관리</h1>
-        <Link href="/admin/bulletins/new" className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-deep">
-          새 주보
-        </Link>
-      </div>
+      <AdminPageHero
+        title="주보 관리"
+        image="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80"
+        action={
+          <Link href="/admin/bulletins/new" className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-ink shadow-lg ring-1 ring-black/10 transition hover:bg-surface">
+            새 주보
+          </Link>
+        }
+      />
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
         <table className="min-w-[48rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
