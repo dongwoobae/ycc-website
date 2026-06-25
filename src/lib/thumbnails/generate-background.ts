@@ -10,16 +10,19 @@ const BACKGROUND_PROMPT: Record<ThumbnailStyle, string> = {
     'A clean studio-style gradient backdrop for a portrait, warm spotlight, soft vignette, church mood. Plain on one side for a person cutout and text. Absolutely no text, no letters, no words.',
 }
 
-export async function generateBackground(style: ThumbnailStyle): Promise<Buffer> {
+export async function generateBackground(style: ThumbnailStyle, keywords?: string): Promise<Buffer> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set')
+
+  const theme = keywords?.trim() ? ` Visual theme of this sermon: ${keywords.trim()}.` : ''
+  const prompt = BACKGROUND_PROMPT[style] + theme
 
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: 'gpt-image-2',
-      prompt: BACKGROUND_PROMPT[style],
+      prompt,
       size: '1280x720',
       n: 1,
     }),
