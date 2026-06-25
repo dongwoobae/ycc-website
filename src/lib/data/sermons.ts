@@ -13,6 +13,7 @@ export type SermonListRow = Pick<
   | 'sermonDate'
   | 'videoUrl'
   | 'thumbnailUrl'
+  | 'customThumbnailUrl'
   | 'summary'
   | 'isPublished'
   | 'youtubeVideoId'
@@ -31,6 +32,7 @@ const sermonColumns = {
   sermonDate: sermonsTable.sermonDate,
   videoUrl: sermonsTable.videoUrl,
   thumbnailUrl: sermonsTable.thumbnailUrl,
+  customThumbnailUrl: sermonsTable.customThumbnailUrl,
   summary: sermonsTable.summary,
   isPublished: sermonsTable.isPublished,
   youtubeVideoId: sermonsTable.youtubeVideoId,
@@ -65,7 +67,9 @@ export function toSermon(row: SermonListRow): Sermon {
     youtubeVideoId: row.youtubeVideoId ?? undefined,
     durationSeconds: row.durationSeconds ?? undefined,
     thumbnailUrl:
-      row.thumbnailUrl ?? (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : undefined),
+      row.customThumbnailUrl ??
+      row.thumbnailUrl ??
+      (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : undefined),
     summary: row.summary ?? undefined,
     quickSummary: row.quickSummary ?? undefined,
     chapters: row.chapters ?? undefined,
