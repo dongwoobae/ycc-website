@@ -119,10 +119,17 @@ export default function BrandLogo({ variant = 'header' }: BrandLogoProps) {
 
 참고: 기존 `LogoMark` export는 제거된다. 다른 곳에서 `LogoMark`를 import하지 않는지 Step 2에서 확인한다.
 
-- [ ] **Step 2: LogoMark 잔여 참조 확인**
+- [ ] **Step 2: LogoMark 잔여 참조 확인 (repo 전체)**
 
-Run: `grep -rn "LogoMark" src`
-Expected: `BrandLogo.tsx` 외에 결과가 없어야 한다. (있으면 해당 import 제거 또는 `BrandLogo` 사용으로 교체)
+Run: `grep -rn "LogoMark" . --include=*.ts --include=*.tsx --include=*.md`
+Expected: `BrandLogo.tsx` 외에 코드 참조가 없어야 한다. (문서/테스트 포함 전체 확인. 있으면 해당 import 제거 또는 `BrandLogo` 사용으로 교체)
+
+- [ ] **Step 2b: PCK PNG 원본 품질·여백 확인**
+
+`public/brand/pck-emblem.png`의 원본 해상도/투명 여백을 확인한다. 휘장은 세로형이라 정사각 배지(`44px`) 안 78% 영역에서 충분히 또렷하고, 상하 잘림 없이 들어가는지 본다. 원본이 작거나 내부 여백이 과하면 배지 size를 키우거나(`48px`) 이미지 `object-contain` 비율을 조정한다.
+
+Run: `node -e "const s=require('fs').statSync('public/brand/pck-emblem.png');console.log(s.size)"` (대략 25KB 확인)
+Expected: 파일 존재. (시각 품질은 Step 4 dev 확인에서 최종 판정)
 
 - [ ] **Step 3: 타입체크/빌드**
 
@@ -180,9 +187,15 @@ git commit -m "feat: 로고를 PCK 공식 휘장(흰 배지+컬러)·YEONGCHEONJ
 
 (기존 `isSolid ? ... : ...` 삼항을 위 고정값으로 교체)
 
-- [ ] **Step 3: 드롭다운 패널은 밝은 카드 유지 확인**
+- [ ] **Step 3: 드롭다운 패널 밝은 카드 유지 + 우측 정렬로 오버플로 방지**
 
-드롭다운 내부 패널(`bg-paper/95 ... text-ink` 등, 약 142-158라인)은 밝은 배경이므로 변경하지 않는다. 코드 확인만 하고 그대로 둔다.
+드롭다운 내부 패널(`bg-paper/95 ... text-ink` 등)은 밝은 배경이라 색은 변경하지 않는다. 단, 메뉴가 우측 정렬이라 패널이 `absolute left-0`이면 우측 항목(특히 `교회소식`)에서 뷰포트 밖으로 밀릴 수 있다. 드롭다운 래퍼(약 141라인)의 `left-0`을 `right-0`으로 바꿔 우측 정렬로 연다:
+
+```tsx
+                <div className="invisible absolute right-0 top-full pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+```
+
+내부 카드의 `origin-top` 유지. (좌측 항목이 적어 left 오버플로 위험은 낮으나, 우측 정렬 메뉴엔 right 기준이 안전)
 
 - [ ] **Step 4: 모바일 버거 버튼 색 정리**
 
@@ -206,7 +219,9 @@ Expected: 통과.
 `npm run dev` 후:
 - 비-immersive 페이지(예: `/sermons`): 상단 바가 **딥블루 + 흰 메뉴**로 보인다.
 - 홈(`/`): 최상단에선 투명(히어로 위), 스크롤하면 딥블루 바로 전환.
-- 드롭다운(교회소개) 열면 밝은 카드 + 잉크 텍스트로 가독성 유지.
+- 드롭다운(교회소개·교회소식) 열면 밝은 카드 + 잉크 텍스트, **우측 패널이 뷰포트 안에** 들어옴(특히 교회소식).
+- **960px 부근 폭**에서 로고 + 4메뉴 + CTA가 한 줄에 겹침 없이 들어가는지 확인(데스크탑 nav 최초 실사용 경로).
+- **대비(WCAG)**: `accent-deep`(rgb 33 83 180) 위 `text-white`는 대비 ≈4.9:1로 통과. 단 `text-white/85`(반투명)·CTA `bg-accent`(rgb 47 108 206) 위 흰 텍스트는 경계선이므로, nav 링크 본문은 가급적 `text-white/90` 이상을 사용해 4.5:1을 확보한다. 활성/호버 외 기본 메뉴 텍스트 가독성 확인.
 
 - [ ] **Step 8: 커밋**
 
@@ -281,6 +296,52 @@ body:has(.admin-shell) > footer {
 
 `body:has(.admin-shell) { padding-left: 0; }`는 더 이상 필요 없지만 무해하므로 둔다.
 
+- [ ] **Step 3b: Subnav sticky 위치를 헤더 아래로 보정**
+
+`src/components/layout/Subnav.tsx:22`는 데스크탑에 좌측 사이드바만 있던 시절 `min-[960px]:top-0`이었다. 이제 데스크탑에도 상단 고정 헤더(높이 `h-20`=80px)가 생기므로, Subnav가 헤더 뒤로 숨지 않게 데스크탑도 `top-20`으로 맞춘다.
+
+`nav` className을:
+
+```tsx
+    <nav className="sticky top-20 z-30 border-b border-line bg-paper min-[960px]:top-0" aria-label={label}>
+```
+
+에서 아래로 수정(`min-[960px]:top-0` 제거 → 전 폭 `top-20`):
+
+```tsx
+    <nav className="sticky top-20 z-30 border-b border-line bg-paper" aria-label={label}>
+```
+
+또한 Header z-index(`z-50`)가 Subnav(`z-30`)보다 위라 겹침 순서 정상인지 확인.
+
+- [ ] **Step 3c: 홈 앵커 스크롤 마진을 헤더 높이만큼 보정**
+
+`src/app/globals.css`의 아래 블록은 데스크탑(좌측 사이드바, 상단 헤더 없음) 기준으로 `scroll-margin-top: 0`을 강제했다. 이제 데스크탑에도 고정 헤더가 있으므로 `data-home-after-hero` 앵커가 헤더 아래로 보정돼야 한다.
+
+```css
+@supports selector(:has(*)) {
+  html:has(.home-scroll-page) [data-home-after-hero] {
+    scroll-margin-top: 80px;
+  }
+
+  @media (min-width: 960px) {
+    html:has(.home-scroll-page) [data-home-after-hero] {
+      scroll-margin-top: 0;
+    }
+  }
+}
+```
+
+를 아래로 수정(데스크탑 0 오버라이드 제거 → 전 폭 80px):
+
+```css
+@supports selector(:has(*)) {
+  html:has(.home-scroll-page) [data-home-after-hero] {
+    scroll-margin-top: 80px;
+  }
+}
+```
+
 - [ ] **Step 4: 타입체크/빌드**
 
 Run: `npm run lint && npm run build`
@@ -291,7 +352,9 @@ Expected: 통과. (Sidebar import 제거 후 미사용 경고 없어야 함)
 `npm run dev` 후:
 - 데스크탑(≥960px) 홈/내부 페이지: **좌측 사이드바 없이** 상단 딥블루 가로 메뉴(로고 좌·메뉴 우)만 보인다. 본문이 좌측 레일 여백 없이 전체폭을 쓴다.
 - 모바일: 상단 바 + 우상단 버거 정상.
-- `/admin`: 공개 헤더/푸터가 안 보이고 admin 자체 레이아웃 정상(레일 잔여 여백 없음).
+- **Subnav 페이지**(예: `/about`, `/about/history`): 데스크탑에서 스크롤 시 Subnav가 헤더(80px) 바로 아래에 붙고 헤더 뒤로 숨지 않는다.
+- **홈 앵커 스크롤**: 히어로에서 #2 섹션으로 이동 시 섹션 상단이 고정 헤더에 가리지 않는다(데스크탑·모바일 모두).
+- `/admin` 및 하위(`/admin/sermons`, `/admin/posts` 등 최소 2~3개): 공개 헤더/푸터가 안 보이고 admin 자체 레이아웃 정상(레일 잔여 여백 없음).
 
 - [ ] **Step 6: 커밋**
 
@@ -364,3 +427,11 @@ git commit -m "chore: 미사용 사이드바 컴포넌트·CSS 제거" --no-gpg-
 **타입 일관성:** `BrandLogo`는 `EmblemBadge` 내부 헬퍼만 추가, export 시그니처 동일. `Header`는 클래스 문자열만 변경(시그니처 무변). `LogoMark` 제거에 따른 외부 참조는 Task 2 Step 2에서 grep로 차단.
 
 **의존성:** Task 1의 소스 파일 경로(`Downloads/PCK_Logo/...`)가 실재함을 사전 확인함.
+
+**Codex 계획 비판 반영 (2026-06-25):**
+- Subnav `min-[960px]:top-0` ↔ 신규 고정 헤더 충돌 → Task 4 Step 3b 추가(전 폭 `top-20`).
+- 홈 앵커 `scroll-margin-top` 데스크탑 0 강제 → Task 4 Step 3c 추가(전 폭 80px).
+- 우측 정렬 메뉴 드롭다운 `left-0` 오버플로 → Task 3 Step 3에서 `right-0`로 변경.
+- 데스크탑 nav 최초 실사용(960px 한 줄 맞춤)·대비(WCAG) → Task 3 Step 7 검증 강화.
+- PCK PNG 원본 품질/여백 → Task 2 Step 2b 추가. `LogoMark` grep repo 전체로 확대(Task 2 Step 2).
+- admin 영향 → Task 4 Step 5에서 `/admin/*` 다수 경로 확인으로 강화.
