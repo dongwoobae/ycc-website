@@ -2,25 +2,64 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { generateSummaryAction, syncNowAction, togglePublishAction } from '@/lib/actions/sermons'
+import { syncNowAction, togglePublishAction } from '@/lib/actions/sermons'
+import { sermonListTitle } from '@/lib/sermons/list-title'
 
 interface Row {
   id: string
   sermonDate: string
   title: string
+  displayTitle: string | null
   preacher: string | null
   worshipType: string
   isPublished: boolean
   summaryStatus: string
 }
 
+// 요약 상태별 원형 표시. DB 값은 none/pending/ready/failed.
+const SUMMARY_META: Record<string, { color: string; label: string }> = {
+  ready: { color: '#16a34a', label: '완료' },
+  pending: { color: '#92633a', label: '대기' },
+  none: { color: '#9ca3af', label: '없음' },
+  failed: { color: '#dc2626', label: '실패' },
+}
+
+// 정렬 우선순위(작을수록 위). 첫 클릭: failed→none→pending→ready 순.
+const SORT_RANK: Record<string, number> = { failed: 0, none: 1, pending: 2, ready: 3 }
+
+// 0: 초기(날짜순) · 1: 오름차순(failed 위) · 2: 내림차순(ready 위)
+type SortState = 0 | 1 | 2
+
+function SummaryBadge({ status }: { status: string }) {
+  const meta = SUMMARY_META[status] ?? SUMMARY_META.none
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />
+      <span className="text-ink-muted">{meta.label}</span>
+    </span>
+  )
+}
+
 export default function SermonAdminTable({ rows }: { rows: Row[] }) {
   const [pending, startTransition] = useTransition()
   const [msg, setMsg] = useState('')
   const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<SortState>(0)
 
   const q = query.trim().toLowerCase()
-  const filtered = q ? rows.filter((row) => row.title.toLowerCase().includes(q)) : rows
+  const filtered = q
+    ? rows.filter((row) => sermonListTitle(row).toLowerCase().includes(q))
+    : rows
+
+  const sorted =
+    sort === 0
+      ? filtered
+      : [...filtered].sort((a, b) => {
+          const d = (SORT_RANK[a.summaryStatus] ?? 99) - (SORT_RANK[b.summaryStatus] ?? 99)
+          return sort === 1 ? d : -d
+        })
+
+  const sortIndicator = sort === 0 ? '↕' : sort === 1 ? '↑' : '↓'
 
   function run(fn: () => Promise<unknown>, ok: string) {
     setMsg('')
@@ -66,10 +105,25 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
         등록합니다. 예배(주일·수요·금요·찬양)는 자막이 있으면 요약까지 자동 생성돼요. 기존 설교는 변경되지 않습니다.
       </p>
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
-        <table className="min-w-[48rem] w-full text-sm">
+        <table className="min-w-[44rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
             <tr>
-              {['Date', 'Title', 'Preacher', 'Worship', 'Summary', 'Published', 'Actions'].map((heading) => (
+              {['Date', 'Title', 'Preacher', 'Worship'].map((heading) => (
+                <th key={heading} className="px-4 py-3 text-left font-medium">
+                  {heading}
+                </th>
+              ))}
+              <th className="px-4 py-3 text-left font-medium">
+                <button
+                  type="button"
+                  onClick={() => setSort((s) => ((s + 1) % 3) as SortState)}
+                  className="inline-flex items-center gap-1 font-medium hover:text-ink"
+                  title="클릭하여 요약 상태로 정렬"
+                >
+                  Summary <span className="text-xs">{sortIndicator}</span>
+                </button>
+              </th>
+              {['Published', 'Actions'].map((heading) => (
                 <th key={heading} className="px-4 py-3 text-left font-medium">
                   {heading}
                 </th>
@@ -77,50 +131,51 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {sorted.length === 0 ? (
               <tr className="border-t border-line">
                 <td className="px-4 py-3 text-ink-muted" colSpan={7}>
                   {rows.length === 0 ? 'No sermons.' : '검색 결과가 없습니다.'}
                 </td>
               </tr>
             ) : (
-              filtered.map((row) => (
-                <tr key={row.id} className="border-t border-line">
-                  <td className="px-4 py-3">{row.sermonDate}</td>
-                  <td className="px-4 py-3">
-                    <Link href={`/admin/sermons/${row.id}/edit`} className="text-accent-deep hover:underline">
-                      {row.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">{row.preacher ?? '—'}</td>
-                  <td className="px-4 py-3">{row.worshipType}</td>
-                  <td className="px-4 py-3">{row.summaryStatus}</td>
-                  <td className="px-4 py-3">{row.isPublished ? '공개' : '비공개'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <Link href={`/admin/sermons/${row.id}/edit`} className="text-accent-deep hover:underline">
-                        편집
+              sorted.map((row) => {
+                const listTitle = sermonListTitle(row)
+                return (
+                  <tr key={row.id} className="border-t border-line">
+                    <td className="px-4 py-3 whitespace-nowrap">{row.sermonDate}</td>
+                    <td className="max-w-[14rem] px-4 py-3">
+                      <Link
+                        href={`/admin/sermons/${row.id}/edit`}
+                        title={listTitle}
+                        className="block truncate text-accent-deep hover:underline"
+                      >
+                        {listTitle}
                       </Link>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => run(() => generateSummaryAction(row.id), '요약 생성 완료')}
-                        className="text-accent-deep hover:underline disabled:opacity-50"
-                      >
-                        요약
-                      </button>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => run(() => togglePublishAction(row.id, !row.isPublished), '변경됨')}
-                        className="text-accent-deep hover:underline disabled:opacity-50"
-                      >
-                        {row.isPublished ? '비공개' : '공개'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="px-4 py-3">{row.preacher ?? '—'}</td>
+                    <td className="px-4 py-3">{row.worshipType}</td>
+                    <td className="px-4 py-3">
+                      <SummaryBadge status={row.summaryStatus} />
+                    </td>
+                    <td className="px-4 py-3">{row.isPublished ? '공개' : '비공개'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <Link href={`/admin/sermons/${row.id}/edit`} className="text-accent-deep hover:underline">
+                          편집
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => run(() => togglePublishAction(row.id, !row.isPublished), '변경됨')}
+                          className="text-accent-deep hover:underline disabled:opacity-50"
+                        >
+                          {row.isPublished ? '비공개' : '공개'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>

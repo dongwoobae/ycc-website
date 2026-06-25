@@ -18,6 +18,7 @@ export default async function AdminSermonsPage() {
           id: row.id,
           sermonDate: row.sermonDate,
           title: row.title,
+          displayTitle: row.displayTitle,
           preacher: row.preacher,
           worshipType: row.worshipType,
           isPublished: row.isPublished,

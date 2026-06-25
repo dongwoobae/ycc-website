@@ -35,6 +35,7 @@ export async function getSermonsForAdmin() {
       id: sermons.id,
       sermonDate: sermons.sermonDate,
       title: sermons.title,
+      displayTitle: sermons.displayTitle,
       preacher: sermons.preacher,
       worshipType: sermons.worshipType,
       isPublished: sermons.isPublished,
