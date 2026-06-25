@@ -14,6 +14,18 @@ describe('extractScripture', () => {
     expect(extractScripture('사랑장 고린도전서 13:4 묵상')).toBe('고린도전서 13:4')
   })
 
+  it('한글 표기(N장 M절)를 콜론 표기로 변환해 추출한다', () => {
+    expect(extractScripture('본 설교는 빌립보서 4장 19절을 바탕으로 합니다')).toBe('빌립보서 4:19')
+  })
+
+  it('한글 표기 절 범위(-)도 추출한다', () => {
+    expect(extractScripture('사도행전 13장 1-3절을 통해')).toBe('사도행전 13:1-3')
+  })
+
+  it('한글 표기 절 범위(물결표 ~)도 추출한다', () => {
+    expect(extractScripture('야고보서 1장 19~25절 묵상')).toBe('야고보서 1:19-25')
+  })
+
   it('구절이 없으면 빈 문자열을 반환한다', () => {
     expect(extractScripture('오늘의 은혜로운 말씀')).toBe('')
   })
