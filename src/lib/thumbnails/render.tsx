@@ -2,7 +2,8 @@ import 'server-only'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { ImageResponse } from 'next/og'
-import type { ThumbnailText } from './types'
+import { positionToLayout } from './position'
+import { DEFAULT_THUMBNAIL_POSITION, type ThumbnailPosition, type ThumbnailText } from './types'
 
 const WIDTH = 1280
 const HEIGHT = 720
@@ -24,10 +25,12 @@ async function loadFonts() {
 export interface RenderInput extends ThumbnailText {
   backgroundDataUrl: string
   cutoutDataUrl?: string
+  position?: ThumbnailPosition
 }
 
 export async function renderThumbnail(input: RenderInput): Promise<Buffer> {
   const { bold } = await loadFonts()
+  const layout = positionToLayout(input.position ?? DEFAULT_THUMBNAIL_POSITION)
   const response = new ImageResponse(
     (
       <div
@@ -36,7 +39,8 @@ export async function renderThumbnail(input: RenderInput): Promise<Buffer> {
           height: HEIGHT,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-end',
+          justifyContent: layout.justifyContent,
+          alignItems: layout.alignItems,
           position: 'relative',
           fontFamily: 'Pretendard',
         }}
@@ -64,7 +68,17 @@ export async function renderThumbnail(input: RenderInput): Promise<Buffer> {
             style={{ position: 'absolute', right: 24, bottom: 0, objectFit: 'contain' }}
           />
         ) : null}
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', padding: 56, gap: 16 }}>
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: layout.alignItems,
+            textAlign: layout.textAlign,
+            padding: 56,
+            gap: 16,
+          }}
+        >
           {input.scripture ? (
             <span style={{ fontSize: 38, color: '#ffd966', fontWeight: 700 }}>{input.scripture}</span>
           ) : null}

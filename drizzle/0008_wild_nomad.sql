@@ -1,0 +1,1 @@
+ALTER TABLE "sermons" ADD COLUMN "thumbnail_bg_keywords" text;

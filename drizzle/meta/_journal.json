@@ -57,6 +57,20 @@
       "when": 1782351231414,
       "tag": "0007_chemical_wiccan",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782352983302,
+      "tag": "0008_wild_nomad",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782355160163,
+      "tag": "0009_lame_chimera",
+      "breakpoints": true
     }
   ]
 }
