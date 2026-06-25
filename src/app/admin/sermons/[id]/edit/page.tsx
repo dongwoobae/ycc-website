@@ -24,6 +24,7 @@ export default async function EditSermonPage({ params }: { params: Promise<{ id:
         summaryStatus={row.summaryStatus}
         quickSummary={row.quickSummary ?? []}
         chapters={row.chapters ?? []}
+        candidates={row.thumbnailCandidates ?? []}
       />
     </div>
   )
