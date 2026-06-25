@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 import { sermons as sermonsTable, type SermonRow } from '@/lib/db/schema'
 import type { Sermon, WorshipType } from '@/lib/types'
 
+// 상세(detail)는 chapters/quickSummary 포함, 목록(list)은 제외.
+// 목록 전용 컬럼셋으로 조회한 행도 toSermon에 그대로 넘길 수 있도록 둘을 optional로 둔다.
 export type SermonListRow = Pick<
   SermonRow,
   | 'id'
@@ -18,12 +20,14 @@ export type SermonListRow = Pick<
   | 'isPublished'
   | 'youtubeVideoId'
   | 'durationSeconds'
-  | 'quickSummary'
-  | 'chapters'
   | 'summaryStatus'
->
+> & {
+  quickSummary?: SermonRow['quickSummary']
+  chapters?: SermonRow['chapters']
+}
 
-const sermonColumns = {
+// 목록 카드(SermonCard)가 실제 쓰는 컬럼만 — 대용량 jsonb(chapters/quickSummary) 제외해 over-fetch 방지.
+const sermonListColumns = {
   id: sermonsTable.id,
   title: sermonsTable.title,
   displayTitle: sermonsTable.displayTitle,
@@ -37,9 +41,14 @@ const sermonColumns = {
   isPublished: sermonsTable.isPublished,
   youtubeVideoId: sermonsTable.youtubeVideoId,
   durationSeconds: sermonsTable.durationSeconds,
+  summaryStatus: sermonsTable.summaryStatus,
+}
+
+// 상세(detail)용: 목록 컬럼 + chapters/quickSummary.
+const sermonColumns = {
+  ...sermonListColumns,
   quickSummary: sermonsTable.quickSummary,
   chapters: sermonsTable.chapters,
-  summaryStatus: sermonsTable.summaryStatus,
 }
 
 function youtubeIdFromUrl(videoUrl: string | null): string {
@@ -80,7 +89,7 @@ export function toSermon(row: SermonListRow): Sermon {
 
 export async function getSermons(): Promise<Sermon[]> {
   const rows = await db
-    .select(sermonColumns)
+    .select(sermonListColumns)
     .from(sermonsTable)
     .where(eq(sermonsTable.isPublished, true))
     .orderBy(desc(sermonsTable.sermonDate))
@@ -105,13 +114,17 @@ export async function getSermonsByWorshipType(worshipType?: WorshipType): Promis
   const condition = worshipType
     ? and(eq(sermonsTable.isPublished, true), eq(sermonsTable.worshipType, worshipType))
     : eq(sermonsTable.isPublished, true)
-  const rows = await db.select(sermonColumns).from(sermonsTable).where(condition).orderBy(desc(sermonsTable.sermonDate))
+  const rows = await db
+    .select(sermonListColumns)
+    .from(sermonsTable)
+    .where(condition)
+    .orderBy(desc(sermonsTable.sermonDate))
   return rows.map(toSermon)
 }
 
 export async function getLatestSermons(limit = 3): Promise<Sermon[]> {
   const rows = await db
-    .select(sermonColumns)
+    .select(sermonListColumns)
     .from(sermonsTable)
     .where(eq(sermonsTable.isPublished, true))
     .orderBy(desc(sermonsTable.sermonDate))
