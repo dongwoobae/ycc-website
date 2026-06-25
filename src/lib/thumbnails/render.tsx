@@ -3,7 +3,16 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { ImageResponse } from 'next/og'
 import { positionToLayout } from './position'
-import { DEFAULT_THUMBNAIL_POSITION, type ThumbnailPosition, type ThumbnailText } from './types'
+import {
+  DEFAULT_THUMBNAIL_COLORS,
+  DEFAULT_THUMBNAIL_POSITION,
+  type ThumbnailColors,
+  type ThumbnailPosition,
+  type ThumbnailText,
+} from './types'
+
+// 밝은 배경에서도 글자가 묻히지 않도록 반투명 검은 그림자를 깐다.
+const TEXT_SHADOW = '0px 2px 8px rgba(0,0,0,0.55)'
 
 const WIDTH = 1280
 const HEIGHT = 720
@@ -26,11 +35,13 @@ export interface RenderInput extends ThumbnailText {
   backgroundDataUrl: string
   cutoutDataUrl?: string
   position?: ThumbnailPosition
+  colors?: ThumbnailColors
 }
 
 export async function renderThumbnail(input: RenderInput): Promise<Buffer> {
   const { bold } = await loadFonts()
   const layout = positionToLayout(input.position ?? DEFAULT_THUMBNAIL_POSITION)
+  const colors = input.colors ?? DEFAULT_THUMBNAIL_COLORS
   const response = new ImageResponse(
     (
       <div
@@ -80,9 +91,13 @@ export async function renderThumbnail(input: RenderInput): Promise<Buffer> {
           }}
         >
           {input.scripture ? (
-            <span style={{ fontSize: 38, color: '#ffd966', fontWeight: 700 }}>{input.scripture}</span>
+            <span style={{ fontSize: 38, color: colors.scripture, fontWeight: 700, textShadow: TEXT_SHADOW }}>
+              {input.scripture}
+            </span>
           ) : null}
-          <span style={{ fontSize: 76, color: '#ffffff', fontWeight: 700, lineHeight: 1.1 }}>
+          <span
+            style={{ fontSize: 76, color: colors.headline, fontWeight: 700, lineHeight: 1.1, textShadow: TEXT_SHADOW }}
+          >
             {input.headline}
           </span>
         </div>

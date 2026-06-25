@@ -13,16 +13,29 @@ import { geminiHeadline } from '@/lib/thumbnails/headline'
 import { renderThumbnail, toDataUrl } from '@/lib/thumbnails/render'
 import { storeBackground, storeCandidate } from '@/lib/thumbnails/store'
 import {
+  DEFAULT_THUMBNAIL_COLORS,
   DEFAULT_THUMBNAIL_POSITION,
   isThumbnailPosition,
   type ThumbnailCandidate,
+  type ThumbnailColors,
   type ThumbnailPosition,
+  type ThumbnailRenderOptions,
   type ThumbnailStyle,
   type ThumbnailText,
 } from '@/lib/thumbnails/types'
 
 function coercePosition(position: ThumbnailPosition | undefined): ThumbnailPosition {
   return isThumbnailPosition(position) ? position : DEFAULT_THUMBNAIL_POSITION
+}
+
+const HEX_RE = /^#[0-9a-fA-F]{3,8}$/
+function coerceColors(colors: ThumbnailColors | undefined): ThumbnailColors {
+  const pick = (value: string | undefined, fallback: string) =>
+    typeof value === 'string' && HEX_RE.test(value) ? value : fallback
+  return {
+    headline: pick(colors?.headline, DEFAULT_THUMBNAIL_COLORS.headline),
+    scripture: pick(colors?.scripture, DEFAULT_THUMBNAIL_COLORS.scripture),
+  }
 }
 
 function revalidate(id: string) {
@@ -79,7 +92,7 @@ export async function generateThumbnailAction(
   id: string,
   style: ThumbnailStyle,
   text: ThumbnailText,
-  position?: ThumbnailPosition
+  options?: ThumbnailRenderOptions
 ): Promise<GenerateThumbnailResult> {
   const session = await requireAdmin()
   if (style === 'cutout') throw new Error('인물컷형 누끼 생성은 다음 단계에서 지원됩니다')
@@ -91,7 +104,8 @@ export async function generateThumbnailAction(
     headline: text.headline,
     scripture: text.scripture,
     backgroundDataUrl: toDataUrl(background),
-    position: coercePosition(position),
+    position: coercePosition(options?.position),
+    colors: coerceColors(options?.colors),
   })
 
   const candidate = await storeCandidate(id, style, png)
@@ -101,14 +115,14 @@ export async function generateThumbnailAction(
 }
 
 /**
- * 저장된 배경을 재사용해 텍스트만 새 위치로 재합성한다(gpt-image-2 미호출 → 무비용).
+ * 저장된 배경을 재사용해 텍스트만 새 위치·색상으로 재합성한다(gpt-image-2 미호출 → 무비용).
  * 배경이 아직 없으면(생성 이력 없음) 에러로 안내한다.
  */
-export async function repositionThumbnailAction(
+export async function recomposeThumbnailAction(
   id: string,
   style: ThumbnailStyle,
   text: ThumbnailText,
-  position: ThumbnailPosition
+  options: ThumbnailRenderOptions
 ): Promise<GenerateThumbnailResult> {
   const session = await requireAdmin()
   if (style === 'cutout') throw new Error('인물컷형 누끼 생성은 다음 단계에서 지원됩니다')
@@ -130,11 +144,12 @@ export async function repositionThumbnailAction(
     headline: text.headline,
     scripture: text.scripture,
     backgroundDataUrl: toDataUrl(background),
-    position: coercePosition(position),
+    position: coercePosition(options.position),
+    colors: coerceColors(options.colors),
   })
 
   const candidate = await storeCandidate(id, style, png)
-  await log('update', 'sermon', id, `thumbnail:reposition:${style}`, session.user.id)
+  await log('update', 'sermon', id, `thumbnail:recompose:${style}`, session.user.id)
   revalidate(id)
   return { candidate }
 }

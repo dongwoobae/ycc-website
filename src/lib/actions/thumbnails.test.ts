@@ -14,28 +14,25 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
-import { applyThumbnailAction, repositionThumbnailAction } from './thumbnails'
+import { applyThumbnailAction, recomposeThumbnailAction } from './thumbnails'
 
 const TEXT = { headline: '제목', scripture: '' }
+const OPTS = { position: 'top-right' as const }
 
 beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('repositionThumbnailAction', () => {
+describe('recomposeThumbnailAction', () => {
   it('설교가 없으면 에러', async () => {
     selectLimit.mockResolvedValue([])
-    await expect(repositionThumbnailAction('s1', 'classic', TEXT, 'top-right')).rejects.toThrow(
-      'sermon not found'
-    )
+    await expect(recomposeThumbnailAction('s1', 'classic', TEXT, OPTS)).rejects.toThrow('sermon not found')
     expect(updateWhere).not.toHaveBeenCalled()
   })
 
   it('저장된 배경이 없으면 먼저 생성하라고 안내', async () => {
     selectLimit.mockResolvedValue([{ backgrounds: null }])
-    await expect(repositionThumbnailAction('s1', 'classic', TEXT, 'top-right')).rejects.toThrow(
-      '먼저 썸네일을 생성'
-    )
+    await expect(recomposeThumbnailAction('s1', 'classic', TEXT, OPTS)).rejects.toThrow('먼저 썸네일을 생성')
     expect(updateWhere).not.toHaveBeenCalled()
   })
 })

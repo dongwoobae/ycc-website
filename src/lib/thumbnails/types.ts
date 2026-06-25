@@ -41,3 +41,18 @@ export const THUMBNAIL_POSITIONS: ThumbnailPosition[] = [
 export function isThumbnailPosition(value: unknown): value is ThumbnailPosition {
   return typeof value === 'string' && (THUMBNAIL_POSITIONS as string[]).includes(value)
 }
+
+export interface ThumbnailColors {
+  headline: string
+  scripture: string
+}
+
+export const DEFAULT_THUMBNAIL_COLORS: ThumbnailColors = {
+  headline: '#ffffff',
+  scripture: '#ffd966',
+}
+
+export interface ThumbnailRenderOptions {
+  position?: ThumbnailPosition
+  colors?: ThumbnailColors
+}

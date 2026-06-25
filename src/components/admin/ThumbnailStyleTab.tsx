@@ -3,17 +3,21 @@
 import { useState, useTransition } from "react";
 import {
   generateThumbnailAction,
-  repositionThumbnailAction,
+  recomposeThumbnailAction,
   suggestThumbnailTextAction,
 } from "@/lib/actions/thumbnails";
 import {
+  DEFAULT_THUMBNAIL_COLORS,
   DEFAULT_THUMBNAIL_POSITION,
   type ThumbnailCandidate,
+  type ThumbnailColors,
   type ThumbnailPosition,
+  type ThumbnailRenderOptions,
   type ThumbnailStyle,
   type ThumbnailText,
 } from "@/lib/thumbnails/types";
 import ThumbnailPositionGrid from "./ThumbnailPositionGrid";
+import ThumbnailColorControls from "./ThumbnailColorControls";
 
 interface Props {
   sermonId: string;
@@ -28,6 +32,7 @@ export default function ThumbnailStyleTab({ sermonId, style, description, existi
   const [text, setText] = useState<ThumbnailText>({ headline: "", scripture: "" });
   const [preview, setPreview] = useState<string | undefined>(existing?.url);
   const [position, setPosition] = useState<ThumbnailPosition>(DEFAULT_THUMBNAIL_POSITION);
+  const [colors, setColors] = useState<ThumbnailColors>(DEFAULT_THUMBNAIL_COLORS);
   const [loadingText, setLoadingText] = useState(false);
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
@@ -51,7 +56,7 @@ export default function ThumbnailStyleTab({ sermonId, style, description, existi
     setMsg("");
     start(async () => {
       try {
-        const { candidate } = await generateThumbnailAction(sermonId, style, text, position);
+        const { candidate } = await generateThumbnailAction(sermonId, style, text, { position, colors });
         setPreview(candidate.url);
       } catch (e) {
         setMsg(e instanceof Error ? e.message : String(e));
@@ -59,19 +64,23 @@ export default function ThumbnailStyleTab({ sermonId, style, description, existi
     });
   }
 
-  // 배경이 이미 있으면(=미리보기 존재) 텍스트만 재합성해 위치 이동(무비용). 없으면 위치만 저장.
-  function changePosition(next: ThumbnailPosition) {
-    setPosition(next);
+  // 배경이 이미 있으면(=미리보기 존재) 저장된 배경 재사용해 텍스트만 재합성(무비용). 없으면 무시.
+  function recompose(options: ThumbnailRenderOptions) {
     if (!preview) return;
     setMsg("");
     start(async () => {
       try {
-        const { candidate } = await repositionThumbnailAction(sermonId, style, text, next);
+        const { candidate } = await recomposeThumbnailAction(sermonId, style, text, options);
         setPreview(candidate.url);
       } catch (e) {
         setMsg(e instanceof Error ? e.message : String(e));
       }
     });
+  }
+
+  function changePosition(next: ThumbnailPosition) {
+    setPosition(next);
+    recompose({ position: next, colors });
   }
 
   return (
@@ -109,8 +118,16 @@ export default function ThumbnailStyleTab({ sermonId, style, description, existi
           <span className="text-sm text-faint">아직 생성되지 않음</span>
         )}
       </div>
-      <ThumbnailPositionGrid value={position} onChange={changePosition} disabled={pending} />
-      <p className="text-xs text-amber-600">⚠ 생성 시 OpenAI 이미지 비용이 발생합니다. (위치 이동은 무비용)</p>
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+        <ThumbnailPositionGrid value={position} onChange={changePosition} disabled={pending} />
+        <ThumbnailColorControls
+          value={colors}
+          onChange={setColors}
+          onCommit={() => recompose({ position, colors })}
+          disabled={pending}
+        />
+      </div>
+      <p className="text-xs text-amber-600">⚠ 생성 시 OpenAI 이미지 비용이 발생합니다. (위치·색상 변경은 무비용)</p>
       <div className="flex gap-2">
         <button
           type="button"
