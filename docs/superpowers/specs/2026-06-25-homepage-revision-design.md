@@ -63,7 +63,8 @@
 - 행사 사진 카테고리(소식): 2025전교인수련회, 2025성탄축하, 2026겨울성경학교, 2026특별새벽기도회, 구역모임, 청춘교실 → `gallery_albums`로 관리
 
 ### 6. 푸터
-- 소셜 아이콘: 유튜브(채널ID `UCzB3UsqsJhtFUvPEeOtTL6g` 보유) · 블로그(`churchInfo.blog`) · 디모데앱(DimodeSmart, URL 필요)
+- 소셜 아이콘: 유튜브(채널ID `UCzB3UsqsJhtFUvPEeOtTL6g` 보유) · 블로그(`churchInfo.blog`) · 디모데앱(DimodeSmart)
+  - 디모데앱 링크: 소개 페이지 `https://www.dimode.co.kr/Page/Index/35121` (새 탭). PC·iOS·Android 모두 열리는 공식 벤더 페이지. (플레이스토어 `kr.co.dimode.smart`는 Android 전용이라 미채택)
 - 표기: 대한예수교장로회 / 영천중앙교회 / 전화 / 카피라이트 (현행 `Footer.tsx` 기반 보강)
 
 ## 의존성 (외부 입력 필요)
