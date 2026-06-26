@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { sermons } from '@/lib/db/schema'
+import { sermons, sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
 import { generateSermonSummary, DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 import { buildTranscriptText } from '@/lib/transcript/prompt'
@@ -29,13 +29,15 @@ export async function selectRetryTargets(limit = 10, now: Date = new Date()): Pr
   return db
     .select({ id: sermons.id })
     .from(sermons)
+    .innerJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
+    .leftJoin(sermonTranscripts, eq(sermonTranscripts.sermonId, sermons.id))
     .where(
       and(
-        eq(sermons.summaryStatus, 'failed'),
-        isNotNull(sermons.transcriptText),
+        eq(sermonSummaries.summaryStatus, 'failed'),
+        isNotNull(sermonTranscripts.transcriptText),
         inArray(sermons.worshipType, [...autoSummaryTypes]),
-        lt(sermons.summaryAttempts, MAX_SUMMARY_ATTEMPTS),
-        or(isNull(sermons.summaryNextRetryAt), lte(sermons.summaryNextRetryAt, now)),
+        lt(sermonSummaries.summaryAttempts, MAX_SUMMARY_ATTEMPTS),
+        or(isNull(sermonSummaries.summaryNextRetryAt), lte(sermonSummaries.summaryNextRetryAt, now)),
       ),
     )
     .orderBy(desc(sermons.sermonDate))
@@ -50,32 +52,46 @@ interface ClaimedSermon {
 
 export async function claimSermonById(id: string, now: Date = new Date()): Promise<ClaimedSermon | null> {
   const staleBefore = new Date(now.getTime() - STALE_PENDING_MS)
+  await db.execute(sql`INSERT INTO sermon_summaries (sermon_id) VALUES (${id}) ON CONFLICT (sermon_id) DO NOTHING`)
   const result = await db.execute(sql`
-    UPDATE sermons SET
-      summary_status = 'pending',
-      summary_attempts = summary_attempts + 1
-    WHERE id = ${id}
-      AND summary_attempts < ${MAX_SUMMARY_ATTEMPTS}
-      AND (
-        (summary_status IN ('none', 'failed')
-          AND (summary_next_retry_at IS NULL OR summary_next_retry_at <= ${now.toISOString()}))
-        OR (summary_status = 'pending' AND summary_generated_at IS NULL
-          AND summary_next_retry_at IS NULL AND created_at <= ${staleBefore.toISOString()})
-      )
-    RETURNING id, duration_seconds AS "durationSeconds", transcript_text AS "transcriptText"
+    WITH claimed AS (
+      UPDATE sermon_summaries SET
+        summary_status = 'pending',
+        summary_attempts = summary_attempts + 1
+      WHERE sermon_id = ${id}
+        AND summary_attempts < ${MAX_SUMMARY_ATTEMPTS}
+        AND (
+          (summary_status IN ('none', 'failed')
+            AND (summary_next_retry_at IS NULL OR summary_next_retry_at <= ${now.toISOString()}))
+          OR (summary_status = 'pending' AND summary_generated_at IS NULL
+            AND summary_next_retry_at IS NULL AND created_at <= ${staleBefore.toISOString()})
+        )
+      RETURNING sermon_id
+    )
+    SELECT s.id, s.duration_seconds AS "durationSeconds", t.transcript_text AS "transcriptText"
+    FROM claimed c
+    JOIN sermons s ON s.id = c.sermon_id
+    LEFT JOIN sermon_transcripts t ON t.sermon_id = c.sermon_id
   `)
   const rows = Array.isArray(result) ? result : result.rows
   return (rows[0] as ClaimedSermon | undefined) ?? null
 }
 
 export async function forceClaimSermonById(id: string): Promise<ClaimedSermon | null> {
+  await db.execute(sql`INSERT INTO sermon_summaries (sermon_id) VALUES (${id}) ON CONFLICT (sermon_id) DO NOTHING`)
   const result = await db.execute(sql`
-    UPDATE sermons SET
-      summary_status = 'pending',
-      summary_attempts = summary_attempts + 1,
-      summary_next_retry_at = NULL
-    WHERE id = ${id}
-    RETURNING id, duration_seconds AS "durationSeconds", transcript_text AS "transcriptText"
+    WITH claimed AS (
+      UPDATE sermon_summaries SET
+        summary_status = 'pending',
+        summary_attempts = summary_attempts + 1,
+        summary_next_retry_at = NULL
+      WHERE sermon_id = ${id}
+      RETURNING sermon_id
+    )
+    SELECT s.id, s.duration_seconds AS "durationSeconds", t.transcript_text AS "transcriptText"
+    FROM claimed c
+    JOIN sermons s ON s.id = c.sermon_id
+    LEFT JOIN sermon_transcripts t ON t.sermon_id = c.sermon_id
   `)
   const rows = Array.isArray(result) ? result : result.rows
   return (rows[0] as ClaimedSermon | undefined) ?? null
@@ -85,10 +101,14 @@ export async function fetchAndStoreTranscript(sermonId: string, videoId: string)
   const segments = await fetchTranscript(videoId)
   if (segments.length === 0) throw new Error('자막 미준비')
   const transcriptText = buildTranscriptText(segments)
+  const fetchedAt = new Date()
   await db
-    .update(sermons)
-    .set({ transcriptText, transcriptFetchedAt: new Date() })
-    .where(eq(sermons.id, sermonId))
+    .insert(sermonTranscripts)
+    .values({ sermonId, transcriptText, transcriptFetchedAt: fetchedAt })
+    .onConflictDoUpdate({
+      target: sermonTranscripts.sermonId,
+      set: { transcriptText, transcriptFetchedAt: fetchedAt },
+    })
   return transcriptText
 }
 
@@ -101,7 +121,7 @@ export async function summarizeClaimed(
   try {
     const result = await generateSermonSummary(transcriptText, durationSeconds)
     await db
-      .update(sermons)
+      .update(sermonSummaries)
       .set({
         summary: result.summary,
         quickSummary: result.quickSummary,
@@ -111,17 +131,17 @@ export async function summarizeClaimed(
         summaryNextRetryAt: null,
         summaryModel: model,
       })
-      .where(eq(sermons.id, id))
+      .where(eq(sermonSummaries.sermonId, id))
     return 'ready'
   } catch (e) {
     console.error(`[summarize] ${id} failed`, e)
     await db
-      .update(sermons)
+      .update(sermonSummaries)
       .set({
         summaryStatus: 'failed',
         summaryNextRetryAt: computeNextRetry(MAX_SUMMARY_ATTEMPTS, new Date()),
       })
-      .where(eq(sermons.id, id))
+      .where(eq(sermonSummaries.sermonId, id))
     return 'failed'
   }
 }
@@ -132,9 +152,10 @@ export async function manualSummarize(id: string): Promise<'ready' | 'failed'> {
       id: sermons.id,
       youtubeVideoId: sermons.youtubeVideoId,
       durationSeconds: sermons.durationSeconds,
-      transcriptText: sermons.transcriptText,
+      transcriptText: sermonTranscripts.transcriptText,
     })
     .from(sermons)
+    .leftJoin(sermonTranscripts, eq(sermonTranscripts.sermonId, sermons.id))
     .where(eq(sermons.id, id))
     .limit(1)
   if (!row || !row.youtubeVideoId) throw new Error('sermon not found or has no YouTube video id')
