@@ -92,6 +92,7 @@ export const sermonThumbnails = pgTable('sermon_thumbnails', {
   thumbnailCandidates: jsonb('thumbnail_candidates').$type<ThumbnailCandidate[]>(),
   thumbnailBgKeywords: text('thumbnail_bg_keywords'),
   thumbnailBackgrounds: jsonb('thumbnail_backgrounds').$type<Partial<Record<ThumbnailStyle, string>>>(),
+  thumbnailCutoutUrl: text('thumbnail_cutout_url'),
 })
 
 export const posts = pgTable(

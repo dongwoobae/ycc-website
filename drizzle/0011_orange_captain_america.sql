@@ -1,0 +1,1 @@
+ALTER TABLE "sermon_thumbnails" ADD COLUMN "thumbnail_cutout_url" text;
