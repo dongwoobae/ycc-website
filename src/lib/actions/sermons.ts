@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { desc, eq } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
-import { sermons } from '@/lib/db/schema'
+import { sermons, sermonSummaries } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { resyncAllSermons } from '@/lib/sermons/sync'
 import { manualSummarize } from '@/lib/sermons/summarize'
@@ -39,9 +39,10 @@ export async function getSermonsForAdmin() {
       preacher: sermons.preacher,
       worshipType: sermons.worshipType,
       isPublished: sermons.isPublished,
-      summaryStatus: sermons.summaryStatus,
+      summaryStatus: sermonSummaries.summaryStatus,
     })
     .from(sermons)
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
     .orderBy(desc(sermons.sermonDate))
 }
 
