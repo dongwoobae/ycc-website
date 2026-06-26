@@ -13,6 +13,10 @@ function backgroundKey(sermonId: string, style: ThumbnailStyle): string {
   return `thumbnails/backgrounds/${sermonId}/${style}-${Date.now()}.png`
 }
 
+function cutoutKey(sermonId: string): string {
+  return `thumbnails/cutouts/${sermonId}-${Date.now()}.png`
+}
+
 /**
  * 생성한 배경 이미지를 R2에 올리고 sermon_thumbnails.thumbnailBackgrounds[style]에 URL을 저장한다.
  * 저장된 URL은 위치 재배치(reposition) 시 배경 재사용에 쓰인다. (위성 행 부재 시 upsert로 생성)
@@ -59,4 +63,22 @@ export async function storeCandidate(
     .returning({ id: sermonThumbnails.sermonId })
   if (updated.length === 0) throw new Error('sermon not found')
   return candidate
+}
+
+/**
+ * 누끼(투명 PNG)를 R2에 올리고 sermon_thumbnails.thumbnailCutoutUrl에 저장한다.
+ * 유튜브 썸네일 파생이라 변하지 않으므로 1회 추출 후 재사용 캐시로 쓰인다.
+ */
+export async function storeCutout(sermonId: string, png: Buffer): Promise<string> {
+  const url = await uploadToR2(png, cutoutKey(sermonId), 'image/png')
+  const updated = await db
+    .insert(sermonThumbnails)
+    .values({ sermonId, thumbnailCutoutUrl: url })
+    .onConflictDoUpdate({
+      target: sermonThumbnails.sermonId,
+      set: { thumbnailCutoutUrl: url },
+    })
+    .returning({ id: sermonThumbnails.sermonId })
+  if (updated.length === 0) throw new Error('sermon not found')
+  return url
 }
