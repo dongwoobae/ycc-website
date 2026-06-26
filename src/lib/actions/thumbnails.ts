@@ -11,7 +11,8 @@ import { generateBackground } from '@/lib/thumbnails/generate-background'
 import { geminiBgKeywords } from '@/lib/thumbnails/bg-keywords'
 import { geminiHeadline } from '@/lib/thumbnails/headline'
 import { renderThumbnail, toDataUrl } from '@/lib/thumbnails/render'
-import { storeBackground, storeCandidate } from '@/lib/thumbnails/store'
+import { removeBackground } from '@/lib/thumbnails/remove-background'
+import { storeBackground, storeCandidate, storeCutout } from '@/lib/thumbnails/store'
 import {
   DEFAULT_THUMBNAIL_COLORS,
   DEFAULT_THUMBNAIL_POSITION,
@@ -64,6 +65,7 @@ export async function suggestThumbnailTextAction(id: string, style: ThumbnailSty
 
 export interface GenerateThumbnailResult {
   backgroundUrl: string
+  cutoutUrl?: string
 }
 
 /**
@@ -94,6 +96,28 @@ async function resolveBgKeywords(id: string): Promise<string> {
 }
 
 /**
+ * 인물 누끼 URL을 반환한다. 캐시(thumbnailCutoutUrl)가 있으면 재사용하고,
+ * 없으면 유튜브 썸네일(sermons.thumbnailUrl)로 remove.bg를 1회 호출해 R2에 저장한다.
+ * 썸네일이 없는 설교는 누끼 없이 진행(undefined).
+ */
+async function resolveCutout(id: string): Promise<string | undefined> {
+  const [row] = await db
+    .select({
+      cutoutUrl: sermonThumbnails.thumbnailCutoutUrl,
+      thumbnailUrl: sermons.thumbnailUrl,
+    })
+    .from(sermons)
+    .leftJoin(sermonThumbnails, eq(sermonThumbnails.sermonId, sermons.id))
+    .where(eq(sermons.id, id))
+    .limit(1)
+  if (!row) throw new Error('sermon not found')
+  if (row.cutoutUrl?.trim()) return row.cutoutUrl
+  if (!row.thumbnailUrl) return undefined
+  const png = await removeBackground(row.thumbnailUrl)
+  return storeCutout(id, png)
+}
+
+/**
  * 배경 이미지를 생성·저장하고 그 URL을 반환한다(gpt-image-2 호출 → 비용 발생).
  * 텍스트 합성은 클라이언트 CSS 미리보기가 담당하고, PNG 저장은 적용 시점으로 미룬다.
  */
@@ -102,13 +126,16 @@ export async function generateThumbnailAction(
   style: ThumbnailStyle
 ): Promise<GenerateThumbnailResult> {
   const session = await requireAdmin()
-  if (style === 'cutout') throw new Error('인물컷형 누끼 생성은 다음 단계에서 지원됩니다')
 
   const keywords = await resolveBgKeywords(id)
   const background = await generateBackground(style, keywords)
   const backgroundUrl = await storeBackground(id, style, background)
+
+  let cutoutUrl: string | undefined
+  if (style === 'cutout') cutoutUrl = await resolveCutout(id)
+
   await log('create', 'sermon', id, `thumbnail:bg:${style}`, session.user.id)
-  return { backgroundUrl }
+  return { backgroundUrl, cutoutUrl }
 }
 
 /**
@@ -122,10 +149,12 @@ export async function composeAndApplyThumbnailAction(
   options: ThumbnailRenderOptions
 ): Promise<void> {
   const session = await requireAdmin()
-  if (style === 'cutout') throw new Error('인물컷형 누끼 생성은 다음 단계에서 지원됩니다')
 
   const [row] = await db
-    .select({ backgrounds: sermonThumbnails.thumbnailBackgrounds })
+    .select({
+      backgrounds: sermonThumbnails.thumbnailBackgrounds,
+      cutoutUrl: sermonThumbnails.thumbnailCutoutUrl,
+    })
     .from(sermonThumbnails)
     .where(eq(sermonThumbnails.sermonId, id))
     .limit(1)
@@ -137,10 +166,17 @@ export async function composeAndApplyThumbnailAction(
   if (!res.ok) throw new Error(`배경 이미지를 불러오지 못했습니다: ${res.status}`)
   const background = Buffer.from(await res.arrayBuffer())
 
+  let cutoutDataUrl: string | undefined
+  if (style === 'cutout' && row.cutoutUrl) {
+    const cutoutRes = await fetch(row.cutoutUrl)
+    if (cutoutRes.ok) cutoutDataUrl = toDataUrl(Buffer.from(await cutoutRes.arrayBuffer()))
+  }
+
   const png = await renderThumbnail({
     headline: text.headline,
     scripture: text.scripture,
     backgroundDataUrl: toDataUrl(background),
+    cutoutDataUrl,
     position: coercePosition(options.position),
     colors: coerceColors(options.colors),
   })
