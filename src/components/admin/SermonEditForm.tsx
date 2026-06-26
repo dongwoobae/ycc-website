@@ -16,9 +16,10 @@ interface Props {
   quickSummary: string[]
   chapters: SermonChapter[]
   backgrounds: Partial<Record<ThumbnailStyle, string>>
+  cutoutUrl?: string
 }
 
-export default function SermonEditForm({ id, initial, summaryStatus, quickSummary, chapters, backgrounds }: Props) {
+export default function SermonEditForm({ id, initial, summaryStatus, quickSummary, chapters, backgrounds, cutoutUrl }: Props) {
   const router = useRouter()
   const [form, setForm] = useState<SermonEditInput>(initial)
   const [msg, setMsg] = useState('')
@@ -156,7 +157,7 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
       </div>
 
       {thumbOpen && (
-        <ThumbnailModal sermonId={id} backgrounds={backgrounds} onClose={() => setThumbOpen(false)} />
+        <ThumbnailModal sermonId={id} backgrounds={backgrounds} cutoutUrl={cutoutUrl} onClose={() => setThumbOpen(false)} />
       )}
     </div>
   )

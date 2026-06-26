@@ -25,6 +25,7 @@ export default async function EditSermonPage({ params }: { params: Promise<{ id:
         quickSummary={row.quickSummary ?? []}
         chapters={row.chapters ?? []}
         backgrounds={row.thumbnailBackgrounds ?? {}}
+        cutoutUrl={row.thumbnailCutoutUrl ?? undefined}
       />
     </div>
   )

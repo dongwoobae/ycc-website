@@ -20,13 +20,15 @@ interface Props {
   style: ThumbnailStyle;
   description: string;
   background?: string;
+  cutout?: string;
   onApply: (text: ThumbnailText, options: ThumbnailRenderOptions) => void;
   applying: boolean;
 }
 
-export default function ThumbnailStyleTab({ sermonId, style, description, background: initialBackground, onApply, applying }: Props) {
+export default function ThumbnailStyleTab({ sermonId, style, description, background: initialBackground, cutout: initialCutout, onApply, applying }: Props) {
   const [text, setText] = useState<ThumbnailText>({ headline: "", scripture: "" });
   const [background, setBackground] = useState<string | undefined>(initialBackground);
+  const [cutout, setCutout] = useState<string | undefined>(initialCutout);
   const [position, setPosition] = useState<ThumbnailPosition>(DEFAULT_THUMBNAIL_POSITION);
   const [colors, setColors] = useState<ThumbnailColors>(DEFAULT_THUMBNAIL_COLORS);
   const [loadingText, setLoadingText] = useState(false);
@@ -53,8 +55,9 @@ export default function ThumbnailStyleTab({ sermonId, style, description, backgr
     setMsg("");
     start(async () => {
       try {
-        const { backgroundUrl } = await generateThumbnailAction(sermonId, style);
+        const { backgroundUrl, cutoutUrl } = await generateThumbnailAction(sermonId, style);
         setBackground(backgroundUrl);
+        if (cutoutUrl) setCutout(cutoutUrl);
       } catch (e) {
         setMsg(e instanceof Error ? e.message : String(e));
       }
@@ -88,7 +91,7 @@ export default function ThumbnailStyleTab({ sermonId, style, description, backgr
           onChange={(e) => setText((t) => ({ ...t, scripture: e.target.value }))}
         />
       </div>
-      <ThumbnailPreview background={background} text={text} position={position} colors={colors} />
+      <ThumbnailPreview background={background} cutout={style === "cutout" ? cutout : undefined} text={text} position={position} colors={colors} />
       <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
         <ThumbnailPositionGrid value={position} onChange={setPosition} disabled={pending} />
         <ThumbnailColorControls value={colors} onChange={setColors} disabled={pending} />

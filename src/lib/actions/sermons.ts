@@ -61,6 +61,7 @@ export async function getSermonForAdmin(id: string) {
       quickSummary: sermonSummaries.quickSummary,
       chapters: sermonSummaries.chapters,
       thumbnailBackgrounds: sermonThumbnails.thumbnailBackgrounds,
+      thumbnailCutoutUrl: sermonThumbnails.thumbnailCutoutUrl,
     })
     .from(sermons)
     .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))

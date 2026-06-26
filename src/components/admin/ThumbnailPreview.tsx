@@ -5,6 +5,7 @@ import type { ThumbnailColors, ThumbnailPosition, ThumbnailText } from "@/lib/th
 
 interface Props {
   background?: string;
+  cutout?: string;
   text: ThumbnailText;
   position: ThumbnailPosition;
   colors: ThumbnailColors;
@@ -14,7 +15,7 @@ interface Props {
 const TEXT_SHADOW = "0px 0.16cqw 0.63cqw rgba(0,0,0,0.55)";
 const GRADIENT = "linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.72) 100%)";
 
-export default function ThumbnailPreview({ background, text, position, colors }: Props) {
+export default function ThumbnailPreview({ background, cutout, text, position, colors }: Props) {
   const layout = positionToLayout(position);
 
   if (!background) {
@@ -40,6 +41,15 @@ export default function ThumbnailPreview({ background, text, position, colors }:
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={background} alt="썸네일 미리보기" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0" style={{ background: GRADIENT }} />
+      {cutout ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={cutout}
+          alt=""
+          className="absolute"
+          style={{ right: "1.875cqw", bottom: 0, height: "100%", objectFit: "contain" }}
+        />
+      ) : null}
       <div
         style={{
           position: "relative",

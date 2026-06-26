@@ -15,16 +15,17 @@ import ThumbnailStyleTab from './ThumbnailStyleTab'
 const DESCRIPTIONS: Record<ThumbnailStyle, string> = {
   classic: '설교 제목 + 성경구절을 단정하게 배치합니다.',
   hook: 'AI가 만든 짧은 헤드라인 + 성경구절로 클릭을 유도합니다.',
-  cutout: '제목·구절에 더해 유튜브 썸네일에서 인물을 따내 합성합니다. (준비 중)',
+  cutout: '제목·구절에 더해 유튜브 썸네일에서 인물을 따내 합성합니다.',
 }
 
 interface Props {
   sermonId: string
   backgrounds: Partial<Record<ThumbnailStyle, string>>
+  cutoutUrl?: string
   onClose: () => void
 }
 
-export default function ThumbnailModal({ sermonId, backgrounds, onClose }: Props) {
+export default function ThumbnailModal({ sermonId, backgrounds, cutoutUrl, onClose }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<ThumbnailStyle>('classic')
   const [pending, start] = useTransition()
@@ -77,6 +78,7 @@ export default function ThumbnailModal({ sermonId, backgrounds, onClose }: Props
           style={tab}
           description={DESCRIPTIONS[tab]}
           background={backgrounds[tab]}
+          cutout={cutoutUrl}
           onApply={apply}
           applying={pending}
         />
