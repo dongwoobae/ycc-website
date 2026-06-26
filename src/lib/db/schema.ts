@@ -68,6 +68,32 @@ export const sermons = pgTable('sermons', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (t) => [index('sermons_published_date_idx').on(t.isPublished, t.sermonDate)])
 
+export const sermonTranscripts = pgTable('sermon_transcripts', {
+  sermonId: uuid('sermon_id').primaryKey().references(() => sermons.id, { onDelete: 'cascade' }),
+  transcriptText: text('transcript_text'),
+  transcriptFetchedAt: timestamp('transcript_fetched_at', { withTimezone: true }),
+})
+
+export const sermonSummaries = pgTable('sermon_summaries', {
+  sermonId: uuid('sermon_id').primaryKey().references(() => sermons.id, { onDelete: 'cascade' }),
+  summary: text('summary'),
+  quickSummary: jsonb('quick_summary').$type<string[]>(),
+  chapters: jsonb('chapters').$type<SermonChapter[]>(),
+  summaryStatus: text('summary_status').notNull().default('none'),
+  summaryAttempts: integer('summary_attempts').notNull().default(0),
+  summaryNextRetryAt: timestamp('summary_next_retry_at', { withTimezone: true }),
+  summaryGeneratedAt: timestamp('summary_generated_at', { withTimezone: true }),
+  summaryModel: text('summary_model'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (t) => [index('sermon_summaries_status_retry_idx').on(t.summaryStatus, t.summaryNextRetryAt)])
+
+export const sermonThumbnails = pgTable('sermon_thumbnails', {
+  sermonId: uuid('sermon_id').primaryKey().references(() => sermons.id, { onDelete: 'cascade' }),
+  thumbnailCandidates: jsonb('thumbnail_candidates').$type<ThumbnailCandidate[]>(),
+  thumbnailBgKeywords: text('thumbnail_bg_keywords'),
+  thumbnailBackgrounds: jsonb('thumbnail_backgrounds').$type<Partial<Record<ThumbnailStyle, string>>>(),
+})
+
 export const posts = pgTable(
   'posts',
   {
@@ -138,6 +164,9 @@ export const appLogs = pgTable('app_logs', {
 
 export type Profile = typeof profiles.$inferSelect
 export type SermonRow = typeof sermons.$inferSelect
+export type SermonTranscriptRow = typeof sermonTranscripts.$inferSelect
+export type SermonSummaryRow = typeof sermonSummaries.$inferSelect
+export type SermonThumbnailRow = typeof sermonThumbnails.$inferSelect
 export type SermonSeries = typeof sermonSeries.$inferSelect
 export type PostRow = typeof posts.$inferSelect
 export type BulletinRow = typeof bulletins.$inferSelect

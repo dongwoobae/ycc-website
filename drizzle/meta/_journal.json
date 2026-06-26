@@ -71,6 +71,13 @@
       "when": 1782355160163,
       "tag": "0009_lame_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782454287386,
+      "tag": "0010_volatile_brood",
+      "breakpoints": true
     }
   ]
 }
