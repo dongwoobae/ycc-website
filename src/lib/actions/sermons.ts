@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { desc, eq } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
-import { sermons, sermonSummaries } from '@/lib/db/schema'
+import { sermons, sermonSummaries, sermonThumbnails } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { resyncAllSermons } from '@/lib/sermons/sync'
 import { manualSummarize } from '@/lib/sermons/summarize'
@@ -48,7 +48,25 @@ export async function getSermonsForAdmin() {
 
 export async function getSermonForAdmin(id: string) {
   await requireAdmin()
-  const [row] = await db.select().from(sermons).where(eq(sermons.id, id)).limit(1)
+  // 요약/챕터/배경은 위성(SoT)에서 조회 — sermons 원본 컬럼은 더 이상 갱신되지 않음
+  const [row] = await db
+    .select({
+      id: sermons.id,
+      title: sermons.title,
+      displayTitle: sermons.displayTitle,
+      preacher: sermons.preacher,
+      worshipType: sermons.worshipType,
+      sermonDate: sermons.sermonDate,
+      summaryStatus: sermonSummaries.summaryStatus,
+      quickSummary: sermonSummaries.quickSummary,
+      chapters: sermonSummaries.chapters,
+      thumbnailBackgrounds: sermonThumbnails.thumbnailBackgrounds,
+    })
+    .from(sermons)
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
+    .leftJoin(sermonThumbnails, eq(sermonThumbnails.sermonId, sermons.id))
+    .where(eq(sermons.id, id))
+    .limit(1)
   return row
 }
 
