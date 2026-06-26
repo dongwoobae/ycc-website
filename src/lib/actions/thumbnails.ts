@@ -169,7 +169,8 @@ export async function composeAndApplyThumbnailAction(
   let cutoutDataUrl: string | undefined
   if (style === 'cutout' && row.cutoutUrl) {
     const cutoutRes = await fetch(row.cutoutUrl)
-    if (cutoutRes.ok) cutoutDataUrl = toDataUrl(Buffer.from(await cutoutRes.arrayBuffer()))
+    if (!cutoutRes.ok) throw new Error(`누끼 이미지를 불러오지 못했습니다: ${cutoutRes.status}`)
+    cutoutDataUrl = toDataUrl(Buffer.from(await cutoutRes.arrayBuffer()))
   }
 
   const png = await renderThumbnail({
