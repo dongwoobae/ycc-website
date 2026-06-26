@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
-import { sermons } from '@/lib/db/schema'
+import { sermons, sermonSummaries, sermonThumbnails } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { composeThumbnailText } from '@/lib/thumbnails/compose-text'
 import { generateBackground } from '@/lib/thumbnails/generate-background'
@@ -51,10 +51,11 @@ export async function suggestThumbnailTextAction(id: string, style: ThumbnailSty
     .select({
       title: sermons.title,
       displayTitle: sermons.displayTitle,
-      summary: sermons.summary,
-      quickSummary: sermons.quickSummary,
+      summary: sermonSummaries.summary,
+      quickSummary: sermonSummaries.quickSummary,
     })
     .from(sermons)
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
     .where(eq(sermons.id, id))
     .limit(1)
   if (!row) throw new Error('sermon not found')
@@ -72,18 +73,23 @@ export interface GenerateThumbnailResult {
 async function resolveBgKeywords(id: string): Promise<string> {
   const [row] = await db
     .select({
-      bgKeywords: sermons.thumbnailBgKeywords,
-      summary: sermons.summary,
-      quickSummary: sermons.quickSummary,
+      bgKeywords: sermonThumbnails.thumbnailBgKeywords,
+      summary: sermonSummaries.summary,
+      quickSummary: sermonSummaries.quickSummary,
     })
     .from(sermons)
+    .leftJoin(sermonThumbnails, eq(sermonThumbnails.sermonId, sermons.id))
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
     .where(eq(sermons.id, id))
     .limit(1)
   if (!row) throw new Error('sermon not found')
   if (row.bgKeywords?.trim()) return row.bgKeywords
 
   const keywords = await geminiBgKeywords({ summary: row.summary, quickSummary: row.quickSummary })
-  await db.update(sermons).set({ thumbnailBgKeywords: keywords }).where(eq(sermons.id, id))
+  await db
+    .insert(sermonThumbnails)
+    .values({ sermonId: id, thumbnailBgKeywords: keywords })
+    .onConflictDoUpdate({ target: sermonThumbnails.sermonId, set: { thumbnailBgKeywords: keywords } })
   return keywords
 }
 
@@ -119,9 +125,9 @@ export async function composeAndApplyThumbnailAction(
   if (style === 'cutout') throw new Error('인물컷형 누끼 생성은 다음 단계에서 지원됩니다')
 
   const [row] = await db
-    .select({ backgrounds: sermons.thumbnailBackgrounds })
-    .from(sermons)
-    .where(eq(sermons.id, id))
+    .select({ backgrounds: sermonThumbnails.thumbnailBackgrounds })
+    .from(sermonThumbnails)
+    .where(eq(sermonThumbnails.sermonId, id))
     .limit(1)
   if (!row) throw new Error('sermon not found')
   const backgroundUrl = row.backgrounds?.[style]

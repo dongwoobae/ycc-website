@@ -22,7 +22,7 @@ export default async function AdminSermonsPage() {
           preacher: row.preacher,
           worshipType: row.worshipType,
           isPublished: row.isPublished,
-          summaryStatus: row.summaryStatus,
+          summaryStatus: row.summaryStatus ?? 'none',
         }))}
       />
     </div>

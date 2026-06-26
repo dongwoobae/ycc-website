@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { DEFAULT_PREACHER } from '@/lib/constants'
 import { db } from '@/lib/db'
-import { sermons } from '@/lib/db/schema'
+import { sermons, sermonSummaries, sermonTranscripts, sermonThumbnails } from '@/lib/db/schema'
 import type { WorshipType } from '@/lib/types'
 import { sermonDateFromTitle } from '@/lib/sermons/sermon-date'
 import type { YouTubeVideo } from '@/lib/youtube/client'
@@ -29,5 +29,11 @@ export async function insertSermon(video: YouTubeVideo, worshipType: WorshipType
     })
     .onConflictDoNothing({ target: sermons.youtubeVideoId })
     .returning({ id: sermons.id })
-  return row?.id ?? ''
+  const id = row?.id ?? ''
+  if (id) {
+    await db.insert(sermonSummaries).values({ sermonId: id }).onConflictDoNothing()
+    await db.insert(sermonTranscripts).values({ sermonId: id }).onConflictDoNothing()
+    await db.insert(sermonThumbnails).values({ sermonId: id }).onConflictDoNothing()
+  }
+  return id
 }

@@ -1,10 +1,11 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { sermons as sermonsTable, type SermonRow } from '@/lib/db/schema'
+import { sermons as sermonsTable, sermonSummaries, type SermonRow, type SermonSummaryRow } from '@/lib/db/schema'
 import type { Sermon, WorshipType } from '@/lib/types'
 
 // 상세(detail)는 chapters/quickSummary 포함, 목록(list)은 제외.
 // 목록 전용 컬럼셋으로 조회한 행도 toSermon에 그대로 넘길 수 있도록 둘을 optional로 둔다.
+// summary/summaryStatus는 sermon_summaries LEFT JOIN 출처(행 부재 시 null 가능).
 export type SermonListRow = Pick<
   SermonRow,
   | 'id'
@@ -16,14 +17,14 @@ export type SermonListRow = Pick<
   | 'videoUrl'
   | 'thumbnailUrl'
   | 'customThumbnailUrl'
-  | 'summary'
   | 'isPublished'
   | 'youtubeVideoId'
   | 'durationSeconds'
-  | 'summaryStatus'
 > & {
-  quickSummary?: SermonRow['quickSummary']
-  chapters?: SermonRow['chapters']
+  summary: SermonSummaryRow['summary']
+  summaryStatus: SermonSummaryRow['summaryStatus'] | null
+  quickSummary?: SermonSummaryRow['quickSummary']
+  chapters?: SermonSummaryRow['chapters']
 }
 
 // 목록 카드(SermonCard)가 실제 쓰는 컬럼만 — 대용량 jsonb(chapters/quickSummary) 제외해 over-fetch 방지.
@@ -37,18 +38,18 @@ const sermonListColumns = {
   videoUrl: sermonsTable.videoUrl,
   thumbnailUrl: sermonsTable.thumbnailUrl,
   customThumbnailUrl: sermonsTable.customThumbnailUrl,
-  summary: sermonsTable.summary,
+  summary: sermonSummaries.summary,
   isPublished: sermonsTable.isPublished,
   youtubeVideoId: sermonsTable.youtubeVideoId,
   durationSeconds: sermonsTable.durationSeconds,
-  summaryStatus: sermonsTable.summaryStatus,
+  summaryStatus: sermonSummaries.summaryStatus,
 }
 
 // 상세(detail)용: 목록 컬럼 + chapters/quickSummary.
 const sermonColumns = {
   ...sermonListColumns,
-  quickSummary: sermonsTable.quickSummary,
-  chapters: sermonsTable.chapters,
+  quickSummary: sermonSummaries.quickSummary,
+  chapters: sermonSummaries.chapters,
 }
 
 function youtubeIdFromUrl(videoUrl: string | null): string {
@@ -91,6 +92,7 @@ export async function getSermons(): Promise<Sermon[]> {
   const rows = await db
     .select(sermonListColumns)
     .from(sermonsTable)
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermonsTable.id))
     .where(eq(sermonsTable.isPublished, true))
     .orderBy(desc(sermonsTable.sermonDate))
   return rows.map(toSermon)
@@ -100,13 +102,19 @@ export async function getSermonById(id: string): Promise<Sermon | undefined> {
   const rows = await db
     .select(sermonColumns)
     .from(sermonsTable)
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermonsTable.id))
     .where(and(eq(sermonsTable.id, id), eq(sermonsTable.isPublished, true)))
     .limit(1)
   return rows[0] ? toSermon(rows[0]) : undefined
 }
 
 export async function getSermonForAdmin(id: string): Promise<Sermon | undefined> {
-  const rows = await db.select(sermonColumns).from(sermonsTable).where(eq(sermonsTable.id, id)).limit(1)
+  const rows = await db
+    .select(sermonColumns)
+    .from(sermonsTable)
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermonsTable.id))
+    .where(eq(sermonsTable.id, id))
+    .limit(1)
   return rows[0] ? toSermon(rows[0]) : undefined
 }
 
@@ -117,6 +125,7 @@ export async function getSermonsByWorshipType(worshipType?: WorshipType): Promis
   const rows = await db
     .select(sermonListColumns)
     .from(sermonsTable)
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermonsTable.id))
     .where(condition)
     .orderBy(desc(sermonsTable.sermonDate))
   return rows.map(toSermon)
@@ -126,6 +135,7 @@ export async function getLatestSermons(limit = 3): Promise<Sermon[]> {
   const rows = await db
     .select(sermonListColumns)
     .from(sermonsTable)
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermonsTable.id))
     .where(eq(sermonsTable.isPublished, true))
     .orderBy(desc(sermonsTable.sermonDate))
     .limit(limit)

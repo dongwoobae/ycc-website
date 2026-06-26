@@ -1,6 +1,6 @@
-import { and, desc, inArray, isNotNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm'
 import { db } from '../src/lib/db'
-import { sermons } from '../src/lib/db/schema'
+import { sermons, sermonSummaries } from '../src/lib/db/schema'
 import { manualSummarize } from '../src/lib/sermons/summarize'
 import { autoSummaryTypes } from '../src/lib/worship'
 
@@ -30,10 +30,11 @@ async function main() {
   const targets = await db
     .select({ id: sermons.id, title: sermons.title })
     .from(sermons)
+    .innerJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
     .where(
       and(
         isNotNull(sermons.youtubeVideoId),
-        inArray(sermons.summaryStatus, ['none', 'failed']),
+        inArray(sermonSummaries.summaryStatus, ['none', 'failed']),
         inArray(sermons.worshipType, [...autoSummaryTypes]),
       ),
     )

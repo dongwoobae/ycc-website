@@ -21,7 +21,7 @@ export default async function EditSermonPage({ params }: { params: Promise<{ id:
           worshipType: row.worshipType,
           sermonDate: row.sermonDate,
         }}
-        summaryStatus={row.summaryStatus}
+        summaryStatus={row.summaryStatus ?? 'none'}
         quickSummary={row.quickSummary ?? []}
         chapters={row.chapters ?? []}
         backgrounds={row.thumbnailBackgrounds ?? {}}

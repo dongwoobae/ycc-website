@@ -1,6 +1,6 @@
 import { and, count, desc, eq, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { bulletins, galleryAlbums, posts, sermons } from '@/lib/db/schema'
+import { bulletins, galleryAlbums, posts, sermons, sermonSummaries } from '@/lib/db/schema'
 import { autoSummaryTypes } from '@/lib/worship'
 
 export interface CountPair {
@@ -56,10 +56,11 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       })
       .from(galleryAlbums),
     db
-      .select({ status: sermons.summaryStatus, c: count() })
+      .select({ status: sermonSummaries.summaryStatus, c: count() })
       .from(sermons)
+      .innerJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
       .where(autoSummaryWhere)
-      .groupBy(sermons.summaryStatus),
+      .groupBy(sermonSummaries.summaryStatus),
     db
       .select({
         id: sermons.id,
@@ -68,7 +69,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
         sermonDate: sermons.sermonDate,
       })
       .from(sermons)
-      .where(and(eq(sermons.summaryStatus, 'failed'), autoSummaryWhere))
+      .innerJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
+      .where(and(eq(sermonSummaries.summaryStatus, 'failed'), autoSummaryWhere))
       .orderBy(desc(sermons.sermonDate))
       .limit(8),
     db.select({ c: count() }).from(sermons).where(eq(sermons.worshipType, '미분류')),
