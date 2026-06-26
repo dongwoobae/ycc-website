@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import sharp from 'sharp'
 import { asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
@@ -38,9 +39,13 @@ function getImageFile(formData: FormData, name: string, required: boolean) {
 
 async function uploadImage(file: File) {
   const buffer = Buffer.from(await file.arrayBuffer())
-  const contentType = sniffImageMime(buffer)
-  if (!contentType) throw new Error('unsupported image file')
-  return uploadToR2(buffer, galleryImageKey(file.name), contentType)
+  if (!sniffImageMime(buffer)) throw new Error('unsupported image file')
+  const webp = await sharp(buffer)
+    .rotate()
+    .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 75 })
+    .toBuffer()
+  return uploadToR2(webp, galleryImageKey(file.name), 'image/webp')
 }
 
 function revalidateGalleryPaths(albumId?: string) {

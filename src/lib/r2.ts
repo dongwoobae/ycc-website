@@ -45,7 +45,8 @@ export function sanitizeR2Filename(filename: string) {
 }
 
 export function galleryImageKey(filename: string) {
-  return `gallery/${crypto.randomUUID()}-${sanitizeR2Filename(filename)}`
+  const base = sanitizeR2Filename(filename).replace(/\.[^.]+$/, '') || 'image'
+  return `gallery/${crypto.randomUUID()}-${base}.webp`
 }
 
 export function bulletinHwpKey(filename: string) {
