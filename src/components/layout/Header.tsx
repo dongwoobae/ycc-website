@@ -7,23 +7,46 @@ import BrandLogo from './BrandLogo'
 import Container from './Container'
 
 const aboutLinks = [
-  { label: '소개', href: '/about', desc: '교회를 소개합니다' },
-  { label: '인사말', href: '/about/greeting', desc: '담임목사 인사' },
-  { label: '연혁', href: '/about/history', desc: '걸어온 발자취' },
-  { label: '섬기는 분들', href: '/about/serving', desc: '함께 섬기는 이들' },
-  { label: '예배시간·오시는 길', href: '/about/visit', desc: '예배 안내와 위치' },
+  { label: '교회 연혁', href: '/about/history', desc: '걸어온 발자취' },
+  { label: '담임목사 인사', href: '/about/greeting', desc: '담임목사 인사말' },
+  { label: '섬기는 사람들', href: '/about/serving', desc: '함께 섬기는 이들' },
+]
+
+const guideLinks = [
+  { label: '행복선언', href: '/happiness', desc: '예배 때 함께하는 고백' },
+  { label: '주일예배', href: '/worship#sunday', desc: '주일 오전 11:00' },
+  { label: '주일학교', href: '/worship#school', desc: '영아부 · 유치부 · 아동부 · 중고등부' },
+  { label: '청년부', href: '/worship#youth', desc: '주일 오후 2:00' },
+  { label: '수요예배', href: '/worship#wednesday', desc: '수요일 오후 7:30' },
+  { label: '새벽예배', href: '/worship#dawn', desc: '화–주일 오전 5:00' },
+  { label: '금요기도회', href: '/worship#friday', desc: '매월 첫째 금요일' },
+]
+
+const wordLinks = [
+  { label: '주일설교', href: '/sermons?worship=주일예배', desc: '주일예배 말씀' },
+  { label: '찬양예배 설교', href: '/sermons?worship=주일찬양예배', desc: '찬양예배 말씀' },
+  { label: '수요설교', href: '/sermons?worship=수요예배', desc: '수요예배 말씀' },
+  { label: '시온찬양대', href: '/sermons?worship=시온찬양대', desc: '찬양대 영상' },
+]
+
+const newcomerLinks = [
+  { label: '예배 시간표', href: '/worship#sunday', desc: '예배 안내' },
+  { label: '교회 지도', href: '/about/visit#map', desc: '오시는 길' },
+  { label: '주소 · 연락처', href: '/about/visit#contact', desc: '위치와 전화' },
+  { label: 'FAQ', href: '/faq', desc: '자주 묻는 질문' },
 ]
 
 const newsLinks = [
-  { label: '소식', href: '/news', desc: '교회 소식과 공지' },
-  { label: '갤러리', href: '/gallery', desc: '사진으로 보는 일상' },
+  { label: '교회소식', href: '/news', desc: '교회 소식과 공지' },
+  { label: '행사 사진', href: '/gallery', desc: '사진으로 보는 일상' },
 ]
 
 const navLinks = [
-  { label: '교회소개', href: '/about', section: '/about', eyebrow: 'Church', children: aboutLinks },
-  { label: '예배·설교', href: '/sermons', section: '/sermons' },
-  { label: '주보', href: '/bulletins', section: '/bulletins' },
-  { label: '교회소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
+  { label: '소개', href: '/about', section: '/about', eyebrow: 'About', children: aboutLinks },
+  { label: '안내', href: '/worship', section: '/worship', eyebrow: 'Guide', children: guideLinks },
+  { label: '말씀과 찬양', href: '/sermons', section: '/sermons', eyebrow: 'Worship', children: wordLinks },
+  { label: '처음 오셨나요?', href: '/newfamily', section: '/newfamily', eyebrow: 'Welcome', children: newcomerLinks },
+  { label: '소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
 ]
 
 export default function Header() {

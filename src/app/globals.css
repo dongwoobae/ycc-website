@@ -93,6 +93,75 @@ a {
   }
 }
 
+/* 오로라 배경 — 홈 #2 환영·#4 진입 섹션. 이미지 없이 블러 블롭이 느리게 흐름. */
+.aurora-blob {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  filter: blur(72px);
+  will-change: transform;
+}
+.aurora-blob--a {
+  width: clamp(300px, 44vw, 660px);
+  top: -16%;
+  left: -6%;
+  background: radial-gradient(circle at 50% 50%, rgb(126 232 196 / 0.62), transparent 68%);
+  animation: aurora-a 19s ease-in-out infinite alternate;
+}
+.aurora-blob--b {
+  width: clamp(280px, 42vw, 620px);
+  top: -22%;
+  right: -8%;
+  background: radial-gradient(circle at 50% 50%, rgb(127 176 255 / 0.58), transparent 68%);
+  animation: aurora-b 23s ease-in-out infinite alternate;
+}
+.aurora-blob--c {
+  width: clamp(300px, 46vw, 680px);
+  bottom: -28%;
+  left: 10%;
+  background: radial-gradient(circle at 50% 50%, rgb(182 156 255 / 0.55), transparent 68%);
+  animation: aurora-c 21s ease-in-out infinite alternate;
+}
+.aurora-blob--d {
+  width: clamp(240px, 36vw, 540px);
+  bottom: -18%;
+  right: 4%;
+  background: radial-gradient(circle at 50% 50%, rgb(240 166 216 / 0.5), transparent 68%);
+  animation: aurora-d 26s ease-in-out infinite alternate;
+}
+@keyframes aurora-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(8%, 12%, 0) scale(1.15);
+  }
+}
+@keyframes aurora-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  to {
+    transform: translate3d(-10%, 8%, 0) scale(0.95);
+  }
+}
+@keyframes aurora-c {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(10%, -10%, 0) scale(1.12);
+  }
+}
+@keyframes aurora-d {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  to {
+    transform: translate3d(-8%, -12%, 0) scale(1);
+  }
+}
+
 /* 스크롤 진입 모션 (Reveal) — variant별 */
 [data-reveal] {
   opacity: 0;
@@ -142,6 +211,9 @@ a {
     animation: none !important;
   }
   .scroll-cue-line {
+    animation: none !important;
+  }
+  .aurora-blob {
     animation: none !important;
   }
   .motion-hover {

@@ -30,7 +30,7 @@ export default function FullBleedBand() {
             이웃과 다음 세대를 섬김으로 하나님 나라가 이루어지기를 갈망합니다.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <HomeButton href="/about/visit">예배 안내</HomeButton>
+            <HomeButton href="/worship">예배 안내</HomeButton>
             <HomeButton href="/about/visit" variant="ghost">
               오시는 길
             </HomeButton>

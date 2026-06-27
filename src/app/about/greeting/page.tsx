@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import AboutSubnav from '@/components/about/AboutSubnav'
@@ -23,8 +24,15 @@ export default function GreetingPage() {
           <div className="grid gap-12 lg:grid-cols-[320px_1fr] lg:gap-16">
             <Reveal variant="left">
               <figure className="lg:sticky lg:top-28">
-                <div className="flex aspect-[3/4] items-center justify-center rounded-2xl border-[1.5px] border-line bg-surface shadow-subtle">
-                  <span className="text-sm font-semibold text-ink-muted/60">사진 준비 중</span>
+                <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border-[1.5px] border-line bg-surface shadow-subtle">
+                  <Image
+                    src="/images/staff/pastor-kim-seonchan.webp"
+                    alt="김선찬 담임목사"
+                    fill
+                    unoptimized
+                    sizes="(min-width: 1024px) 320px, 100vw"
+                    className="object-cover object-top"
+                  />
                 </div>
                 <figcaption className="mt-4 text-center">
                   <p className="font-serif text-lg font-extrabold tracking-tight text-ink">김선찬 목사</p>
