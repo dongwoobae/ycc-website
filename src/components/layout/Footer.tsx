@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import Container from './Container'
 import { churchInfo } from '@/lib/church'
 import { adultWorshipSchedule } from '@/lib/worship'
@@ -10,6 +11,12 @@ const menuLinks = [
   { label: '교회소식', href: '/news' },
   { label: '갤러리', href: '/gallery' },
   { label: '오시는 길', href: '/about/visit' },
+]
+
+const socialLinks = [
+  { label: '유튜브', href: churchInfo.youtube, src: '/images/social/youtube.webp', w: 136, h: 96 },
+  { label: '네이버 블로그', href: churchInfo.blog, src: '/images/social/naver-blog.webp', w: 100, h: 96 },
+  { label: '디모데앱', href: churchInfo.dimode, src: '/images/social/dimode.webp', w: 96, h: 96 },
 ]
 
 export default function Footer() {
@@ -26,6 +33,29 @@ export default function Footer() {
             <br />
             전화 {churchInfo.phone}
           </address>
+
+          <div className="mt-6 flex items-center gap-4">
+            {socialLinks.map((social) => (
+              <a
+                key={social.label}
+                href={social.href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={social.label}
+                title={social.label}
+                className="inline-flex transition hover:opacity-75"
+              >
+                <Image
+                  src={social.src}
+                  alt={social.label}
+                  width={social.w}
+                  height={social.h}
+                  unoptimized
+                  className="h-8 w-auto"
+                />
+              </a>
+            ))}
+          </div>
         </div>
 
         <div>
