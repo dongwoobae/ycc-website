@@ -5,12 +5,12 @@ import { churchInfo } from '@/lib/church'
 import { adultWorshipSchedule } from '@/lib/worship'
 
 const menuLinks = [
-  { label: '처음 오세요', href: '/newfamily' },
-  { label: '설교', href: '/sermons' },
+  { label: '소개', href: '/about' },
+  { label: '안내', href: '/worship' },
+  { label: '말씀과 찬양', href: '/sermons' },
+  { label: '처음 오셨나요?', href: '/newfamily' },
+  { label: '소식', href: '/news' },
   { label: '주보', href: '/bulletins' },
-  { label: '교회소식', href: '/news' },
-  { label: '갤러리', href: '/gallery' },
-  { label: '오시는 길', href: '/about/visit' },
 ]
 
 const socialLinks = [
