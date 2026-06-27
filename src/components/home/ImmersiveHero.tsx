@@ -4,7 +4,7 @@ import { useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import Container from '@/components/layout/Container'
 import Reveal from '@/components/ui/Reveal'
-import { Eyebrow, HomeButton } from './HomePrimitives'
+import { Eyebrow } from './HomePrimitives'
 
 const DESKTOP_QUERY = '(min-width: 960px)'
 const REDUCE_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
@@ -74,14 +74,6 @@ export default function ImmersiveHero() {
               “그가 나를 푸른 풀밭에 누이시며 쉴 만한 물가로 인도하시는도다.” <br />
               <span className="text-[0.8em] font-semibold tracking-[0.1em] text-white/55">- 시편 23:2</span>
             </p>
-          </Reveal>
-          <Reveal delay={360}>
-            <div className="mt-10 flex flex-wrap gap-3 min-[960px]:justify-end">
-              <HomeButton href="/newfamily">교회가 처음이세요? →</HomeButton>
-              <HomeButton href="/about/visit" variant="ghost">
-                예배시간 · 오시는 길
-              </HomeButton>
-            </div>
           </Reveal>
         </div>
       </Container>
