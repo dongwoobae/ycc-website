@@ -91,7 +91,7 @@ export default function Header() {
         isImmersive ? 'fixed' : 'sticky',
         'left-0 right-0 top-0 z-50 border-b transition-[background-color,border-color,color] duration-300',
         isSolid
-          ? 'border-accent-deep bg-accent-deep text-white shadow-subtle'
+          ? 'border-white/10 bg-[linear-gradient(180deg,rgb(0_0_0/0.45),rgb(0_0_0/0.92))] text-white shadow-subtle'
           : 'border-transparent bg-transparent text-white',
       ].join(' '),
     [isImmersive, isSolid],

@@ -4,7 +4,6 @@ import { useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import Container from '@/components/layout/Container'
 import Reveal from '@/components/ui/Reveal'
-import { Eyebrow } from './HomePrimitives'
 
 const DESKTOP_QUERY = '(min-width: 960px)'
 const REDUCE_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
@@ -58,9 +57,6 @@ export default function ImmersiveHero() {
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,oklch(0.15_0.05_258/.45)_0%,transparent_28%,oklch(0.14_0.05_258/.55)_70%,oklch(0.13_0.055_258/.94)_100%)]" />
       <Container size="wide" className="pb-24 pt-32 min-[960px]:px-10 min-[960px]:pb-28">
         <div className="min-[960px]:ml-auto min-[960px]:max-w-2xl min-[960px]:text-right">
-          <Reveal>
-            <Eyebrow>쉴 만한 물가로</Eyebrow>
-          </Reveal>
           <Reveal delay={120}>
             <h1 className="mt-6 font-extrabold leading-[1.05] tracking-tight text-white [text-shadow:0_4px_50px_oklch(0.1_0.05_258/.6)]">
               <span className="block text-[clamp(18px,3vw,30px)] font-bold tracking-[0.14em] text-white/80">
