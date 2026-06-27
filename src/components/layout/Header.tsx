@@ -162,12 +162,6 @@ export default function Header() {
               </div>
             )
           })}
-          <Link
-            className="motion-hover ml-1 rounded-full bg-accent px-5 py-2.5 text-[14.5px] font-bold text-white transition hover:-translate-y-0.5 hover:bg-accent-deep"
-            href="/newfamily"
-          >
-            처음 오세요
-          </Link>
         </nav>
 
         <button
@@ -225,13 +219,6 @@ export default function Header() {
                   )}
                 </div>
               ))}
-              <Link
-                href="/newfamily"
-                onClick={() => setMenuOpen(false)}
-                className="motion-hover mt-6 rounded-full bg-accent px-6 py-4 text-center text-lg font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-accent-deep"
-              >
-                처음 오세요
-              </Link>
             </nav>
           </Container>
         </div>
