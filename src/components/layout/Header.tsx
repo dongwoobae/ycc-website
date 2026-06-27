@@ -7,23 +7,46 @@ import BrandLogo from './BrandLogo'
 import Container from './Container'
 
 const aboutLinks = [
-  { label: '소개', href: '/about', desc: '교회를 소개합니다' },
-  { label: '인사말', href: '/about/greeting', desc: '담임목사 인사' },
-  { label: '연혁', href: '/about/history', desc: '걸어온 발자취' },
-  { label: '섬기는 분들', href: '/about/serving', desc: '함께 섬기는 이들' },
-  { label: '예배시간·오시는 길', href: '/about/visit', desc: '예배 안내와 위치' },
+  { label: '교회 연혁', href: '/about/history', desc: '걸어온 발자취' },
+  { label: '담임목사 인사', href: '/about/greeting', desc: '담임목사 인사말' },
+  { label: '섬기는 사람들', href: '/about/serving', desc: '함께 섬기는 이들' },
+]
+
+const guideLinks = [
+  { label: '행복선언', href: '/happiness', desc: '예배 때 함께하는 고백' },
+  { label: '주일예배', href: '/worship#sunday', desc: '주일 오전 11:00' },
+  { label: '주일학교', href: '/worship#school', desc: '영아부 · 유치부 · 아동부 · 중고등부' },
+  { label: '청년부', href: '/worship#youth', desc: '주일 오후 2:00' },
+  { label: '수요예배', href: '/worship#wednesday', desc: '수요일 오후 7:30' },
+  { label: '새벽예배', href: '/worship#dawn', desc: '화–주일 오전 5:00' },
+  { label: '금요기도회', href: '/worship#friday', desc: '매월 첫째 금요일' },
+]
+
+const wordLinks = [
+  { label: '주일설교', href: '/sermons?worship=주일예배', desc: '주일예배 말씀' },
+  { label: '찬양예배 설교', href: '/sermons?worship=주일찬양예배', desc: '찬양예배 말씀' },
+  { label: '수요설교', href: '/sermons?worship=수요예배', desc: '수요예배 말씀' },
+  { label: '시온찬양대', href: '/sermons?worship=시온찬양대', desc: '찬양대 영상' },
+]
+
+const newcomerLinks = [
+  { label: '예배 시간표', href: '/worship#sunday', desc: '예배 안내' },
+  { label: '교회 지도', href: '/about/visit#map', desc: '오시는 길' },
+  { label: '주소 · 연락처', href: '/about/visit#contact', desc: '위치와 전화' },
+  { label: 'FAQ', href: '/faq', desc: '자주 묻는 질문' },
 ]
 
 const newsLinks = [
-  { label: '소식', href: '/news', desc: '교회 소식과 공지' },
-  { label: '갤러리', href: '/gallery', desc: '사진으로 보는 일상' },
+  { label: '교회소식', href: '/news', desc: '교회 소식과 공지' },
+  { label: '행사 사진', href: '/gallery', desc: '사진으로 보는 일상' },
 ]
 
 const navLinks = [
-  { label: '교회소개', href: '/about', section: '/about', eyebrow: 'Church', children: aboutLinks },
-  { label: '예배·설교', href: '/sermons', section: '/sermons' },
-  { label: '주보', href: '/bulletins', section: '/bulletins' },
-  { label: '교회소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
+  { label: '소개', href: '/about', section: '/about', eyebrow: 'About', children: aboutLinks },
+  { label: '안내', href: '/worship', section: '/worship', eyebrow: 'Guide', children: guideLinks },
+  { label: '말씀과 찬양', href: '/sermons', section: '/sermons', eyebrow: 'Worship', children: wordLinks },
+  { label: '처음 오셨나요?', href: '/newfamily', section: '/newfamily', eyebrow: 'Welcome', children: newcomerLinks },
+  { label: '소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
 ]
 
 export default function Header() {
@@ -90,16 +113,16 @@ export default function Header() {
       [
         isImmersive ? 'fixed' : 'sticky',
         'left-0 right-0 top-0 z-50 border-b transition-[background-color,border-color,color] duration-300',
-        isSolid ? 'border-line bg-bg/85 text-ink shadow-subtle backdrop-blur' : 'border-transparent bg-transparent text-white',
+        isSolid
+          ? 'border-white/10 bg-[linear-gradient(180deg,rgb(0_0_0/0.45),rgb(0_0_0/0.92))] text-white shadow-subtle'
+          : 'border-transparent bg-transparent text-white',
       ].join(' '),
     [isImmersive, isSolid],
   )
 
-  const navLinkClassName = isSolid
-    ? 'text-ink-muted hover:bg-surface/80 hover:text-ink'
-    : 'text-white/85 hover:bg-white/10 hover:text-white'
+  const navLinkClassName = 'text-white/90 hover:bg-white/10 hover:text-white'
 
-  const activeNavClassName = isSolid ? 'bg-surface text-ink' : 'bg-white/15 text-white'
+  const activeNavClassName = 'bg-white/15 text-white'
 
   const matchesSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
 
@@ -138,7 +161,7 @@ export default function Header() {
                 >
                   {link.label}
                 </Link>
-                <div className="invisible absolute left-0 top-full pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                <div className="invisible absolute right-0 top-full pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
                   <div className="w-64 origin-top translate-y-1 scale-[0.98] rounded-xl border border-line bg-paper/95 p-2.5 shadow-soft backdrop-blur transition duration-200 group-focus-within:translate-y-0 group-focus-within:scale-100 group-hover:translate-y-0 group-hover:scale-100">
                     <p className="px-3.5 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-accent">
                       {link.eyebrow}
@@ -162,19 +185,11 @@ export default function Header() {
               </div>
             )
           })}
-          <Link
-            className="motion-hover ml-1 rounded-full bg-accent px-5 py-2.5 text-[14.5px] font-bold text-white transition hover:-translate-y-0.5 hover:bg-accent-deep"
-            href="/newfamily"
-          >
-            처음 오세요
-          </Link>
         </nav>
 
         <button
           type="button"
-          className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition min-[960px]:hidden ${
-            isSolid ? 'border-line text-ink hover:bg-surface' : 'border-white/40 text-white hover:bg-white/10'
-          }`}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/40 text-white transition hover:bg-white/10 min-[960px]:hidden"
           onClick={() => setMenuOpen((value) => !value)}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
@@ -227,13 +242,6 @@ export default function Header() {
                   )}
                 </div>
               ))}
-              <Link
-                href="/newfamily"
-                onClick={() => setMenuOpen(false)}
-                className="motion-hover mt-6 rounded-full bg-accent px-6 py-4 text-center text-lg font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-accent-deep"
-              >
-                처음 오세요
-              </Link>
             </nav>
           </Container>
         </div>
