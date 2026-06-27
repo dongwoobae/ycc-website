@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     default: '영천중앙교회',
     template: '%s | 영천중앙교회',
   },
-  description: '삶의 소망을 주는 은혜로운 영천중앙교회 공식 홈페이지입니다.',
+  description: '영천중앙교회 공식 홈페이지입니다.',
   alternates: {
     canonical: '/',
   },
@@ -64,14 +64,14 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: '영천중앙교회',
-    description: '삶의 소망을 주는 은혜로운 영천중앙교회',
+    description: '영천중앙교회',
     url: '/',
     locale: 'ko_KR',
     siteName: '영천중앙교회',
     type: 'website',
     images: [
       {
-        url: '/brand/ycc-og.png',
+        url: '/brand/pck-og.png',
         width: 1200,
         height: 630,
         alt: '영천중앙교회',
@@ -81,8 +81,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: '영천중앙교회',
-    description: '삶의 소망을 주는 은혜로운 영천중앙교회',
-    images: ['/brand/ycc-og.png'],
+    description: '영천중앙교회',
+    images: ['/brand/pck-og.png'],
   },
 }
 
