@@ -289,7 +289,7 @@ function Cta() {
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <HomeButton href={`tel:${churchInfo.phone}`}>전화 문의</HomeButton>
-            <HomeButton href="/#visit" variant="ghost">
+            <HomeButton href="/about/visit" variant="ghost">
               예배시간 보기
             </HomeButton>
           </div>

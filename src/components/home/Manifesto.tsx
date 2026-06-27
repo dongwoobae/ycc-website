@@ -2,24 +2,24 @@ import Container from "@/components/layout/Container";
 import Reveal from "@/components/ui/Reveal";
 import { Eyebrow } from "./HomePrimitives";
 
+// 홈 스크롤 #2 — 환영 메시지. 블루→라벤더 부드러운 세로 그라데이션 배경.
 export default function Manifesto() {
   return (
-    <section data-home-after-hero className="bg-bg py-24 min-[960px]:py-32">
+    <section
+      data-home-after-hero
+      className="bg-[linear-gradient(180deg,#DCE7F7_0%,#E4E3F4_55%,#ECE6F6_100%)] py-28 min-[960px]:py-36"
+    >
       <Container size="wide" className="text-center">
         <Reveal>
-          <Eyebrow>Our heart</Eyebrow>
+          <Eyebrow>Welcome</Eyebrow>
         </Reveal>
         <Reveal delay={120}>
-          <p className="mx-auto mt-6 max-w-[20ch] text-[clamp(28px,4.4vw,52px)] font-bold leading-[1.34] tracking-tight text-ink">
-            일에 지치고, 관계에 마음 쓰고, 아이를 세우며 살아가는 당신에게.
+          <p className="mx-auto mt-7 max-w-[24ch] text-[clamp(28px,4.6vw,54px)] font-bold leading-[1.42] tracking-tight text-ink">
+            오래된 믿음 위에, <span className="text-accent">새로운 은혜</span>가 머무는
             <br />
-            <span className="text-accent">쉼과 소망</span>이 되는 교회이고 싶습니다.
-          </p>
-        </Reveal>
-        <Reveal delay={240}>
-          <p className="mx-auto mt-8 max-w-[50ch] text-[17px] leading-8 text-ink-muted">
-            화려한 무엇보다 진실한 예배와 서로를 돌보는 사람들. 영천중앙교회는 이웃과 함께 걸으며 삶의 자리에 닿는
-            공동체를 꿈꿉니다.
+            영천중앙교회에 오신
+            <br />
+            여러분 환영합니다
           </p>
         </Reveal>
       </Container>

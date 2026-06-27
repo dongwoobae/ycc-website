@@ -9,7 +9,7 @@ const menuLinks = [
   { label: '주보', href: '/bulletins' },
   { label: '교회소식', href: '/news' },
   { label: '갤러리', href: '/gallery' },
-  { label: '오시는 길', href: '/#visit' },
+  { label: '오시는 길', href: '/about/visit' },
 ]
 
 export default function Footer() {

@@ -3,31 +3,37 @@ import Container from '@/components/layout/Container'
 import Reveal from '@/components/ui/Reveal'
 import { HomeButton } from './HomePrimitives'
 
+// 홈 스크롤 #3 — 교회 소개 + 바로가기. 글자 가독성을 위해 교회 사진을 더 흐리게.
 export default function FullBleedBand() {
   return (
-    <section className="relative isolate flex min-h-[520px] h-[78svh] items-center overflow-hidden bg-[oklch(0.24_0.055_259)] text-white">
+    <section className="relative isolate flex min-h-[560px] h-[82svh] items-center overflow-hidden bg-[oklch(0.2_0.05_259)] text-white">
       <Image
         src="/images/church-spire.webp"
         alt=""
         fill
         unoptimized
         sizes="100vw"
-        className="-z-20 object-cover object-[center_28%]"
+        className="-z-20 scale-110 object-cover object-[center_28%] blur-[3px]"
       />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,oklch(0.13_0.055_258/.84)_0%,oklch(0.13_0.055_258/.38)_60%,transparent_100%)]" />
+      <div className="absolute inset-0 -z-10 bg-black/35" />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,oklch(0.12_0.05_258/.9)_0%,oklch(0.12_0.05_258/.6)_60%,oklch(0.12_0.05_258/.35)_100%)]" />
       <Container size="wide" className="min-[960px]:px-10">
-        <Reveal className="max-w-xl">
-          <h2 className="text-[clamp(30px,4.6vw,58px)] font-extrabold leading-[1.08] tracking-tight">
-            처음 오시는 길,
+        <Reveal className="max-w-2xl">
+          <h2 className="text-[clamp(24px,3.4vw,42px)] font-extrabold leading-[1.32] tracking-tight">
+            대한예수교장로회 영천중앙교회는
             <br />
-            <span className="text-accent">혼자 두지 않습니다.</span>
+            예수 그리스도의 복음 위에 세워진 <span className="text-accent">믿음의 공동체</span>입니다.
           </h2>
-          <p className="mt-5 text-lg leading-8 text-white/90">
-            복장, 주차, 예배 순서, 아이 돌봄까지 궁금한 모든 것을 미리 안내해 드립니다. 편안한 마음으로 한 번
-            오세요.
+          <p className="mt-5 text-[clamp(15px,1.6vw,19px)] leading-8 text-white/90">
+            우리는 예배와 말씀 위에 서서, 기도로 하나님의 통치를 구하며,
+            <br className="hidden sm:block" />
+            이웃과 다음 세대를 섬김으로 하나님 나라가 이루어지기를 갈망합니다.
           </p>
-          <div className="mt-8">
-            <HomeButton href="/newfamily">처음 방문 안내 보기 →</HomeButton>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <HomeButton href="/about/visit">예배 안내</HomeButton>
+            <HomeButton href="/about/visit" variant="ghost">
+              오시는 길
+            </HomeButton>
           </div>
         </Reveal>
       </Container>
