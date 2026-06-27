@@ -90,16 +90,16 @@ export default function Header() {
       [
         isImmersive ? 'fixed' : 'sticky',
         'left-0 right-0 top-0 z-50 border-b transition-[background-color,border-color,color] duration-300',
-        isSolid ? 'border-line bg-bg/85 text-ink shadow-subtle backdrop-blur' : 'border-transparent bg-transparent text-white',
+        isSolid
+          ? 'border-accent-deep bg-accent-deep text-white shadow-subtle'
+          : 'border-transparent bg-transparent text-white',
       ].join(' '),
     [isImmersive, isSolid],
   )
 
-  const navLinkClassName = isSolid
-    ? 'text-ink-muted hover:bg-surface/80 hover:text-ink'
-    : 'text-white/85 hover:bg-white/10 hover:text-white'
+  const navLinkClassName = 'text-white/90 hover:bg-white/10 hover:text-white'
 
-  const activeNavClassName = isSolid ? 'bg-surface text-ink' : 'bg-white/15 text-white'
+  const activeNavClassName = 'bg-white/15 text-white'
 
   const matchesSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
 
@@ -138,7 +138,7 @@ export default function Header() {
                 >
                   {link.label}
                 </Link>
-                <div className="invisible absolute left-0 top-full pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                <div className="invisible absolute right-0 top-full pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
                   <div className="w-64 origin-top translate-y-1 scale-[0.98] rounded-xl border border-line bg-paper/95 p-2.5 shadow-soft backdrop-blur transition duration-200 group-focus-within:translate-y-0 group-focus-within:scale-100 group-hover:translate-y-0 group-hover:scale-100">
                     <p className="px-3.5 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-accent">
                       {link.eyebrow}
@@ -172,9 +172,7 @@ export default function Header() {
 
         <button
           type="button"
-          className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition min-[960px]:hidden ${
-            isSolid ? 'border-line text-ink hover:bg-surface' : 'border-white/40 text-white hover:bg-white/10'
-          }`}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/40 text-white transition hover:bg-white/10 min-[960px]:hidden"
           onClick={() => setMenuOpen((value) => !value)}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"

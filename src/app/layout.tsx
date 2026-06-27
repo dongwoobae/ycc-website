@@ -3,7 +3,6 @@ import { Nanum_Myeongjo } from 'next/font/google'
 import localFont from 'next/font/local'
 import './globals.css'
 import Header from '@/components/layout/Header'
-import Sidebar from '@/components/layout/Sidebar'
 import Footer from '@/components/layout/Footer'
 import { Analytics } from '@vercel/analytics/next'
 
@@ -58,10 +57,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/brand/ycc-icon.svg', type: 'image/svg+xml' },
-      { url: '/brand/ycc-icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/brand/pck-icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/brand/pck-icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    apple: [{ url: '/brand/ycc-icon-180.png', sizes: '180x180', type: 'image/png' }],
+    apple: [{ url: '/brand/pck-icon-180.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
     title: '영천중앙교회',
@@ -98,11 +97,9 @@ export default function RootLayout({
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-ink focus:shadow-subtle">
           Skip to content
         </a>
-        {/* 데스크톱(≥960px)에서는 사이드바가 헤더를 대체, 모바일은 기존 헤더(버거) 유지 */}
-        <div className="site-chrome contents min-[960px]:hidden">
+        <div className="site-chrome contents">
           <Header />
         </div>
-        <Sidebar />
         <main id="main-content" className="flex-1">{children}</main>
         <Footer />
         <Analytics />
