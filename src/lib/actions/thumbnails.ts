@@ -1,5 +1,6 @@
 'use server'
 
+// 인물컷형(cutout) 누끼 기능 정식 활성화 — 옛 가드 제거됨. (빌드 캐시 무효화용 마커)
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
