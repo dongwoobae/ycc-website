@@ -1,11 +1,9 @@
 import Subnav from '@/components/layout/Subnav'
 
 const tabs = [
-  { label: '소개', href: '/about' },
-  { label: '인사말', href: '/about/greeting' },
-  { label: '연혁', href: '/about/history' },
-  { label: '섬기는 분들', href: '/about/serving' },
-  { label: '예배시간·오시는 길', href: '/about/visit' },
+  { label: '담임목사 인사', href: '/about/greeting' },
+  { label: '교회 연혁', href: '/about/history' },
+  { label: '섬기는 사람들', href: '/about/serving' },
 ]
 
 export default function AboutSubnav() {

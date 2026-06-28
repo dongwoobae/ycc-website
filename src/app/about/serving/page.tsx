@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import AboutSubnav from '@/components/about/AboutSubnav'
@@ -8,16 +9,14 @@ export const metadata: Metadata = {
   title: '섬기는 분들',
 }
 
+const staff: { role: string; name: string; photo: string }[] = [
+  { role: '담임목사', name: '김선찬', photo: '/images/staff/pastor-kim-seonchan.webp' },
+  { role: '전임전도사', name: '김지희', photo: '/images/staff/evangelist-kim-jihee.webp' },
+  { role: '교육전도사', name: '이지형', photo: '/images/staff/evangelist-lee-jihyung.webp' },
+  { role: '교육전도사', name: '정다슬', photo: '/images/staff/evangelist-jung-daseul.webp' },
+]
+
 const groups: { title: string; rows: { role: string; names: string }[] }[] = [
-  {
-    title: '교역자',
-    rows: [
-      { role: '담임 목사', names: '김선찬' },
-      { role: '전임전도사', names: '김지희' },
-      { role: '교육전도사', names: '이지형' },
-      { role: '교육전도사', names: '정다슬' },
-    ],
-  },
   {
     title: '장로',
     rows: [
@@ -57,7 +56,38 @@ export default function ServingPage() {
       <AboutSubnav />
       <div className="py-20 sm:py-24">
         <Container size="wide">
-          <div className="grid gap-6 md:grid-cols-2">
+          <section>
+            <Reveal>
+              <h2 className="flex items-center gap-3 font-serif text-2xl font-extrabold tracking-tight text-ink">
+                <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
+                교역자
+              </h2>
+            </Reveal>
+            <div className="mt-6 grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4">
+              {staff.map((person, i) => (
+                <Reveal key={`${person.role}-${person.name}`} variant="zoom" delay={i * 80}>
+                  <figure className="overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:border-accent hover:shadow-soft">
+                    <div className="relative aspect-[3/4] bg-surface">
+                      <Image
+                        src={person.photo}
+                        alt={`${person.role} ${person.name}`}
+                        fill
+                        unoptimized
+                        sizes="(min-width: 1024px) 25vw, 50vw"
+                        className="object-cover object-top"
+                      />
+                    </div>
+                    <figcaption className="px-4 py-4 text-center">
+                      <p className="text-[13px] font-semibold text-ink-muted">{person.role}</p>
+                      <p className="mt-1 font-serif text-lg font-extrabold tracking-tight text-ink">{person.name}</p>
+                    </figcaption>
+                  </figure>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
             {groups.map((group, i) => (
               <Reveal key={group.title} variant="zoom" delay={i * 90}>
                 <section className="h-full rounded-2xl border border-line bg-paper p-8 shadow-subtle transition hover:-translate-y-1 hover:border-accent hover:shadow-soft">
