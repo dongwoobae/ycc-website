@@ -3,11 +3,13 @@ import 'server-only'
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { isAllowedUploadMime, type UploadMime } from '@/lib/upload-sniff'
 
-const accountId = process.env.R2_ACCOUNT_ID
-const accessKeyId = process.env.R2_ACCESS_KEY_ID
-const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY
-const bucket = process.env.R2_BUCKET_NAME
-const publicUrl = process.env.R2_PUBLIC_URL
+// 환경변수에 붙여넣을 때 섞이는 공백/줄바꿈은 SigV4 서명 키를 어긋나게 해
+// SignatureDoesNotMatch(403)를 유발한다. 자격증명류는 일괄 trim 한다.
+const accountId = process.env.R2_ACCOUNT_ID?.trim()
+const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim()
+const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim()
+const bucket = process.env.R2_BUCKET_NAME?.trim()
+const publicUrl = process.env.R2_PUBLIC_URL?.trim()
 const allowedKeyPrefixes = ['bulletins/', 'gallery/', 'thumbnails/'] as const
 
 let r2Client: S3Client | undefined
