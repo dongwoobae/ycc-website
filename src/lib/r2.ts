@@ -25,6 +25,10 @@ function getR2Client() {
       accessKeyId: requireEnv(accessKeyId, 'R2_ACCESS_KEY_ID'),
       secretAccessKey: requireEnv(secretAccessKey, 'R2_SECRET_ACCESS_KEY'),
     },
+    // Cloudflare R2는 aws-sdk-js v3 기본 CRC32 무결성 체크섬을 제대로 처리하지 못해
+    // PUT 시 SignatureDoesNotMatch(403)를 낸다. 자동 체크섬을 꺼서 호환성을 맞춘다.
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   })
   return r2Client
 }
