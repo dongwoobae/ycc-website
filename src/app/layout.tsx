@@ -5,6 +5,7 @@ import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { Analytics } from '@vercel/analytics/next'
+import { getCanonicalSiteOrigin } from '@/lib/site-origin'
 
 const nanumMyeongjo = Nanum_Myeongjo({
   weight: ['400', '700', '800'],
@@ -46,7 +47,7 @@ const pretendard = localFont({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ycjc.kr'),
+  metadataBase: new URL(getCanonicalSiteOrigin()),
   title: {
     default: '영천중앙교회',
     template: '%s | 영천중앙교회',
