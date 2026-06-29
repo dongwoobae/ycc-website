@@ -28,9 +28,7 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
       <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
         {sermonListTitle(sermon)}
       </h1>
-      <p className="mt-4 text-ink-muted">
-        {sermon.preacher} · {sermon.sermonDate}
-      </p>
+      <p className="mt-4 text-ink-muted">{sermon.sermonDate}</p>
       {sermon.summary ? (
         <p className="mt-4 max-w-3xl leading-7 text-ink-muted">{sermon.summary}</p>
       ) : null}

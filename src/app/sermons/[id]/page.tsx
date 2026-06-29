@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: SermonDetailProps): Promise<M
   const displayTitle = sermonListTitle(sermon)
   return {
     title: displayTitle,
-    description: sermon.summary ?? `${sermon.preacher} · ${sermon.worshipType}`,
+    description: sermon.summary ?? sermon.worshipType,
     openGraph: {
       title: displayTitle,
       description: sermon.summary,
