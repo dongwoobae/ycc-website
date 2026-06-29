@@ -1,4 +1,8 @@
-import 'dotenv/config'
+import { config } from 'dotenv'
+// 로컬 실행 시 .env.local 우선, .env 폴백. 파일이 없으면(예: CI) 기존 process.env 사용.
+// dotenv는 이미 설정된 키를 덮어쓰지 않으므로 .env.local 먼저 로드해 우선순위를 준다.
+config({ path: '.env.local' })
+config()
 import { upsertSchedule } from '../src/lib/qstash'
 
 /**
