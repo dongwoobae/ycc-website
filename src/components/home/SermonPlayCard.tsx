@@ -34,7 +34,6 @@ export default function SermonPlayCard({ sermon }: { sermon: Sermon }) {
         <h3 className="mt-3 line-clamp-2 font-serif text-[21px] font-extrabold leading-snug tracking-tight text-ink">
           {sermon.title}
         </h3>
-        <p className="mt-3 text-sm text-faint">{sermon.preacher}</p>
         {sermon.summary ? (
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-ink-muted">{sermon.summary}</p>
         ) : null}

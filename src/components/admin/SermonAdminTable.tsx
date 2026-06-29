@@ -2,8 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { syncNowAction, togglePublishAction } from '@/lib/actions/sermons'
+import { togglePublishAction } from '@/lib/actions/sermons'
 import { sermonListTitle } from '@/lib/sermons/list-title'
+import { useSermonSync } from './useSermonSync'
+import SermonSyncModal from './SermonSyncModal'
 
 interface Row {
   id: string
@@ -43,6 +45,7 @@ function SummaryBadge({ status }: { status: string }) {
 export default function SermonAdminTable({ rows }: { rows: Row[] }) {
   const [pending, startTransition] = useTransition()
   const [msg, setMsg] = useState('')
+  const sync = useSermonSync()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortState>(0)
 
@@ -78,14 +81,8 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
       <div className="mb-4 flex items-center gap-3">
         <button
           type="button"
-          disabled={pending}
-          title="YouTube 플레이리스트에서 새 영상만 가져와 즉시 공개 등록합니다. 예배(주일·수요·금요·찬양)는 자막 요약까지 자동 생성됩니다."
-          onClick={() =>
-            run(async () => {
-              const result = await syncNowAction()
-              setMsg(`동기화 완료: ${result.inserted}건 추가`)
-            }, '')
-          }
+          title="YouTube 채널에서 새 영상만 가져와 즉시 공개 등록합니다. 예배(주일·수요·금요·찬양)는 자막 요약까지 자동 생성됩니다."
+          onClick={sync.open}
           className="rounded-md bg-accent-deep px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           지금 동기화
@@ -101,7 +98,7 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
         {msg && <span className="text-sm text-ink-muted">{msg}</span>}
       </div>
       <p className="mb-4 text-xs leading-5 text-ink-muted">
-        <strong className="font-semibold text-ink">지금 동기화</strong> — YouTube 플레이리스트에서 새 영상만 가져와 즉시 공개
+        <strong className="font-semibold text-ink">지금 동기화</strong> — YouTube 채널에서 새 영상만 가져와 즉시 공개
         등록합니다. 예배(주일·수요·금요·찬양)는 자막이 있으면 요약까지 자동 생성돼요. 기존 설교는 변경되지 않습니다.
       </p>
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
@@ -180,6 +177,13 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
           </tbody>
         </table>
       </div>
+      <SermonSyncModal
+        phase={sync.phase}
+        progress={sync.progress}
+        doneMsg={sync.doneMsg}
+        onStart={sync.start}
+        onClose={sync.close}
+      />
     </div>
   )
 }

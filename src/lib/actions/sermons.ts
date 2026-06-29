@@ -6,7 +6,6 @@ import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonThumbnails } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
-import { resyncAllSermons } from '@/lib/sermons/sync'
 import { manualSummarize } from '@/lib/sermons/summarize'
 import { isWorshipType } from '@/lib/worship'
 
@@ -69,13 +68,6 @@ export async function getSermonForAdmin(id: string) {
     .where(eq(sermons.id, id))
     .limit(1)
   return row
-}
-
-export async function syncNowAction() {
-  await requireAdmin()
-  const result = await resyncAllSermons()
-  revalidateSermonPaths()
-  return result
 }
 
 export async function generateSummaryAction(id: string) {

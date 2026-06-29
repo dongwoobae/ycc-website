@@ -1,10 +1,27 @@
 import { db } from '@/lib/db'
 import { sermons } from '@/lib/db/schema'
+import { publishJob } from '@/lib/qstash'
 import type { WorshipType } from '@/lib/types'
-import { listPlaylistVideos, type YouTubeVideo } from '@/lib/youtube/client'
+import type { YouTubeVideo } from '@/lib/youtube/client'
+import { fetchChannelVideos } from '@/lib/youtube/rapidapi-channel'
+import { classifyByTitle } from './classify-title'
 import { insertSermon } from './ingest'
-import { resolvePlaylists } from './playlists'
 import { claimSermonById, summarizeClaimed, fetchAndStoreTranscript } from './summarize'
+
+/** 자동 요약 대상 예배 유형 (정기 예배만). 그 외(시온찬양대·특송·특별행사·미분류)는 등록만 한다. */
+const AUTO_SUMMARY_TYPES: ReadonlySet<WorshipType> = new Set<WorshipType>([
+  '주일예배',
+  '주일찬양예배',
+  '수요예배',
+  '금요기도회',
+])
+
+export interface SyncProgress {
+  current: number
+  total: number
+  title: string
+  phase: string
+}
 
 export interface PlaylistVideo extends YouTubeVideo {
   worshipType: WorshipType
@@ -41,40 +58,50 @@ export function planSermonInserts(existingIds: Set<string>, videos: PlaylistVide
   return out
 }
 
-export async function resyncAllSermons(): Promise<{ inserted: number; summarized: number }> {
-  const apiKey = process.env.YOUTUBE_API_KEY
-  if (!apiKey) throw new Error('YOUTUBE_API_KEY is not set')
+export async function resyncAllSermons(
+  onProgress?: (p: SyncProgress) => void,
+): Promise<{ inserted: number; summarized: number }> {
+  const channelId = process.env.YOUTUBE_CHANNEL_ID
+  if (!channelId) throw new Error('YOUTUBE_CHANNEL_ID is not set')
+  const maxPages = Number(process.env.SYNC_MAX_PAGES ?? 4)
 
-  const playlists = resolvePlaylists(process.env as Record<string, string | undefined>)
   let inserted = 0
   let summarized = 0
   const existing = await db.select({ id: sermons.youtubeVideoId }).from(sermons)
   const existingIds = new Set(existing.map((r) => r.id).filter((x): x is string => !!x))
 
-  for (const p of playlists) {
+  const videos = await fetchChannelVideos(channelId, maxPages)
+  const newVideos = videos.filter((v) => !existingIds.has(v.videoId))
+  const total = newVideos.length
+
+  let current = 0
+  for (const video of newVideos) {
+    current++
+    const worshipType = classifyByTitle(video.title)
+    const autoSummary = AUTO_SUMMARY_TYPES.has(worshipType)
+    onProgress?.({ current, total, title: video.title, phase: autoSummary ? '자막·요약 중' : '등록' })
+
+    const sermonId = await insertSermon(video, worshipType)
+    if (!sermonId) continue
+    inserted++
+    if (!autoSummary) continue
+
+    let transcriptText: string
     try {
-      const videos = await listPlaylistVideos(p.playlistId, apiKey)
-      for (const video of videos) {
-        if (existingIds.has(video.videoId)) continue
-        existingIds.add(video.videoId)
-        const sermonId = await insertSermon(video, p.worshipType)
-        if (!sermonId) continue
-        inserted++
-        if (!p.autoSummary) continue
-        let transcriptText: string
-        try {
-          transcriptText = await fetchAndStoreTranscript(sermonId, video.videoId)
-        } catch {
-          continue // 자막 미준비 — 등록·공개만, 요약은 추후 보충
-        }
-        const claimed = await claimSermonById(sermonId)
-        if (!claimed) continue
-        const status = await summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText)
-        if (status === 'ready') summarized++
+      transcriptText = await fetchAndStoreTranscript(sermonId, video.videoId)
+    } catch {
+      // 자막 미준비 — 등록만 하고, 백그라운드(QStash)로 재시도를 넘긴다(best-effort).
+      try {
+        await publishJob('fetch-transcript', { sermonId, videoId: video.videoId })
+      } catch {
+        // QStash 미설정(로컬 등)에서도 동기화 자체는 계속 진행.
       }
-    } catch (e) {
-      console.error(`[sync] playlist ${p.playlistId} failed`, e)
+      continue
     }
+    const claimed = await claimSermonById(sermonId)
+    if (!claimed) continue
+    const status = await summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText)
+    if (status === 'ready') summarized++
   }
   return { inserted, summarized }
 }
