@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
+import WorshipSubnav from '@/components/worship/WorshipSubnav'
 import Reveal from '@/components/ui/Reveal'
 import {
   adultWorshipSchedule,
@@ -95,8 +96,9 @@ export default function WorshipPage() {
         eyebrow="Guide"
         title="예배 안내"
         subtitle="영천중앙교회의 예배와 모임을 요일·시간·장소와 함께 안내합니다."
-        image="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=1600&q=80"
       />
+      <WorshipSubnav />
       <div className="py-20 sm:py-24">
         <Container size="wide">
           <div className="grid gap-6 md:grid-cols-2">

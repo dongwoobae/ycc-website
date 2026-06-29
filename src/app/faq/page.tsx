@@ -106,7 +106,7 @@ export default function FaqPage() {
         eyebrow="FAQ"
         title="자주 묻는 질문"
         subtitle="영천중앙교회에 처음 오시는 분들이 자주 묻는 질문을 모았습니다."
-        image="https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?auto=format&fit=crop&w=1600&q=80"
       />
       <section className="py-20 sm:py-24">
         <Container>

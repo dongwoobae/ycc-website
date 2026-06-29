@@ -20,7 +20,7 @@ export default async function SermonsPage() {
         eyebrow="Sermons"
         title="예배·설교"
         subtitle="주일·찬양·수요 예배의 말씀을 다시 듣고 묵상할 수 있습니다."
-        image="https://images.unsplash.com/photo-1473773508845-188df298d2d1?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80"
       />
       <div className="py-20 sm:py-24">
         <Container size="wide">

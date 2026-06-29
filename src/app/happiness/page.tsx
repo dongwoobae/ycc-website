@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
+import WorshipSubnav from '@/components/worship/WorshipSubnav'
 import Reveal from '@/components/ui/Reveal'
 
 export const metadata: Metadata = {
@@ -21,8 +22,9 @@ export default function HappinessPage() {
         eyebrow="Declaration"
         title="행복선언"
         subtitle="영천중앙교회는 예배 때마다 축도 전에 행복선언을 함께 고백합니다."
-        image="https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1600&q=80"
       />
+      <WorshipSubnav />
       <section className="py-20 sm:py-24">
         <Container>
           <div className="mx-auto max-w-3xl">

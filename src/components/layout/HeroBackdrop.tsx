@@ -66,7 +66,7 @@ export default function HeroBackdrop({ image }: { image: string }) {
           className="ken-burns !absolute !left-0 !top-[-35%] !h-[170%] w-full object-cover"
         />
       </div>
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-accent-deep/80 via-ink/60 to-ink/78" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-accent-deep/65 via-ink/42 to-ink/55" />
     </>
   )
 }

@@ -51,7 +51,7 @@ export default function ServingPage() {
         eyebrow="People"
         title="섬기는 분들"
         subtitle="말씀과 예배, 다음세대와 선교의 자리에서 교회를 섬기는 분들입니다."
-        image="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1600&q=80"
       />
       <AboutSubnav />
       <div className="py-20 sm:py-24">

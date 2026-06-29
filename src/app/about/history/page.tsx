@@ -26,7 +26,7 @@ export default function HistoryPage() {
         eyebrow="History"
         title="교회연혁"
         subtitle="1956년 창립 이후, 영천중앙교회가 걸어온 발자취입니다."
-        image="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80"
+        image="https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=1600&q=80"
       />
       <AboutSubnav />
       <section className="py-20 sm:py-24">
