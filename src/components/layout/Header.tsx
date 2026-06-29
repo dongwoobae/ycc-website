@@ -112,7 +112,7 @@ export default function Header() {
         <nav className="hidden items-center gap-1 min-[960px]:flex" aria-label="주요 메뉴">
           {navLinks.map((link) => {
             const active = isActiveItem(link)
-            const itemClass = `rounded-full px-4 py-2 text-[14.5px] font-semibold transition ${active ? activeNavClassName : navLinkClassName}`
+            const itemClass = `rounded-full px-4 py-2 text-[16px] font-bold transition ${active ? activeNavClassName : navLinkClassName}`
             return (
               <Link key={link.href} href={link.href} className={itemClass} aria-current={active ? 'page' : undefined}>
                 {link.label}

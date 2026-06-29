@@ -23,10 +23,7 @@ export default function BrandLogo() {
   return (
     <span className="inline-flex items-center gap-3 leading-none">
       <EmblemBadge size={44} />
-      <span className="flex flex-col">
-        <span className="font-serif text-[21px] font-extrabold tracking-tight">영천중앙교회</span>
-        <span className="mt-1 text-[10px] font-extrabold tracking-[0.18em] opacity-80">YEONGCHEONJOONGANG</span>
-      </span>
+      <span className="font-serif text-[24px] font-extrabold tracking-tight">영천중앙교회</span>
     </span>
   )
 }
