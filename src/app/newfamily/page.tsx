@@ -98,8 +98,8 @@ export default function NewFamilyPage() {
 function Hero() {
   return (
     <section className="relative isolate flex min-h-[560px] items-center overflow-hidden bg-[linear-gradient(160deg,oklch(0.32_0.07_256),oklch(0.2_0.05_260))] py-28 text-center text-white min-[960px]:min-h-[74svh]">
-      <Image src="/images/church-hero.webp" alt="" fill priority unoptimized sizes="100vw" className="ken-burns -z-20 object-cover" />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,oklch(0.15_0.05_258/.42)_0%,transparent_28%,oklch(0.14_0.05_258/.58)_70%,oklch(0.13_0.055_258/.92)_100%)]" />
+      <Image src="/images/church-hero-still.webp" alt="" fill priority unoptimized sizes="100vw" className="-z-20 object-cover" />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,oklch(0.15_0.05_258/.40)_0%,oklch(0.14_0.05_258/.28)_42%,oklch(0.14_0.05_258/.40)_70%,oklch(0.13_0.055_258/.66)_100%)]" />
       <Container size="wide" className="pt-14">
         <Reveal>
           <Eyebrow className="text-white/80">First Visit</Eyebrow>
@@ -275,7 +275,7 @@ function Visit() {
 function Cta() {
   return (
     <section className="relative isolate overflow-hidden bg-[oklch(0.22_0.05_259)] py-24 text-center text-white min-[960px]:py-[150px]">
-      <Image src="/images/church-hero.webp" alt="" fill unoptimized sizes="100vw" className="-z-20 object-cover" />
+      <Image src="/images/church-cta.webp" alt="" fill unoptimized sizes="100vw" className="-z-20 object-cover" />
       <div className="absolute inset-0 -z-10 bg-[oklch(0.14_0.055_258/.82)]" />
       <Container>
         <Reveal>
