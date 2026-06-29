@@ -8,12 +8,10 @@ import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonThumbnails } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { composeThumbnailText } from '@/lib/thumbnails/compose-text'
-import { generateBackground } from '@/lib/thumbnails/generate-background'
-import { geminiBgKeywords } from '@/lib/thumbnails/bg-keywords'
+import { generateThumbnail, type GenerateThumbnailResult } from '@/lib/thumbnails/generate'
 import { geminiHeadline } from '@/lib/thumbnails/headline'
 import { renderThumbnail, toDataUrl } from '@/lib/thumbnails/render'
-import { removeBackground } from '@/lib/thumbnails/remove-background'
-import { storeBackground, storeCandidate, storeCutout } from '@/lib/thumbnails/store'
+import { storeCandidate } from '@/lib/thumbnails/store'
 import {
   DEFAULT_THUMBNAIL_COLORS,
   DEFAULT_THUMBNAIL_POSITION,
@@ -64,79 +62,19 @@ export async function suggestThumbnailTextAction(id: string, style: ThumbnailSty
   return composeThumbnailText(style, row, geminiHeadline)
 }
 
-export interface GenerateThumbnailResult {
-  backgroundUrl: string
-  cutoutUrl?: string
-}
-
-/**
- * 배경 무드 키워드를 반환한다. DB에 캐시돼 있으면 재활용(재생성 시 Gemini 미호출),
- * 없으면 summary/quickSummary로 Gemini 1회 호출 후 DB에 저장한다.
- */
-async function resolveBgKeywords(id: string): Promise<string> {
-  const [row] = await db
-    .select({
-      bgKeywords: sermonThumbnails.thumbnailBgKeywords,
-      summary: sermonSummaries.summary,
-      quickSummary: sermonSummaries.quickSummary,
-    })
-    .from(sermons)
-    .leftJoin(sermonThumbnails, eq(sermonThumbnails.sermonId, sermons.id))
-    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
-    .where(eq(sermons.id, id))
-    .limit(1)
-  if (!row) throw new Error('sermon not found')
-  if (row.bgKeywords?.trim()) return row.bgKeywords
-
-  const keywords = await geminiBgKeywords({ summary: row.summary, quickSummary: row.quickSummary })
-  await db
-    .insert(sermonThumbnails)
-    .values({ sermonId: id, thumbnailBgKeywords: keywords })
-    .onConflictDoUpdate({ target: sermonThumbnails.sermonId, set: { thumbnailBgKeywords: keywords } })
-  return keywords
-}
-
-/**
- * 인물 누끼 URL을 반환한다. 캐시(thumbnailCutoutUrl)가 있으면 재사용하고,
- * 없으면 유튜브 썸네일(sermons.thumbnailUrl)로 remove.bg를 1회 호출해 R2에 저장한다.
- * 썸네일이 없는 설교는 누끼 없이 진행(undefined).
- */
-async function resolveCutout(id: string): Promise<string | undefined> {
-  const [row] = await db
-    .select({
-      cutoutUrl: sermonThumbnails.thumbnailCutoutUrl,
-      thumbnailUrl: sermons.thumbnailUrl,
-    })
-    .from(sermons)
-    .leftJoin(sermonThumbnails, eq(sermonThumbnails.sermonId, sermons.id))
-    .where(eq(sermons.id, id))
-    .limit(1)
-  if (!row) throw new Error('sermon not found')
-  if (row.cutoutUrl?.trim()) return row.cutoutUrl
-  if (!row.thumbnailUrl) return undefined
-  const png = await removeBackground(row.thumbnailUrl)
-  return storeCutout(id, png)
-}
-
 /**
  * 배경 이미지를 생성·저장하고 그 URL을 반환한다(gpt-image-2 호출 → 비용 발생).
- * 텍스트 합성은 클라이언트 CSS 미리보기가 담당하고, PNG 저장은 적용 시점으로 미룬다.
+ * 실시간 진행률이 필요한 경우 SSE 라우트(`/api/admin/sermons/[id]/thumbnail/stream`)를
+ * 쓰고, 이 액션은 진행률이 불필요한 호출부의 폴백으로 유지한다.
  */
 export async function generateThumbnailAction(
   id: string,
   style: ThumbnailStyle
 ): Promise<GenerateThumbnailResult> {
   const session = await requireAdmin()
-
-  const keywords = await resolveBgKeywords(id)
-  const background = await generateBackground(style, keywords)
-  const backgroundUrl = await storeBackground(id, style, background)
-
-  let cutoutUrl: string | undefined
-  if (style === 'cutout') cutoutUrl = await resolveCutout(id)
-
+  const result = await generateThumbnail(id, style)
   await log('create', 'sermon', id, `thumbnail:bg:${style}`, session.user.id)
-  return { backgroundUrl, cutoutUrl }
+  return result
 }
 
 /**
