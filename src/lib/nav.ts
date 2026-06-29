@@ -22,13 +22,8 @@ const aboutLinks: NavChild[] = [
 ]
 
 const guideLinks: NavChild[] = [
+  { label: '예배 안내', href: '/worship', desc: '예배 시간과 위치 안내' },
   { label: '행복선언', href: '/happiness', desc: '예배 때 함께하는 고백' },
-  { label: '주일예배', href: '/worship#sunday', desc: '주일 오전 11:00' },
-  { label: '주일학교', href: '/worship#school', desc: '영아부 · 유치부 · 아동부 · 중고등부' },
-  { label: '청년부', href: '/worship#youth', desc: '주일 오후 2:00' },
-  { label: '수요예배', href: '/worship#wednesday', desc: '수요일 오후 7:30' },
-  { label: '새벽예배', href: '/worship#dawn', desc: '화–주일 오전 5:00' },
-  { label: '금요기도회', href: '/worship#friday', desc: '매월 첫째 금요일' },
 ]
 
 const wordLinks: NavChild[] = [
