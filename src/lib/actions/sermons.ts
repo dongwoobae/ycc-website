@@ -39,6 +39,7 @@ export async function getSermonsForAdmin() {
       worshipType: sermons.worshipType,
       isPublished: sermons.isPublished,
       summaryStatus: sermonSummaries.summaryStatus,
+      customThumbnailUrl: sermons.customThumbnailUrl,
     })
     .from(sermons)
     .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
@@ -61,6 +62,8 @@ export async function getSermonForAdmin(id: string) {
       chapters: sermonSummaries.chapters,
       thumbnailBackgrounds: sermonThumbnails.thumbnailBackgrounds,
       thumbnailCutoutUrl: sermonThumbnails.thumbnailCutoutUrl,
+      customThumbnailUrl: sermons.customThumbnailUrl,
+      thumbnailUrl: sermons.thumbnailUrl,
     })
     .from(sermons)
     .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))

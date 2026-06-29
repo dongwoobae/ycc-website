@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { togglePublishAction } from '@/lib/actions/sermons'
 import { sermonListTitle } from '@/lib/sermons/list-title'
+import { worshipTypes } from '@/lib/worship'
 import { useSermonSync } from './useSermonSync'
 import SermonSyncModal from './SermonSyncModal'
 
@@ -16,6 +17,19 @@ interface Row {
   worshipType: string
   isPublished: boolean
   summaryStatus: string
+  hasCustomThumbnail: boolean
+}
+
+function ThumbnailBadge({ custom }: { custom: boolean }) {
+  return custom ? (
+    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+      생성됨
+    </span>
+  ) : (
+    <span className="inline-flex items-center rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-ink-muted">
+      YouTube
+    </span>
+  )
 }
 
 // 요약 상태별 원형 표시. DB 값은 none/pending/ready/failed.
@@ -48,11 +62,21 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
   const sync = useSermonSync()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortState>(0)
+  const [worshipFilter, setWorshipFilter] = useState('전체')
+
+  // 데이터에 실제 존재하는 예배 종류만 노출 — 표준 순서 우선, 그 외(미분류 등)는 뒤에.
+  const present = Array.from(new Set(rows.map((row) => row.worshipType)))
+  const worshipOptions = [
+    ...worshipTypes.filter((type) => present.includes(type)),
+    ...present.filter((type) => !(worshipTypes as readonly string[]).includes(type)),
+  ]
 
   const q = query.trim().toLowerCase()
-  const filtered = q
-    ? rows.filter((row) => sermonListTitle(row).toLowerCase().includes(q))
-    : rows
+  const filtered = rows.filter((row) => {
+    if (q && !sermonListTitle(row).toLowerCase().includes(q)) return false
+    if (worshipFilter !== '전체' && row.worshipType !== worshipFilter) return false
+    return true
+  })
 
   const sorted =
     sort === 0
@@ -105,11 +129,30 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
         <table className="min-w-[44rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
             <tr>
-              {['Date', 'Title', 'Preacher', 'Worship'].map((heading) => (
+              {['Date', 'Title', 'Preacher'].map((heading) => (
                 <th key={heading} className="px-4 py-3 text-left font-medium">
                   {heading}
                 </th>
               ))}
+              <th className="px-4 py-3 text-left font-medium">
+                <select
+                  value={worshipFilter}
+                  onChange={(event) => setWorshipFilter(event.target.value)}
+                  aria-label="예배 종류로 필터"
+                  title="예배 종류로 필터"
+                  className={`cursor-pointer bg-transparent font-medium hover:text-ink focus:outline-none ${
+                    worshipFilter !== '전체' ? 'text-ink' : ''
+                  }`}
+                >
+                  <option value="전체">Worship</option>
+                  {worshipOptions.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </th>
+              <th className="px-4 py-3 text-left font-medium">Thumbnail</th>
               <th className="px-4 py-3 text-left font-medium">
                 <button
                   type="button"
@@ -130,7 +173,7 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
           <tbody>
             {sorted.length === 0 ? (
               <tr className="border-t border-line">
-                <td className="px-4 py-3 text-ink-muted" colSpan={7}>
+                <td className="px-4 py-3 text-ink-muted" colSpan={8}>
                   {rows.length === 0 ? 'No sermons.' : '검색 결과가 없습니다.'}
                 </td>
               </tr>
@@ -151,6 +194,9 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
                     </td>
                     <td className="px-4 py-3">{row.preacher ?? '—'}</td>
                     <td className="px-4 py-3">{row.worshipType}</td>
+                    <td className="px-4 py-3">
+                      <ThumbnailBadge custom={row.hasCustomThumbnail} />
+                    </td>
                     <td className="px-4 py-3">
                       <SummaryBadge status={row.summaryStatus} />
                     </td>

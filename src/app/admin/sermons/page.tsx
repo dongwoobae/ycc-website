@@ -23,6 +23,7 @@ export default async function AdminSermonsPage() {
           worshipType: row.worshipType,
           isPublished: row.isPublished,
           summaryStatus: row.summaryStatus ?? 'none',
+          hasCustomThumbnail: row.customThumbnailUrl != null,
         }))}
       />
     </div>
