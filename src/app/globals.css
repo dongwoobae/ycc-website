@@ -44,12 +44,6 @@ html {
   scroll-behavior: smooth;
 }
 
-@supports selector(:has(*)) {
-  html:has(.home-scroll-page) [data-home-after-hero] {
-    scroll-margin-top: 80px;
-  }
-}
-
 body {
   min-height: 100vh;
   background: rgb(var(--bg));

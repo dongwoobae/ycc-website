@@ -2,7 +2,6 @@ import ImmersiveHero from '@/components/home/ImmersiveHero'
 import Manifesto from '@/components/home/Manifesto'
 import FullBleedBand from '@/components/home/FullBleedBand'
 import EntryCards from '@/components/home/EntryCards'
-import HomeScrollController from '@/components/home/HomeScrollController'
 import { getLatestSermons } from '@/lib/data/sermons'
 
 export const revalidate = 3600
@@ -22,8 +21,7 @@ export default async function HomePage() {
   const sermonSummary = firstSentence(sermons.find((s) => s.summary)?.summary)
 
   return (
-    <div className="home-scroll-page">
-      <HomeScrollController />
+    <div>
       <ImmersiveHero />
       <Manifesto />
       <FullBleedBand />

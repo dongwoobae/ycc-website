@@ -5,10 +5,7 @@ import { Eyebrow } from "./HomePrimitives";
 // 홈 스크롤 #2 — 환영 메시지. 부드러운 블루→라벤더 그라데이션 배경.
 export default function Manifesto() {
   return (
-    <section
-      data-home-after-hero
-      className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#DCE7F7_0%,#E4E3F4_55%,#ECE6F6_100%)] py-28 min-[960px]:py-36"
-    >
+    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#DCE7F7_0%,#E4E3F4_55%,#ECE6F6_100%)] py-28 min-[960px]:py-36">
       <Container size="wide" className="text-center">
         <Reveal>
           <Eyebrow>Welcome</Eyebrow>
