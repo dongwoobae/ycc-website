@@ -12,7 +12,9 @@ export async function removeBackground(imageUrl: string): Promise<Buffer> {
 
   const form = new FormData()
   form.append('image_url', imageUrl)
-  form.append('size', 'auto')
+  // 원본 유튜브 썸네일이 480x360(0.17MP)이라 preview(≤0.25MP)로도 화질 손실이 없고,
+  // 유료 크레딧 대신 remove.bg 무료 등급(월 50건 preview)으로 처리돼 비용이 들지 않는다.
+  form.append('size', 'preview')
   form.append('format', 'png')
 
   const res = await fetch(REMOVE_BG_URL, {
