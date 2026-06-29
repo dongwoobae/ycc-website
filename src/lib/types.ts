@@ -92,4 +92,5 @@ export interface Post {
   category: PostCategory
   isPinned: boolean
   publishedAt: string
+  author?: string
 }
