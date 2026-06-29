@@ -4,9 +4,7 @@ import type { WorshipType } from '@/lib/types'
 import { listPlaylistVideos, type YouTubeVideo } from '@/lib/youtube/client'
 import { insertSermon } from './ingest'
 import { resolvePlaylists } from './playlists'
-import { fetchTranscript } from '@/lib/transcript/rapidapi'
-import { buildTranscriptText } from '@/lib/transcript/prompt'
-import { claimSermonById, summarizeClaimed } from './summarize'
+import { claimSermonById, summarizeClaimed, fetchAndStoreTranscript } from './summarize'
 
 export interface PlaylistVideo extends YouTubeVideo {
   worshipType: WorshipType
@@ -63,11 +61,15 @@ export async function resyncAllSermons(): Promise<{ inserted: number; summarized
         if (!sermonId) continue
         inserted++
         if (!p.autoSummary) continue
-        const segments = await fetchTranscript(video.videoId)
-        if (segments.length === 0) continue
+        let transcriptText: string
+        try {
+          transcriptText = await fetchAndStoreTranscript(sermonId, video.videoId)
+        } catch {
+          continue // 자막 미준비 — 등록·공개만, 요약은 추후 보충
+        }
         const claimed = await claimSermonById(sermonId)
         if (!claimed) continue
-        const status = await summarizeClaimed(claimed.id, claimed.durationSeconds, buildTranscriptText(segments))
+        const status = await summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText)
         if (status === 'ready') summarized++
       }
     } catch (e) {
