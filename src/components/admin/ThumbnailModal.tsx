@@ -72,16 +72,19 @@ export default function ThumbnailModal({ sermonId, backgrounds, cutoutUrl, onClo
             </button>
           ))}
         </div>
-        <ThumbnailStyleTab
-          key={tab}
-          sermonId={sermonId}
-          style={tab}
-          description={DESCRIPTIONS[tab]}
-          background={backgrounds[tab]}
-          cutout={cutoutUrl}
-          onApply={apply}
-          applying={pending}
-        />
+        {THUMBNAIL_STYLES.map((s) => (
+          <div key={s} className={tab === s ? '' : 'hidden'}>
+            <ThumbnailStyleTab
+              sermonId={sermonId}
+              style={s}
+              description={DESCRIPTIONS[s]}
+              background={backgrounds[s]}
+              cutout={cutoutUrl}
+              onApply={apply}
+              applying={pending}
+            />
+          </div>
+        ))}
         <div className="mt-6 border-t border-line pt-4">
           <button
             type="button"
