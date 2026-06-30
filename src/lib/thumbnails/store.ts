@@ -3,10 +3,11 @@ import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { sermonThumbnails } from '@/lib/db/schema'
 import { uploadToR2 } from '@/lib/r2'
+import { toWebp } from './webp'
 import type { ThumbnailCandidate, ThumbnailStyle } from './types'
 
 function candidateKey(sermonId: string, style: ThumbnailStyle): string {
-  return `thumbnails/candidates/${sermonId}/${style}-${Date.now()}.png`
+  return `thumbnails/candidates/${sermonId}/${style}-${Date.now()}.webp`
 }
 
 function backgroundKey(sermonId: string, style: ThumbnailStyle): string {
@@ -48,7 +49,10 @@ export async function storeCandidate(
   style: ThumbnailStyle,
   png: Buffer
 ): Promise<ThumbnailCandidate> {
-  const url = await uploadToR2(png, candidateKey(sermonId, style), 'image/png')
+  // 공개 표시본(customThumbnailUrl)이라 webp로 변환해 서빙 용량을 줄인다.
+  // (unoptimized 환경에서 원본 PNG가 그대로 내려가 느려지는 문제 대응)
+  const webp = await toWebp(png)
+  const url = await uploadToR2(webp, candidateKey(sermonId, style), 'image/webp')
   const candidate: ThumbnailCandidate = { style, url, createdAt: new Date().toISOString() }
 
   const updated = await db
