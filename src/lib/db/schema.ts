@@ -47,25 +47,12 @@ export const sermons = pgTable('sermons', {
   notesUrl: text('notes_url'),
   thumbnailUrl: text('thumbnail_url'),
   customThumbnailUrl: text('custom_thumbnail_url'),
-  thumbnailCandidates: jsonb('thumbnail_candidates').$type<ThumbnailCandidate[]>(),
-  thumbnailBgKeywords: text('thumbnail_bg_keywords'),
-  // 스타일별 최근 생성 배경 이미지 URL. 위치 재배치 시 gpt-image-2 재호출 없이 재사용한다.
-  thumbnailBackgrounds: jsonb('thumbnail_backgrounds').$type<Partial<Record<ThumbnailStyle, string>>>(),
-  summary: text('summary'),
-  transcriptText: text('transcript_text'),
-  transcriptFetchedAt: timestamp('transcript_fetched_at', { withTimezone: true }),
   youtubeVideoId: text('youtube_video_id').unique(),
   durationSeconds: integer('duration_seconds'),
-  quickSummary: jsonb('quick_summary').$type<string[]>(),
-  chapters: jsonb('chapters').$type<SermonChapter[]>(),
-  summaryStatus: text('summary_status').notNull().default('none'),
-  summaryAttempts: integer('summary_attempts').notNull().default(0),
-  summaryNextRetryAt: timestamp('summary_next_retry_at', { withTimezone: true }),
-  summaryGeneratedAt: timestamp('summary_generated_at', { withTimezone: true }),
-  summaryModel: text('summary_model'),
   isPublished: boolean('is_published').notNull().default(false),
   createdBy: text('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  // 요약/자막/썸네일 컬럼은 위성 테이블(sermon_summaries/transcripts/thumbnails)로 이관됨(0013에서 DROP).
 }, (t) => [index('sermons_published_date_idx').on(t.isPublished, t.sermonDate)])
 
 export const sermonTranscripts = pgTable('sermon_transcripts', {

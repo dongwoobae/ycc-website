@@ -3,13 +3,21 @@ import { getTableColumns } from 'drizzle-orm'
 import { sermons, sermonTranscripts, sermonSummaries, sermonThumbnails } from './schema'
 
 describe('sermons schema', () => {
-  it('has the youtube/summary columns', () => {
+  it('keeps the core youtube columns', () => {
+    const cols = Object.keys(getTableColumns(sermons))
+    for (const c of ['youtubeVideoId', 'durationSeconds']) {
+      expect(cols).toContain(c)
+    }
+  })
+
+  it('no longer has the columns moved to satellites (0013 DROP)', () => {
     const cols = Object.keys(getTableColumns(sermons))
     for (const c of [
-      'youtubeVideoId', 'durationSeconds', 'quickSummary', 'chapters',
+      'summary', 'transcriptText', 'transcriptFetchedAt', 'quickSummary', 'chapters',
       'summaryStatus', 'summaryAttempts', 'summaryNextRetryAt', 'summaryGeneratedAt', 'summaryModel',
+      'thumbnailCandidates', 'thumbnailBgKeywords', 'thumbnailBackgrounds',
     ]) {
-      expect(cols).toContain(c)
+      expect(cols).not.toContain(c)
     }
   })
 

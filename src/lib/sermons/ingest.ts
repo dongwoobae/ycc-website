@@ -24,7 +24,6 @@ export async function insertSermon(video: YouTubeVideo, worshipType: WorshipType
       thumbnailUrl: video.thumbnailUrl,
       youtubeVideoId: video.videoId,
       durationSeconds: video.durationSeconds,
-      summaryStatus: 'none',
       isPublished: true,
     })
     .onConflictDoNothing({ target: sermons.youtubeVideoId })
