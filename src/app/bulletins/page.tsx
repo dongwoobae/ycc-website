@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Container from '@/components/layout/Container'
-import PageHero from '@/components/layout/PageHero'
+import BulletinsHero from '@/components/bulletins/BulletinsHero'
 import Reveal from '@/components/ui/Reveal'
 import { getBulletins } from '@/lib/data/bulletins'
 
@@ -16,12 +16,7 @@ export default async function BulletinsPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="Bulletin"
-        title="주보"
-        subtitle="매주 예배 순서와 교회 소식을 정리해 제공합니다."
-        image="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80"
-      />
+      <BulletinsHero />
       <div className="py-20 sm:py-24">
         <Container size="wide">
           <div className="grid gap-6 md:grid-cols-2">
