@@ -9,6 +9,9 @@ describe('sermonDateFromTitle', () => {
 
   it('유효하지 않은 날짜/토큰 없음은 null', () => {
     expect(sermonDateFromTitle('영천중앙교회 261345 주일예배')).toBeNull() // 13월 45일
+    expect(sermonDateFromTitle('영천중앙교회 260231 주일예배')).toBeNull() // 2월 31일(존재X)
+    expect(sermonDateFromTitle('영천중앙교회 250229 주일예배')).toBeNull() // 2025년 2월 29일(평년)
+    expect(sermonDateFromTitle('영천중앙교회 240229 주일예배')).toBe('2024-02-29') // 2024 윤년 OK
     expect(sermonDateFromTitle('1234567 숫자7자리')).toBeNull()
     expect(sermonDateFromTitle('날짜 없는 제목')).toBeNull()
     expect(sermonDateFromTitle('')).toBeNull()

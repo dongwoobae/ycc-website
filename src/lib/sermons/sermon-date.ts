@@ -9,6 +9,9 @@ export function sermonDateFromTitle(title: string): string | null {
   const [, yy, mm, dd] = m
   const month = Number(mm)
   const day = Number(dd)
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null
+  if (month < 1 || month > 12) return null
+  // 해당 월의 실제 일수(윤년 포함)로 검증해 02-31 같은 잘못된 날짜를 거른다.
+  const daysInMonth = new Date(2000 + Number(yy), month, 0).getDate()
+  if (day < 1 || day > daysInMonth) return null
   return `20${yy}-${mm}-${dd}`
 }

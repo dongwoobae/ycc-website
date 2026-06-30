@@ -2,7 +2,6 @@ import { db } from '@/lib/db'
 import { sermons } from '@/lib/db/schema'
 import { publishJob } from '@/lib/qstash'
 import type { WorshipType } from '@/lib/types'
-import type { YouTubeVideo } from '@/lib/youtube/client'
 import { fetchChannelVideos } from '@/lib/youtube/rapidapi-channel'
 import { classifyByTitle } from './classify-title'
 import { insertSermon } from './ingest'
@@ -21,41 +20,6 @@ export interface SyncProgress {
   total: number
   title: string
   phase: string
-}
-
-export interface PlaylistVideo extends YouTubeVideo {
-  worshipType: WorshipType
-}
-
-export interface NewSermonInsert {
-  youtubeVideoId: string
-  title: string
-  preacher: null
-  worshipType: WorshipType
-  sermonDate: string
-  videoUrl: string
-  thumbnailUrl: string | null
-  durationSeconds: number
-}
-
-export function planSermonInserts(existingIds: Set<string>, videos: PlaylistVideo[]): NewSermonInsert[] {
-  const seen = new Set(existingIds)
-  const out: NewSermonInsert[] = []
-  for (const v of videos) {
-    if (seen.has(v.videoId)) continue
-    seen.add(v.videoId)
-    out.push({
-      youtubeVideoId: v.videoId,
-      title: v.title,
-      preacher: null,
-      worshipType: v.worshipType,
-      sermonDate: (v.publishedAt || '').slice(0, 10),
-      videoUrl: `https://youtu.be/${v.videoId}`,
-      thumbnailUrl: v.thumbnailUrl,
-      durationSeconds: v.durationSeconds,
-    })
-  }
-  return out
 }
 
 export async function resyncAllSermons(

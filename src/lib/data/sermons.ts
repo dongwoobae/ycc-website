@@ -108,16 +108,6 @@ export async function getSermonById(id: string): Promise<Sermon | undefined> {
   return rows[0] ? toSermon(rows[0]) : undefined
 }
 
-export async function getSermonForAdmin(id: string): Promise<Sermon | undefined> {
-  const rows = await db
-    .select(sermonColumns)
-    .from(sermonsTable)
-    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermonsTable.id))
-    .where(eq(sermonsTable.id, id))
-    .limit(1)
-  return rows[0] ? toSermon(rows[0]) : undefined
-}
-
 export async function getSermonsByWorshipType(worshipType?: WorshipType): Promise<Sermon[]> {
   const condition = worshipType
     ? and(eq(sermonsTable.isPublished, true), eq(sermonsTable.worshipType, worshipType))

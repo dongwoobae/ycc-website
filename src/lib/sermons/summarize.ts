@@ -138,7 +138,7 @@ export async function summarizeClaimed(
         summaryStatus: 'ready',
         summaryGeneratedAt: new Date(),
         summaryNextRetryAt: null,
-        summaryModel: model,
+        summaryModel: result.model ?? model,
       })
       .where(eq(sermonSummaries.sermonId, id))
     return 'ready'

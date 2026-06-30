@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
 import type { SermonChapter } from "@/lib/types";
-import { generateContentWithFallback } from "./gemini";
+import { generateContentWithFallback, resolveGeminiModel } from "./gemini";
 
 // summarize.ts의 summaryModel 기록과 일치시키기 위해 재노출한다.
 export { DEFAULT_GEMINI_MODEL } from "./gemini";
@@ -10,6 +10,8 @@ export interface SermonSummaryResult {
   summary: string;
   quickSummary: string[];
   chapters: SermonChapter[];
+  /** 실제 응답을 생성한 모델(폴백 발생 시 폴백 모델). 기록(provenance)용. */
+  model?: string;
 }
 
 const schema = z.object({
@@ -96,5 +98,6 @@ export async function generateSermonSummary(
 
   const text = res.text;
   if (!text) throw new Error("gemini returned empty response");
-  return parseSermonSummary(JSON.parse(text), durationSeconds);
+  const parsed = parseSermonSummary(JSON.parse(text), durationSeconds);
+  return { ...parsed, model: res.modelVersion || resolveGeminiModel() };
 }
