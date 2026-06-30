@@ -6,6 +6,8 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { Analytics } from '@vercel/analytics/next'
 import { getCanonicalSiteOrigin } from '@/lib/site-origin'
+import JsonLd from '@/components/seo/JsonLd'
+import { buildChurchJsonLd } from '@/lib/seo/jsonld'
 
 const nanumMyeongjo = Nanum_Myeongjo({
   weight: ['400', '700', '800'],
@@ -95,6 +97,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${pretendard.variable} ${nanumMyeongjo.variable}`}>
       <body className="flex min-h-screen flex-col bg-bg text-ink antialiased">
+        <JsonLd data={buildChurchJsonLd()} />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-ink focus:shadow-subtle">
           Skip to content
         </a>
