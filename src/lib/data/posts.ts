@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { posts as postsTable, profiles, type PostRow } from '@/lib/db/schema'
+import { posts as postsTable, user, type PostRow } from '@/lib/db/schema'
 import { formatKstDate } from '@/lib/date'
 import type { Post, PostCategory } from '@/lib/types'
 
@@ -38,9 +38,9 @@ export async function getPosts(): Promise<Post[]> {
 
 export async function getPostById(id: string): Promise<Post | undefined> {
   const rows = await db
-    .select({ ...postColumns, author: profiles.fullName })
+    .select({ ...postColumns, author: user.name })
     .from(postsTable)
-    .leftJoin(profiles, eq(profiles.id, postsTable.createdBy))
+    .leftJoin(user, eq(user.id, postsTable.createdBy))
     .where(and(eq(postsTable.id, id), eq(postsTable.isPublished, true)))
     .limit(1)
   const row = rows[0]

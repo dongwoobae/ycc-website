@@ -64,7 +64,7 @@ export const sermons = pgTable('sermons', {
   summaryGeneratedAt: timestamp('summary_generated_at', { withTimezone: true }),
   summaryModel: text('summary_model'),
   isPublished: boolean('is_published').notNull().default(false),
-  createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+  createdBy: text('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 }, (t) => [index('sermons_published_date_idx').on(t.isPublished, t.sermonDate)])
 
@@ -107,7 +107,7 @@ export const posts = pgTable(
     isPinned: boolean('is_pinned').notNull().default(false),
     isPublished: boolean('is_published').notNull().default(false),
     publishedAt: timestamp('published_at', { withTimezone: true }),
-    createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+    createdBy: text('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
   },
@@ -126,7 +126,7 @@ export const bulletins = pgTable('bulletins', {
   scripture: text('scripture'),
   sections: jsonb('sections').$type<BulletinSection[]>().notNull().default(sql`'[]'::jsonb`),
   isPublished: boolean('is_published').notNull().default(false),
-  createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+  createdBy: text('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
 }, (t) => [index('bulletins_published_date_idx').on(t.isPublished, t.bulletinDate)])

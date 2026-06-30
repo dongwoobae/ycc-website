@@ -53,7 +53,7 @@ export async function createPost(input: PostFormInput) {
     .insert(posts)
     .values({
       ...values,
-      createdBy: null,
+      createdBy: s.user.id,
     })
     .returning({ id: posts.id, title: posts.title })
 

@@ -139,7 +139,7 @@ export async function createBulletin(input: BulletinFormInput) {
   const values = parseInput(input)
   const [created] = await db
     .insert(bulletins)
-    .values({ ...values, isPublished: true, createdBy: null })
+    .values({ ...values, isPublished: true, createdBy: s.user.id })
     .returning({ id: bulletins.id, title: bulletins.bulletinDate })
   if (!created) throw new Error('failed to create bulletin')
   await log('create', 'bulletin', created.id, created.title, s.user.id)
