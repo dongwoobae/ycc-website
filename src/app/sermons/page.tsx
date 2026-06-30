@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
-import PageHero from '@/components/layout/PageHero'
+import SermonsHero from '@/components/sermons/SermonsHero'
 import SermonsGrid from '@/components/sermons/SermonsGrid'
 import { getSermons } from '@/lib/data/sermons'
 
@@ -16,12 +16,7 @@ export default async function SermonsPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="Sermons"
-        title="예배·설교"
-        subtitle="주일·찬양·수요 예배의 말씀을 다시 듣고 묵상할 수 있습니다."
-        image="https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80"
-      />
+      <SermonsHero />
       <div className="py-20 sm:py-24">
         <Container size="wide">
           <Suspense fallback={null}>

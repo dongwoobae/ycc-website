@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
 import BulletinView from '@/components/bulletins/BulletinView'
 import { getBulletinById, getBulletins } from '@/lib/data/bulletins'
+import JsonLd from '@/components/seo/JsonLd'
+import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld'
 
 export const revalidate = 3600
 
@@ -30,6 +32,13 @@ export default async function BulletinDetailPage({ params }: BulletinDetailProps
 
   return (
     <div className="py-12">
+      <JsonLd
+        data={buildBreadcrumbJsonLd([
+          { name: '홈', path: '/' },
+          { name: '주보', path: '/bulletins' },
+          { name: `${bulletin.bulletinDate} 주보`, path: `/bulletins/${bulletin.id}` },
+        ])}
+      />
       <Container className="max-w-5xl">
         <BulletinView bulletin={bulletin} />
       </Container>

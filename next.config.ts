@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       ...(r2PublicPattern ? [r2PublicPattern] : []),
       {
