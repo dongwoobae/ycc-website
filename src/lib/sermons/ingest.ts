@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonTranscripts, sermonThumbnails } from '@/lib/db/schema'
 import type { WorshipType } from '@/lib/types'
 import { sermonDateFromTitle } from '@/lib/sermons/sermon-date'
-import type { YouTubeVideo } from '@/lib/youtube/client'
+import type { YouTubeVideo } from '@/lib/youtube/types'
 
 export async function sermonExists(videoId: string): Promise<boolean> {
   const [row] = await db.select({ id: sermons.id }).from(sermons).where(eq(sermons.youtubeVideoId, videoId)).limit(1)

@@ -1,5 +1,5 @@
 import { rapidApiConfig, rapidApiHeaders } from '@/lib/rapidapi'
-import type { YouTubeVideo } from './client'
+import type { YouTubeVideo } from './types'
 
 /** "1:16:44" / "41:17" / "59" 형태의 길이 문자열을 초로 변환한다. */
 export function parseLengthText(text: unknown): number {

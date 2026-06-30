@@ -427,14 +427,6 @@ RAPIDAPI_HOST=yt-api.p.rapidapi.com
 # WebSub (콜백 URL은 사이트 origin + /api/youtube/websub 로 코드에서 합성)
 WEBSUB_SECRET=your_websub_secret
 YOUTUBE_CHANNEL_ID=UCxxxxxxxxxxxxxxxxxxxxxx
-
-# 동기화 대상 재생목록 ID (예배 유형별, 백필 보조 경로용)
-YT_PLAYLIST_SUNDAY=
-YT_PLAYLIST_WEDNESDAY=
-# ... (예배 유형별 재생목록, .env.example 참고)
-
-# 선택(레거시): YouTube Data API v3 — 구버전 재생목록 동기화 헬퍼에서만 사용
-YOUTUBE_API_KEY=
 ```
 
 ---
