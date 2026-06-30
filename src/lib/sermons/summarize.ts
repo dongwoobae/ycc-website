@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
 import { generateSermonSummary, DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
-import { buildTranscriptText } from '@/lib/transcript/prompt'
+import { buildTranscriptText, type TranscriptSegment } from '@/lib/transcript/prompt'
 import { autoSummaryTypes } from '@/lib/worship'
 
 export const MAX_SUMMARY_ATTEMPTS = 3
@@ -48,6 +48,7 @@ interface ClaimedSermon {
   id: string
   durationSeconds: number | null
   transcriptText: string | null
+  attempts: number
 }
 
 export async function claimSermonById(id: string, now: Date = new Date()): Promise<ClaimedSermon | null> {
@@ -66,9 +67,10 @@ export async function claimSermonById(id: string, now: Date = new Date()): Promi
           OR (summary_status = 'pending' AND summary_generated_at IS NULL
             AND summary_next_retry_at IS NULL AND created_at <= ${staleBefore.toISOString()})
         )
-      RETURNING sermon_id
+      RETURNING sermon_id, summary_attempts
     )
-    SELECT s.id, s.duration_seconds AS "durationSeconds", t.transcript_text AS "transcriptText"
+    SELECT s.id, s.duration_seconds AS "durationSeconds", t.transcript_text AS "transcriptText",
+           c.summary_attempts AS "attempts"
     FROM claimed c
     JOIN sermons s ON s.id = c.sermon_id
     LEFT JOIN sermon_transcripts t ON t.sermon_id = c.sermon_id
@@ -86,9 +88,10 @@ export async function forceClaimSermonById(id: string): Promise<ClaimedSermon | 
         summary_attempts = summary_attempts + 1,
         summary_next_retry_at = NULL
       WHERE sermon_id = ${id}
-      RETURNING sermon_id
+      RETURNING sermon_id, summary_attempts
     )
-    SELECT s.id, s.duration_seconds AS "durationSeconds", t.transcript_text AS "transcriptText"
+    SELECT s.id, s.duration_seconds AS "durationSeconds", t.transcript_text AS "transcriptText",
+           c.summary_attempts AS "attempts"
     FROM claimed c
     JOIN sermons s ON s.id = c.sermon_id
     LEFT JOIN sermon_transcripts t ON t.sermon_id = c.sermon_id
@@ -97,9 +100,8 @@ export async function forceClaimSermonById(id: string): Promise<ClaimedSermon | 
   return (rows[0] as ClaimedSermon | undefined) ?? null
 }
 
-export async function fetchAndStoreTranscript(sermonId: string, videoId: string): Promise<string> {
-  const segments = await fetchTranscript(videoId)
-  if (segments.length === 0) throw new Error('자막 미준비')
+/** 이미 받은 자막 세그먼트를 위성 테이블(sermon_transcripts)에 upsert한다. */
+export async function storeTranscript(sermonId: string, segments: TranscriptSegment[]): Promise<string> {
   const transcriptText = buildTranscriptText(segments)
   const fetchedAt = new Date()
   await db
@@ -112,10 +114,17 @@ export async function fetchAndStoreTranscript(sermonId: string, videoId: string)
   return transcriptText
 }
 
+export async function fetchAndStoreTranscript(sermonId: string, videoId: string): Promise<string> {
+  const segments = await fetchTranscript(videoId)
+  if (segments.length === 0) throw new Error('자막 미준비')
+  return storeTranscript(sermonId, segments)
+}
+
 export async function summarizeClaimed(
   id: string,
   durationSeconds: number | null,
-  transcriptText: string
+  transcriptText: string,
+  attempts: number
 ): Promise<'ready' | 'failed'> {
   const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
   try {
@@ -139,7 +148,7 @@ export async function summarizeClaimed(
       .update(sermonSummaries)
       .set({
         summaryStatus: 'failed',
-        summaryNextRetryAt: computeNextRetry(MAX_SUMMARY_ATTEMPTS, new Date()),
+        summaryNextRetryAt: computeNextRetry(attempts, new Date()),
       })
       .where(eq(sermonSummaries.sermonId, id))
     return 'failed'
@@ -164,5 +173,5 @@ export async function manualSummarize(id: string): Promise<'ready' | 'failed'> {
 
   const claimed = await forceClaimSermonById(row.id)
   if (!claimed) throw new Error('summary is not claimable')
-  return summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText)
+  return summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText, claimed.attempts)
 }

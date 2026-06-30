@@ -72,7 +72,7 @@ describe('fetchAndStoreTranscript upsert (integration)', () => {
 describe('summarizeClaimed (integration)', () => {
   it('updates sermon_summaries to ready on success', async () => {
     const id = await insertSermonFixture(h.db, { summaryStatus: 'pending' })
-    const status = await summarizeClaimed(id, 600, 'transcript body')
+    const status = await summarizeClaimed(id, 600, 'transcript body', 1)
     expect(status).toBe('ready')
     const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
     expect(row.summaryStatus).toBe('ready')

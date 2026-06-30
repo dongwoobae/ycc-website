@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { sermons } from '@/lib/db/schema'
+import { sermonSummaries } from '@/lib/db/schema'
 import { publishJob, RETRY_DELAY_SECONDS, verifyQStash } from '@/lib/qstash'
-import { buildTranscriptText } from '@/lib/transcript/prompt'
+import { storeTranscript } from '@/lib/sermons/summarize'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 
 export const maxDuration = 60
@@ -26,16 +26,11 @@ export async function POST(req: Request) {
       await publishJob('fetch-transcript', { sermonId, videoId, attempt: attempt + 1 }, RETRY_DELAY_SECONDS)
       return Response.json({ ok: true, retry: attempt + 1 })
     }
-    await db.update(sermons).set({ summaryStatus: 'failed' }).where(eq(sermons.id, sermonId))
+    await db.update(sermonSummaries).set({ summaryStatus: 'failed' }).where(eq(sermonSummaries.sermonId, sermonId))
     return Response.json({ ok: true, gaveUp: true })
   }
 
-  const transcriptText = buildTranscriptText(segments)
-  await db
-    .update(sermons)
-    .set({ transcriptText, transcriptFetchedAt: new Date() })
-    .where(eq(sermons.id, sermonId))
-
+  await storeTranscript(sermonId, segments)
   await publishJob('summarize', { sermonId })
   return Response.json({ ok: true, segments: segments.length })
 }

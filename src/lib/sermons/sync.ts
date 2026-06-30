@@ -100,7 +100,7 @@ export async function resyncAllSermons(
     }
     const claimed = await claimSermonById(sermonId)
     if (!claimed) continue
-    const status = await summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText)
+    const status = await summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText, claimed.attempts)
     if (status === 'ready') summarized++
   }
   return { inserted, summarized }
