@@ -80,10 +80,12 @@
 - 페이지 진입 시:
   1. `view_id = crypto.randomUUID()` 생성
   2. `POST /api/track { type: 'pageview', viewId, path, referrer }`
-- 체류 측정 (write 부하 최소화):
-  - **주 신호는 leave beacon** — `visibilitychange`(hidden) / `pagehide` 시 `navigator.sendBeacon('/api/track', { type: 'leave', viewId, seconds })`
-  - heartbeat는 beacon 유실 대비 **폴백**으로 60초 간격(탭 visible일 때만). 정상 이탈 시엔 1회 leave만으로 충분
-  - 백그라운드(탭 비활성) 시간은 누적에서 제외, 최대 체류시간 상한(예: 2시간)으로 이상치 컷
+- 체류 측정 (긴 세션 대비 체크포인트 방식 — 예: 1시간 설교 영상):
+  - **heartbeat 60초** — 탭 visible일 때 60초마다 현재까지 누적 duration 전송. 긴 세션도 최대 60초 단위로만 유실(1시간≈60회 체크포인트).
+  - `visibilitychange`(hidden) 시 **체크포인트**로 현재 duration 전송 → 다시 visible 되면 이어서 누적(탭 전환·앱 전환해도 나머지 시간 안 잃음).
+  - `pagehide` 시 **최종** `navigator.sendBeacon('/api/track', { type: 'leave', viewId, seconds })`.
+  - heartbeat/leave 모두 서버에서 `greatest()`로 최댓값 유지 → 순서·중복 무관.
+  - 백그라운드(탭 비활성) 시간은 누적에서 제외, 최대 체류시간 상한(예: 2시간)으로 이상치 컷.
 - Next App Router 경로 변경 감지: `usePathname`로 경로 바뀌면 이전 view의 leave 처리 후 새 view 시작.
 
 ### 4.2 API 라우트 (`src/app/api/track/route.ts`, Node 런타임)
