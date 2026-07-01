@@ -8,6 +8,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { getCanonicalSiteOrigin } from '@/lib/site-origin'
 import JsonLd from '@/components/seo/JsonLd'
 import { buildChurchJsonLd } from '@/lib/seo/jsonld'
+import Tracker from '@/components/analytics/Tracker'
 
 const nanumMyeongjo = Nanum_Myeongjo({
   weight: ['400', '700', '800'],
@@ -106,6 +107,7 @@ export default function RootLayout({
         </div>
         <main id="main-content" className="flex-1">{children}</main>
         <Footer />
+        <Tracker />
         <Analytics />
       </body>
     </html>

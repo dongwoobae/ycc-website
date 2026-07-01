@@ -1,9 +1,11 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { nextCookies } from 'better-auth/next-js'
+import { createAuthMiddleware, getSessionFromCtx } from 'better-auth/api'
 import { db } from './db'
 import { user, session, account, verification } from './db/auth-schema'
 import { normalizeOrigin } from './auth-origin'
+import { log } from './logger'
 
 export { normalizeOrigin }
 
@@ -38,6 +40,24 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
+  },
+  databaseHooks: {
+    // 세션 생성 = 로그인. 사용자는 로그 화면에서 created_by 조인으로 표시된다.
+    session: {
+      create: {
+        async after(newSession) {
+          await log('login', 'user', undefined, undefined, newSession.userId)
+        },
+      },
+    },
+  },
+  hooks: {
+    // 로그아웃은 세션 삭제 전에 현재 세션을 조회해 기록한다.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/sign-out') return
+      const current = await getSessionFromCtx(ctx).catch(() => null)
+      if (current?.user?.id) await log('logout', 'user', undefined, undefined, current.user.id)
+    }),
   },
   trustedOrigins: resolveTrustedOrigins(),
   plugins: [nextCookies()],

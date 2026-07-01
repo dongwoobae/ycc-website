@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { getTableColumns } from 'drizzle-orm'
-import { sermons, sermonTranscripts, sermonSummaries, sermonThumbnails } from './schema'
+import {
+  dailyPageStats,
+  pageViews,
+  sermons,
+  sermonTranscripts,
+  sermonSummaries,
+  sermonThumbnails,
+} from './schema'
 
 describe('sermons schema', () => {
   it('keeps the core youtube columns', () => {
@@ -40,6 +47,23 @@ describe('sermon satellite tables', () => {
   })
   it('sermon_thumbnails has thumbnail working columns', () => {
     const cols = Object.keys(getTableColumns(sermonThumbnails))
-    for (const c of ['sermonId', 'thumbnailCandidates', 'thumbnailBgKeywords', 'thumbnailBackgrounds']) expect(cols).toContain(c)
+    for (const c of ['sermonId', 'thumbnailCandidates', 'thumbnailBgKeywords', 'thumbnailBackgrounds']) {
+      expect(cols).toContain(c)
+    }
+  })
+})
+
+describe('visitor analytics schema', () => {
+  it('has page view tracking columns', () => {
+    const cols = Object.keys(getTableColumns(pageViews))
+    for (const c of [
+      'id', 'visitorId', 'sessionId', 'path', 'referrer', 'region', 'ipMasked', 'userAgent',
+      'durationSeconds', 'createdAt',
+    ]) expect(cols).toContain(c)
+  })
+
+  it('has daily rollup columns', () => {
+    const cols = Object.keys(getTableColumns(dailyPageStats))
+    for (const c of ['date', 'uniqueVisitors', 'pageViews', 'createdAt']) expect(cols).toContain(c)
   })
 })
