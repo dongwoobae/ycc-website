@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { dailyPageStats, pageViews } from '@/lib/db/schema'
 import { formatKstDateTime, todayKst } from '@/lib/date'
 import AdminPageHero from '@/components/admin/AdminPageHero'
+import RefreshButton from '@/components/admin/RefreshButton'
 
 const PAGE_SIZE = 20
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -220,7 +221,7 @@ export default async function AdminAnalyticsPage({
         ))}
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-5 flex flex-wrap items-center gap-2">
         {PERIODS.map((value) => (
           <Link
             key={value}
@@ -232,6 +233,7 @@ export default async function AdminAnalyticsPage({
             {value === 1 ? '오늘' : `최근 ${value}일`}
           </Link>
         ))}
+        <RefreshButton />
       </div>
 
       <section className="mb-6 rounded-xl bg-paper p-4 shadow-sm">
