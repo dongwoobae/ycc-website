@@ -8,6 +8,7 @@ const adminNav = [
   { label: '소식/공지 관리', href: '/admin/posts' },
   { label: '주보 관리', href: '/admin/bulletins' },
   { label: '갤러리 관리', href: '/admin/gallery' },
+  { label: '접속 분석', href: '/admin/analytics' },
   { label: '서버 로그', href: '/admin/log' },
 ]
 

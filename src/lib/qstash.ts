@@ -7,6 +7,7 @@ export type JobName =
   | 'summarize'
   | 'websub-renew'
   | 'retry-summaries'
+  | 'analytics-rollup'
 
 function baseUrl(): string {
   return getCanonicalSiteOrigin()

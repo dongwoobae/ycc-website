@@ -150,6 +150,29 @@ export const appLogs = pgTable('app_logs', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 })
 
+export const pageViews = pgTable('page_views', {
+  id: uuid('id').primaryKey(),
+  visitorId: text('visitor_id').notNull(),
+  sessionId: text('session_id').notNull(),
+  path: text('path').notNull(),
+  referrer: text('referrer'),
+  region: text('region'),
+  ipMasked: text('ip_masked'),
+  userAgent: text('user_agent'),
+  durationSeconds: integer('duration_seconds').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (t) => [
+  index('page_views_created_visitor_idx').on(t.createdAt, t.visitorId),
+  index('page_views_session_created_idx').on(t.sessionId, t.createdAt),
+])
+
+export const dailyPageStats = pgTable('daily_page_stats', {
+  date: date('date').primaryKey(),
+  uniqueVisitors: integer('unique_visitors').notNull(),
+  pageViews: integer('page_views').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+})
+
 export type Profile = typeof profiles.$inferSelect
 export type SermonRow = typeof sermons.$inferSelect
 export type SermonTranscriptRow = typeof sermonTranscripts.$inferSelect
@@ -161,3 +184,5 @@ export type BulletinRow = typeof bulletins.$inferSelect
 export type GalleryAlbumRow = typeof galleryAlbums.$inferSelect
 export type GalleryImageRow = typeof galleryImages.$inferSelect
 export type AppLog = typeof appLogs.$inferSelect
+export type PageViewRow = typeof pageViews.$inferSelect
+export type DailyPageStatsRow = typeof dailyPageStats.$inferSelect
