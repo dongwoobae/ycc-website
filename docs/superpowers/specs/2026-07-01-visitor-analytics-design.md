@@ -19,7 +19,7 @@
 | 항목 | 결정 |
 |---|---|
 | 수집 방식 | 접근법 A — 클라이언트 트래커 + `/api/track` API 라우트 |
-| 방문 단위 | 세션(30분 비활동 시 새 세션) |
+| 방문 단위 | 세션(30분 고정 시간버킷 기반 **결정론적 세션ID** — DB 조회·경쟁조건 없음) |
 | 방문자 식별 | **쿠키리스 서버해시** — `sha256(ANALYTICS_SALT + KST날짜 + IP + User-Agent)` |
 | 동의 배너 | 불필요 (기기에 저장물 없음). 처리방침 고지는 별도 운영 영역 |
 | IP | 마스킹 저장(IPv4 끝옥텟 0, IPv6 하위 비트 0) + 지역명 |
@@ -37,7 +37,7 @@
 |---|---|---|
 | `id` | uuid PK | 클라이언트가 페이지뷰마다 생성하는 `view_id`. duration UPDATE의 키 |
 | `visitor_id` | text notNull | 쿠키리스 일일 해시 (날짜별 로테이션) |
-| `session_id` | uuid notNull | 서버 판정 세션 식별자 |
+| `session_id` | text notNull | 결정론적 세션 식별자 `hash(visitor_id + KST날짜 + 30분버킷)` |
 | `path` | text notNull | 방문 경로 (쿼리스트링 제외) |
 | `referrer` | text nullable | 유입 경로 (있으면) |
 | `region` | text nullable | 지역명 (예: 'Seoul'), 미상 시 null |
@@ -47,9 +47,9 @@
 | `created_at` | timestamptz defaultNow | 진입 시각 |
 
 인덱스:
-- `(visitor_id, created_at)` — 세션 판정(직전 방문 조회) 및 방문자 집계
-- `(created_at)` — 기간 집계/목록 정렬
-- `(session_id)` — 세션 그룹 조회
+- `(created_at, visitor_id)` — 기간 필터 + KST 일별 `count(distinct visitor_id)`
+- `(session_id, created_at)` — 세션 그룹핑·세션별 duration 합산·최신순 정렬
+- 세션ID가 결정론적이라 "직전 방문 조회" 인덱스는 불필요(조회 자체가 없음).
 
 최근(≤90일) 지표 산출 (이 테이블로):
 - 방문자 수 = `count(distinct visitor_id)`
@@ -80,28 +80,33 @@
 - 페이지 진입 시:
   1. `view_id = crypto.randomUUID()` 생성
   2. `POST /api/track { type: 'pageview', viewId, path, referrer }`
-- 체류 측정:
-  - 15초마다 heartbeat: `POST /api/track { type: 'heartbeat', viewId, seconds }`
-  - `visibilitychange`(hidden) / `pagehide` 시 `navigator.sendBeacon('/api/track', { type: 'leave', viewId, seconds })`
+- 체류 측정 (write 부하 최소화):
+  - **주 신호는 leave beacon** — `visibilitychange`(hidden) / `pagehide` 시 `navigator.sendBeacon('/api/track', { type: 'leave', viewId, seconds })`
+  - heartbeat는 beacon 유실 대비 **폴백**으로 60초 간격(탭 visible일 때만). 정상 이탈 시엔 1회 leave만으로 충분
   - 백그라운드(탭 비활성) 시간은 누적에서 제외, 최대 체류시간 상한(예: 2시간)으로 이상치 컷
 - Next App Router 경로 변경 감지: `usePathname`로 경로 바뀌면 이전 view의 leave 처리 후 새 view 시작.
 
 ### 4.2 API 라우트 (`src/app/api/track/route.ts`, Node 런타임)
-`POST`만 처리. 요청 타입별:
+`POST`만 처리. **입력 검증·제외를 라우트 자체에서 수행**(클라 마운트 위치는 심층방어일 뿐, 진짜 게이트 아님). 요청 타입별:
+- 공통 선처리:
+  - **경로 allowlist** — `path`가 공개 경로 규칙을 벗어나면(`/admin`,`/api`,`/sign-in`,정적자산 등) 즉시 204
+  - **관리자 제외** — better-auth 세션 존재 시 204
+  - **봇 제외** — User-Agent 크롤러 패턴이면 204 (best-effort)
+  - **레이트리밋** — visitor_id 기준 단순 상한(과도한 write·스팸 차단)
 - `pageview`:
-  1. **관리자 제외** — better-auth 세션 존재 시 즉시 204 (기록 안 함)
-  2. **봇 제외** — User-Agent가 크롤러 패턴이면 204
-  3. 헤더에서 IP 추출(`x-forwarded-for` 첫 값) → 마스킹, 지역(`x-vercel-ip-city`/`region`) 추출
-  4. `visitor_id = sha256(ANALYTICS_SALT + kstDate + ip + ua)`
-  5. **세션 판정** — 해당 `visitor_id`의 최신 `page_views.created_at` 조회: 30분 이내면 그 `session_id` 재사용, 아니면 새 uuid
-  6. `insert page_views (id=viewId, visitor_id, session_id, path, referrer, region, ip_masked, user_agent, duration_seconds=0)`
+  1. IP 추출(`x-forwarded-for` 첫 값) → 마스킹, 지역(`x-vercel-ip-city`/`region`) 추출
+  2. `visitor_id = sha256(ANALYTICS_SALT + kstDate + ip + ua)`
+  3. `session_id = hash(visitor_id + kstDate + floor(epochMs / 1800000))` — **결정론적, DB 조회 없음**(경쟁조건 제거). 30분 고정버킷 경계에서 방문이 갈리는 근사는 감수
+  4. `insert page_views (id=viewId, visitor_id, session_id, path, referrer, region, ip_masked, user_agent, duration_seconds=0)`
 - `heartbeat` / `leave`:
-  - `update page_views set duration_seconds = greatest(duration_seconds, :seconds) where id = :viewId`
-  - (greatest로 heartbeat·beacon 순서 무관하게 최댓값 유지)
+  - `update page_views set duration_seconds = greatest(duration_seconds, :seconds)`
+    `where id = :viewId and visitor_id = :recomputedVisitorId and created_at > now() - interval '3 hours'`
+  - **visitor_id 재계산 일치**를 요구해 남의 view 조작 차단, 3시간 창으로 오래된 행 갱신 차단, `greatest`로 순서 무관 최댓값 유지, 상한으로 이상치 컷
 
 ### 4.3 유틸리티
-- `src/lib/analytics/ip.ts` — `maskIp(ip)` (IPv4/IPv6), `hashVisitor(salt, date, ip, ua)`
+- `src/lib/analytics/ip.ts` — `maskIp(ip)` (IPv4/IPv6), `hashVisitor(salt, date, ip, ua)`, `sessionId(visitorId, date, epochMs)`
 - `src/lib/analytics/bots.ts` — `isBot(userAgent)` (googlebot/bingbot/crawler/spider/bot 등 패턴)
+- `src/lib/analytics/paths.ts` — `isTrackablePath(path)` (공개경로 allowlist)
 - `ANALYTICS_SALT` env 미설정 시 부팅/최초 사용 시점에 명확한 에러(가드). `.env`는 사용자가 직접 설정.
 
 ### 4.4 롤업 + 보관 정리 잡 (QStash 크론)
@@ -114,7 +119,8 @@
 - 동작:
   1. **롤업** — `daily_page_stats`에 아직 없는 **완료된 모든 날**(어제까지, 누락분 백필 포함)을 `page_views`에서 KST 날짜별 `distinct visitor_id`·`count(*)`로 집계해 upsert. 오늘은 미완료라 제외.
   2. **삭제** — `created_at < now() - 90 days`인 `page_views` 행 삭제.
-- 순서 보장: 반드시 롤업 완료 후 삭제 (집계 누락 방지).
+- 순서 보장: 반드시 롤업 완료 후 삭제. 롤업이 매 실행마다 미집계 완료일을 **전부 백필**하고 보관선(90일)이 일별 갭(1일)보다 훨씬 크므로, 집계 안 된 날이 삭제되는 일은 없음.
+- 타임존: 롤업 집계 키는 KST 날짜, 삭제 임계는 절대시각(`now()-90d`) — 둘은 목적이 달라 혼용 문제 없음(집계 우선 후 삭제).
 - 스케줄 등록: `scripts/qstash-schedules.ts`에 `upsertSchedule({ job: 'analytics-rollup', cron: '10 15 * * *', scheduleId: 'ycc-analytics-rollup' })` 추가.
 
 ## 5. 대시보드 UI (`src/app/admin/analytics/page.tsx`)
@@ -132,16 +138,24 @@
 ## 6. 에러 처리 / 엣지 케이스
 
 - 트래커/track 라우트 실패는 **조용히 무시**(사용자 경험에 영향 0). 서버 로거로만 남김.
-- `view_id` 위조/중복: id는 클라 생성이므로 신뢰 불가 값. 악용해도 자기 세션 duration만 조작 가능 → 영향 경미. 필요 시 duration 상한으로 방어.
+- `view_id` 위조/중복: id는 클라 생성값이라 신뢰 불가 → duration UPDATE를 `visitor_id 재계산 일치 + 최근 3h`로 스코프하고 상한·레이트리밋으로 방어(§4.2).
 - 로컬 개발: Vercel geo 헤더 없음 → region='알수없음', IP는 `127.0.0.x`.
 - SPA 내비게이션·프리페치: 트래커가 실제 pathname 변경만 pageview로 기록.
+
+### 정확도·한계 (대시보드에 명시)
+
+- **방문자 수는 "일일 순방문자 근사치"** — 쿠키리스 해시라 공유 IP/NAT·모바일 IP 변동·UA 변화로 과소·과대 오차가 있고, 날짜 넘는 동일인 식별은 불가(의도된 트레이드오프).
+- **체류시간은 "근사(하한 경향)"** — sendBeacon/heartbeat 유실·모바일 백그라운드·강제종료로 실제보다 짧게 잡힐 수 있음. 대시보드 라벨에 '근사'를 표기.
+- **SALT 정책** — `ANALYTICS_SALT`(정적) + KST날짜로 일 단위 로테이션. 정적 솔트라 솔트 유출 시 특정일 재식별 이론상 가능 → 교회 사이트 수준에선 수용, 필요 시 주기적 솔트 교체로 강화 가능.
 
 ## 7. 테스트 (vitest)
 
 - `maskIp` — IPv4/IPv6 마스킹 정확성
 - `hashVisitor` — 동일 입력 동일 해시, 날짜 바뀌면 다른 해시, 솔트 없으면 에러
 - `isBot` — 대표 크롤러 UA true, 일반 브라우저 UA false
-- 세션 판정 로직 — 30분 경계(이내=재사용 / 초과=신규)
+- `sessionId` 결정론 — 같은 버킷=동일ID(조회 없이), 30분 버킷 경계 넘으면 다른 ID
+- 경로 allowlist — 공개경로 통과 / `/admin`·`/api`·정적 차단
+- duration UPDATE 스코프 — visitor_id 불일치·3h 초과 행은 갱신 안 됨, greatest 최댓값 유지
 - 대시보드 집계 — 방문자/PV/세션/평균체류 계산 (샘플 rows fixture)
 
 ## 8. 범위 밖 (YAGNI)
