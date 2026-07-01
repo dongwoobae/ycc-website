@@ -25,7 +25,7 @@
 | IP | 마스킹 저장(IPv4 끝옥텟 0, IPv6 하위 비트 0) + 지역명 |
 | 지역 산출 | Vercel geo 헤더(`x-vercel-ip-city` 등), 없으면 '알수없음' |
 | 추적 범위 | 공개 페이지만. 관리자 본인 제외, 봇/크롤러 제외 |
-| 보관 기간 | 무기한 (삭제 잡 없음) |
+| 보관 기간 | 상세 로그 **90일** 후 삭제, **일별 집계(방문자·PV)는 영구 보존** |
 | 대시보드 경로 | `/admin/analytics` |
 | 메뉴 권한 | 모든 관리자 (서버로그와 달리 계정 게이팅 없음) |
 
@@ -51,12 +51,26 @@
 - `(created_at)` — 기간 집계/목록 정렬
 - `(session_id)` — 세션 그룹 조회
 
-지표 산출 (별도 테이블 없이 이 테이블로):
+최근(≤90일) 지표 산출 (이 테이블로):
 - 방문자 수 = `count(distinct visitor_id)`
 - PV = `count(*)`
 - 세션 수 = `count(distinct session_id)`
 - 평균 체류시간 = 세션별 `sum(duration_seconds)`의 평균
 - 개별 방문 로그 = `session_id`로 그룹 → 펼치면 해당 세션의 `path` 행들(경로 + 개별 체류)
+
+### 일별 집계 테이블 `daily_page_stats` (영구 보존)
+
+`page_views`를 90일 후 삭제해도 장기 추이가 남도록, 하루 지난 데이터를 롤업해 보존한다.
+
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `date` | date PK | KST 기준 날짜 |
+| `unique_visitors` | integer notNull | 그날 `distinct visitor_id` 수 |
+| `page_views` | integer notNull | 그날 총 PV |
+| `created_at` | timestamptz defaultNow | 롤업 생성 시각 |
+
+- `visitor_id`는 일일 로테이션 해시라 "그날 distinct visitor_id = 그날 순방문자"로 자연 일치.
+- 대시보드 장기 추이(90일 초과 구간)는 이 테이블을 사용.
 
 ## 4. 수집 흐름
 
@@ -89,6 +103,19 @@
 - `src/lib/analytics/bots.ts` — `isBot(userAgent)` (googlebot/bingbot/crawler/spider/bot 등 패턴)
 - `ANALYTICS_SALT` env 미설정 시 부팅/최초 사용 시점에 명확한 에러(가드). `.env`는 사용자가 직접 설정.
 
+### 4.4 롤업 + 보관 정리 잡 (QStash 크론)
+
+기존 QStash 패턴 재사용 (`verifyQStash` + `/api/jobs/{job}` + `scripts/qstash-schedules.ts` 등록).
+
+- 신규 잡: `JobName`에 `analytics-rollup` 추가, 라우트 `src/app/api/jobs/analytics-rollup/route.ts`.
+- 서명 검증: `verifyQStash`로 QStash 서명 확인, 실패 시 401 (기존 잡과 동일).
+- 매일 1회 실행 (예: KST 00:10 = UTC 15:10, cron `10 15 * * *`; QStash cron은 UTC 기준임에 유의).
+- 동작:
+  1. **롤업** — `daily_page_stats`에 아직 없는 과거 날짜(전일 및 미집계일)를 `page_views`에서 KST 날짜별 `distinct visitor_id`·`count(*)`로 집계해 upsert.
+  2. **삭제** — `created_at < now() - 90 days`인 `page_views` 행 삭제.
+- 순서 보장: 반드시 롤업 완료 후 삭제 (집계 누락 방지).
+- 스케줄 등록: `scripts/qstash-schedules.ts`에 `upsertSchedule({ job: 'analytics-rollup', cron: '10 15 * * *', scheduleId: 'ycc-analytics-rollup' })` 추가.
+
 ## 5. 대시보드 UI (`src/app/admin/analytics/page.tsx`)
 
 - admin 레이아웃 nav에 "접속 분석"(`/admin/analytics`) 추가 — 모든 관리자 노출.
@@ -97,6 +124,7 @@
 - 기간 선택(오늘/7일/30일 토글 또는 from~to).
 - 하단 세션 목록 테이블: 컬럼 = 시작시각 · 지역 · IP(마스킹) · 페이지수 · 총 체류시간.
   - 행 클릭 시 드롭다운으로 해당 세션의 페이지 동선(경로 + 진입시각 + 개별 체류) 펼침.
+- 장기 추이: 90일 초과 구간은 `daily_page_stats`(일별 방문자·PV)로 표시. 최근 90일 상세는 `page_views` 사용.
 - 페이지네이션: 기존 `/admin/log` 패턴(PAGE_SIZE+1 조회) 재사용.
 - 서버 컴포넌트로 집계 쿼리 수행, 드롭다운 펼침은 서버에서 세션별 rows를 미리 내려 클라이언트 토글(또는 `<details>`)로 처리.
 
@@ -120,5 +148,5 @@
 - 실시간(라이브) 접속자 뷰
 - 유입 채널/UTM 분석, 이탈률, 전환 퍼널
 - 인기 페이지 순위 (요청 시 추후 추가 — 데이터는 이미 있음)
-- 데이터 보관/삭제 자동화 (무기한 결정)
 - 차트 라이브러리 도입 (초기엔 숫자 카드 + 테이블, 필요 시 후속)
+- 일별 외 주/월 단위 롤업 (일별 집계로 충분, 필요 시 후속)
