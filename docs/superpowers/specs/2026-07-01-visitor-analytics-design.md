@@ -60,7 +60,7 @@
 
 ### 일별 집계 테이블 `daily_page_stats` (영구 보존)
 
-`page_views`를 90일 후 삭제해도 장기 추이가 남도록, 하루 지난 데이터를 롤업해 보존한다.
+런칭일부터 **완료된 모든 날**을 매일 집계해 보존한다(삭제 여부와 무관). `page_views`가 90일 후 삭제돼도 일별 추이는 이 테이블에 온전히 남는다.
 
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
@@ -70,7 +70,8 @@
 | `created_at` | timestamptz defaultNow | 롤업 생성 시각 |
 
 - `visitor_id`는 일일 로테이션 해시라 "그날 distinct visitor_id = 그날 순방문자"로 자연 일치.
-- 대시보드 장기 추이(90일 초과 구간)는 이 테이블을 사용.
+- 오늘(진행 중)은 미완료라 집계하지 않고, 대시보드에서 `page_views`로 실시간 계산.
+- 대시보드 일별 방문자·PV 추이는 이 테이블(완료된 날) + 오늘 실시간을 합쳐 표시.
 
 ## 4. 수집 흐름
 
@@ -111,7 +112,7 @@
 - 서명 검증: `verifyQStash`로 QStash 서명 확인, 실패 시 401 (기존 잡과 동일).
 - 매일 1회 실행 (예: KST 00:10 = UTC 15:10, cron `10 15 * * *`; QStash cron은 UTC 기준임에 유의).
 - 동작:
-  1. **롤업** — `daily_page_stats`에 아직 없는 과거 날짜(전일 및 미집계일)를 `page_views`에서 KST 날짜별 `distinct visitor_id`·`count(*)`로 집계해 upsert.
+  1. **롤업** — `daily_page_stats`에 아직 없는 **완료된 모든 날**(어제까지, 누락분 백필 포함)을 `page_views`에서 KST 날짜별 `distinct visitor_id`·`count(*)`로 집계해 upsert. 오늘은 미완료라 제외.
   2. **삭제** — `created_at < now() - 90 days`인 `page_views` 행 삭제.
 - 순서 보장: 반드시 롤업 완료 후 삭제 (집계 누락 방지).
 - 스케줄 등록: `scripts/qstash-schedules.ts`에 `upsertSchedule({ job: 'analytics-rollup', cron: '10 15 * * *', scheduleId: 'ycc-analytics-rollup' })` 추가.
@@ -124,7 +125,7 @@
 - 기간 선택(오늘/7일/30일 토글 또는 from~to).
 - 하단 세션 목록 테이블: 컬럼 = 시작시각 · 지역 · IP(마스킹) · 페이지수 · 총 체류시간.
   - 행 클릭 시 드롭다운으로 해당 세션의 페이지 동선(경로 + 진입시각 + 개별 체류) 펼침.
-- 장기 추이: 90일 초과 구간은 `daily_page_stats`(일별 방문자·PV)로 표시. 최근 90일 상세는 `page_views` 사용.
+- 일별 방문자·PV 추이: `daily_page_stats`(완료된 날) + 오늘은 `page_views` 실시간. 세션 상세 드릴다운은 최근 90일 `page_views` 사용.
 - 페이지네이션: 기존 `/admin/log` 패턴(PAGE_SIZE+1 조회) 재사용.
 - 서버 컴포넌트로 집계 쿼리 수행, 드롭다운 펼침은 서버에서 세션별 rows를 미리 내려 클라이언트 토글(또는 `<details>`)로 처리.
 
