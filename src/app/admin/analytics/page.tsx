@@ -264,11 +264,15 @@ export default async function AdminAnalyticsPage({
         <table className="min-w-[56rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
             <tr>
-              {['시작시각', '지역', 'IP', '페이지수', '총 체류'].map((heading) => (
-                <th key={heading} className="px-4 py-3 text-left font-medium">
-                  {heading}
-                </th>
-              ))}
+              <th colSpan={5} className="px-4 py-3 font-medium">
+                <div className="grid grid-cols-[1.5fr_1fr_1fr_0.7fr_1fr] gap-4 text-left">
+                  <span>시작시각</span>
+                  <span>지역</span>
+                  <span>IP</span>
+                  <span>페이지수</span>
+                  <span>총 체류</span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -283,7 +287,7 @@ export default async function AdminAnalyticsPage({
                 <tr key={row.sessionId} className="border-t border-line align-top">
                   <td className="px-4 py-3" colSpan={5}>
                     <details>
-                      <summary className="grid cursor-pointer grid-cols-[1.5fr_1fr_1fr_0.7fr_1fr] gap-4 text-left">
+                      <summary className="grid cursor-pointer list-none grid-cols-[1.5fr_1fr_1fr_0.7fr_1fr] gap-4 text-left [&::-webkit-details-marker]:hidden">
                         <span className="text-ink-muted">{formatKstDateTime(row.startedAt)}</span>
                         <span>{row.region || '알수없음'}</span>
                         <span className="font-mono text-xs text-ink-muted">{row.ipMasked || '-'}</span>
