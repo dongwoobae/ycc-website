@@ -1,7 +1,7 @@
-import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { formatSse } from '@/lib/sse'
+import { revalidateSermonPaths } from '@/lib/sermons/revalidate'
 import { resyncAllSermons } from '@/lib/sermons/sync'
 
 // 인라인 자막+요약을 포함하므로 기본(60s)보다 길게. ⚠️ Vercel Hobby는 60s 상한.
@@ -35,9 +35,7 @@ export async function POST() {
       try {
         const result = await resyncAllSermons((p) => send('progress', p))
         // 공개 페이지 ISR 캐시 무효화 (기존 syncNowAction 동작 복원).
-        revalidatePath('/')
-        revalidatePath('/sermons')
-        revalidatePath('/admin/sermons')
+        revalidateSermonPaths()
         send('done', result)
       } catch (e) {
         send('error', { message: e instanceof Error ? e.message : String(e) })

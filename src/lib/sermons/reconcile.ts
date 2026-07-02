@@ -6,6 +6,7 @@ import { expectsAutoSummary } from '@/lib/worship'
 import { fetchChannelVideos } from '@/lib/youtube/rapidapi-channel'
 import { classifyByTitle } from './classify-title'
 import { insertSermon } from './ingest'
+import { revalidateSermonPaths } from './revalidate'
 
 /**
  * 채널 최신 영상과 DB를 대조해 WebSub 푸시가 소실된 누락분을 주워 담는 일일 보정(스케줄 전용).
@@ -28,6 +29,7 @@ export async function reconcileSermons(): Promise<{ checked: number; inserted: n
     const sermonId = await insertSermon(video, worshipType)
     if (!sermonId) continue
     inserted++
+    revalidateSermonPaths(sermonId)
     console.warn(`[reconcile] WebSub 누락분 보정 등록 videoId=${video.videoId} "${video.title}"`)
     await log('error', 'sermon', sermonId, `[reconcile] WebSub 알림 소실 감지 — 보정 등록됨(푸시 경로 점검 필요): ${video.title}`)
 

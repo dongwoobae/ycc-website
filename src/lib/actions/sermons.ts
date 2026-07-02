@@ -1,11 +1,11 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { desc, eq } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonThumbnails } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
+import { revalidateSermonPaths } from '@/lib/sermons/revalidate'
 import { manualSummarize } from '@/lib/sermons/summarize'
 import { isWorshipType } from '@/lib/worship'
 
@@ -15,16 +15,6 @@ export interface SermonEditInput {
   preacher: string
   worshipType: string
   sermonDate: string
-}
-
-function revalidateSermonPaths(id?: string) {
-  revalidatePath('/')
-  revalidatePath('/sermons')
-  revalidatePath('/admin/sermons')
-  if (id) {
-    revalidatePath(`/sermons/${id}`)
-    revalidatePath(`/admin/sermons/${id}/edit`)
-  }
 }
 
 export async function getSermonsForAdmin() {

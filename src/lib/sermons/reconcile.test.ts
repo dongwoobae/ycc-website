@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/db', () => ({
   db: { select: () => ({ from: () => Promise.resolve([{ id: 'existing-video' }]) }) },
 }))

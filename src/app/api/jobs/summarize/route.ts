@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { sermonSummaries } from '@/lib/db/schema'
 import { verifyQStash } from '@/lib/qstash'
+import { revalidateSermonPaths } from '@/lib/sermons/revalidate'
 import { claimSermonById, summarizeClaimed } from '@/lib/sermons/summarize'
 
 export const maxDuration = 300
@@ -27,5 +28,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: true, skipped: 'no transcript' })
   }
   const status = await summarizeClaimed(claimed.id, claimed.durationSeconds, text, claimed.attempts)
+  // 요약이 상세/목록에 노출되므로 완료 즉시 ISR 캐시를 무효화한다.
+  if (status === 'ready') revalidateSermonPaths(sermonId)
   return Response.json({ ok: true, status })
 }

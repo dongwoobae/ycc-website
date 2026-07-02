@@ -1,6 +1,7 @@
 import { log } from '@/lib/logger'
 import { publishJob, RETRY_DELAY_SECONDS, verifyQStash } from '@/lib/qstash'
 import { insertSermon, sermonExists } from '@/lib/sermons/ingest'
+import { revalidateSermonPaths } from '@/lib/sermons/revalidate'
 import { classifyByTitle } from '@/lib/sermons/classify-title'
 import { expectsAutoSummary } from '@/lib/worship'
 import { fetchChannelVideos } from '@/lib/youtube/rapidapi-channel'
@@ -34,6 +35,8 @@ export async function POST(req: Request) {
 
   const worshipType = classifyByTitle(video.title)
   const sermonId = await insertSermon(video, worshipType)
+  // 자동 등록분이 ISR 1시간 주기를 기다리지 않고 즉시 공개 페이지에 노출되게 한다.
+  if (sermonId) revalidateSermonPaths(sermonId)
   if (sermonId && expectsAutoSummary(worshipType)) {
     try {
       await publishJob('fetch-transcript', { sermonId, videoId, attempt: 0 })

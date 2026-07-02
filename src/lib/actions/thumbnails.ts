@@ -1,12 +1,12 @@
 'use server'
 
 // 인물컷형(cutout) 누끼 기능 정식 활성화 — 옛 가드 제거됨. (빌드 캐시 무효화용 마커)
-import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonThumbnails } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
+import { revalidateSermonPaths } from '@/lib/sermons/revalidate'
 import { composeThumbnailText } from '@/lib/thumbnails/compose-text'
 import { generateThumbnail, type GenerateThumbnailResult } from '@/lib/thumbnails/generate'
 import { geminiHeadline } from '@/lib/thumbnails/headline'
@@ -35,14 +35,6 @@ function coerceColors(colors: ThumbnailColors | undefined): ThumbnailColors {
     headline: pick(colors?.headline, DEFAULT_THUMBNAIL_COLORS.headline),
     scripture: pick(colors?.scripture, DEFAULT_THUMBNAIL_COLORS.scripture),
   }
-}
-
-function revalidate(id: string) {
-  revalidatePath('/')
-  revalidatePath('/sermons')
-  revalidatePath(`/sermons/${id}`)
-  revalidatePath('/admin/sermons')
-  revalidatePath(`/admin/sermons/${id}/edit`)
 }
 
 export async function suggestThumbnailTextAction(id: string, style: ThumbnailStyle): Promise<ThumbnailText> {
@@ -124,12 +116,12 @@ export async function composeAndApplyThumbnailAction(
   const candidate = await storeCandidate(id, style, png)
   await db.update(sermons).set({ customThumbnailUrl: candidate.url }).where(eq(sermons.id, id))
   await log('update', 'sermon', id, `thumbnail:apply:${style}`, session.user.id)
-  revalidate(id)
+  revalidateSermonPaths(id)
 }
 
 export async function resetThumbnailAction(id: string): Promise<void> {
   const session = await requireAdmin()
   await db.update(sermons).set({ customThumbnailUrl: null }).where(eq(sermons.id, id))
   await log('update', 'sermon', id, 'thumbnail:reset', session.user.id)
-  revalidate(id)
+  revalidateSermonPaths(id)
 }
