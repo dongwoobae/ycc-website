@@ -23,6 +23,14 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '12mb',
     },
   },
+  // Vercel 함수 번들에 sharp 리눅스 네이티브 바이너리가 누락되면 sharp 가 경고 없이
+  // WASM 으로 폴백한다(느리고, SharedArrayBuffer 출력이 R2 업로드를 깨뜨림). 강제 포함한다.
+  outputFileTracingIncludes: {
+    '/**': [
+      './node_modules/@img/sharp-linux-x64/**',
+      './node_modules/@img/sharp-libvips-linux-x64/**',
+    ],
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

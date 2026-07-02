@@ -43,30 +43,34 @@ export default function ThumbnailModal({
 }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<ThumbnailStyle>('classic')
+  const [error, setError] = useState('')
   const [pending, start] = useTransition()
 
-  function apply(text: ThumbnailText, options: ThumbnailRenderOptions) {
+  // 서버액션이 throw 하면 에러 바운더리로 페이지가 통째로 튕기므로 모달 안에서 잡아 안내한다.
+  // (프로덕션에선 액션 에러 메시지가 마스킹되므로 고정 문구를 쓴다 — 상세는 서버 로그 digest 로 추적)
+  function run(action: () => Promise<void>, failMessage: string) {
+    setError('')
     start(async () => {
-      await composeAndApplyThumbnailAction(sermonId, tab, text, options)
-      router.refresh()
-      onClose()
+      try {
+        await action()
+        router.refresh()
+        onClose()
+      } catch {
+        setError(failMessage)
+      }
     })
+  }
+
+  function apply(text: ThumbnailText, options: ThumbnailRenderOptions) {
+    run(() => composeAndApplyThumbnailAction(sermonId, tab, text, options), '썸네일 적용에 실패했습니다. 잠시 후 다시 시도해주세요.')
   }
 
   function applyCandidate(url: string) {
-    start(async () => {
-      await applyCandidateThumbnailAction(sermonId, url)
-      router.refresh()
-      onClose()
-    })
+    run(() => applyCandidateThumbnailAction(sermonId, url), '생성본 적용에 실패했습니다. 잠시 후 다시 시도해주세요.')
   }
 
   function reset() {
-    start(async () => {
-      await resetThumbnailAction(sermonId)
-      router.refresh()
-      onClose()
-    })
+    run(() => resetThumbnailAction(sermonId), '되돌리기에 실패했습니다. 잠시 후 다시 시도해주세요.')
   }
 
   return (
@@ -108,6 +112,7 @@ export default function ThumbnailModal({
             />
           </div>
         ))}
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
         <ThumbnailRecentCandidates
           candidates={candidates}
           appliedUrl={appliedThumbnailUrl}

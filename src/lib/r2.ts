@@ -59,13 +59,21 @@ export function bulletinHwpKey(filename: string) {
   return `bulletins/${crypto.randomUUID()}-${sanitizeR2Filename(filename)}`
 }
 
+// sharp가 WASM(@img/sharp-wasm32) 폴백으로 동작하면 출력 버퍼가 SharedArrayBuffer 기반이 되는데,
+// aws-sdk SigV4 페이로드 해시가 SAB 를 거부해 업로드가 TypeError 로 죽는다. 일반 버퍼로 복사해 방어한다.
+export function toArrayBufferBacked(buffer: Buffer): Buffer {
+  return buffer.buffer instanceof SharedArrayBuffer ? Buffer.from(buffer) : buffer
+}
+
 export async function uploadToR2(buffer: Buffer, key: string, contentType: UploadMime): Promise<string> {
   if (!isAllowedUploadMime(contentType)) throw new Error('unsupported upload content type')
+  const body = toArrayBufferBacked(buffer)
+  if (body !== buffer) console.warn(`[r2] SharedArrayBuffer 기반 버퍼 감지 — 복사 후 업로드 key=${key}`)
   await getR2Client().send(
     new PutObjectCommand({
       Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
       Key: key,
-      Body: buffer,
+      Body: body,
       ContentType: contentType,
     })
   )
