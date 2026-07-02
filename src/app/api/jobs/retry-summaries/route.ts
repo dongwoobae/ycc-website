@@ -16,5 +16,8 @@ export async function POST(req: Request) {
   for (const t of targets) {
     await publishJob('summarize', { sermonId: t.id })
   }
+  if (targets.length > 0) {
+    console.log(`[retry-summaries] 요약 실패분 ${targets.length}건 재투입: ${targets.map((t) => t.id).join(', ')}`)
+  }
   return Response.json({ ok: true, enqueued: targets.length })
 }

@@ -1,3 +1,4 @@
+import { log } from '@/lib/logger'
 import { publishJob } from '@/lib/qstash'
 import { channelTopicUrl, parseWebSubNotification, verifyWebSubSignature } from '@/lib/youtube/websub'
 
@@ -25,7 +26,15 @@ export async function POST(req: Request) {
   }
   const note = parseWebSubNotification(rawBuffer.toString('utf8'))
   if (note.kind === 'upload') {
-    await publishJob('ingest-video', { videoId: note.videoId, attempt: 0 })
+    console.log(`[websub] upload 알림 수신 videoId=${note.videoId} published=${note.published}`)
+    try {
+      await publishJob('ingest-video', { videoId: note.videoId, attempt: 0 })
+    } catch (e) {
+      // 발행 실패가 무기록 500으로 묻히지 않게 원인을 남기고, 500을 반환해 허브 재전송을 유도한다.
+      console.error(`[websub] ingest-video 발행 실패 videoId=${note.videoId}`, e)
+      await log('error', 'sermon', undefined, `[websub] ingest-video 발행 실패: videoId=${note.videoId}`)
+      return new Response('publish failed', { status: 500 })
+    }
   } else if (note.kind === 'unknown') {
     // 파싱 실패가 unknown 처리로 묻히지 않도록 원문 일부를 남긴다.
     console.warn('[websub] unparsed notification', rawBuffer.toString('utf8').slice(0, 500))

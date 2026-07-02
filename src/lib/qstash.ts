@@ -7,6 +7,7 @@ export type JobName =
   | 'summarize'
   | 'websub-renew'
   | 'retry-summaries'
+  | 'reconcile-sermons'
   | 'analytics-rollup'
 
 function baseUrl(): string {

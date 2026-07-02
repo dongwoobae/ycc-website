@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { DEFAULT_PREACHER } from '@/lib/constants'
 import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonTranscripts, sermonThumbnails } from '@/lib/db/schema'
+import { log } from '@/lib/logger'
 import type { WorshipType } from '@/lib/types'
 import { sermonDateFromTitle } from '@/lib/sermons/sermon-date'
 import type { YouTubeVideo } from '@/lib/youtube/types'
@@ -33,6 +34,8 @@ export async function insertSermon(video: YouTubeVideo, worshipType: WorshipType
     await db.insert(sermonSummaries).values({ sermonId: id }).onConflictDoNothing()
     await db.insert(sermonTranscripts).values({ sermonId: id }).onConflictDoNothing()
     await db.insert(sermonThumbnails).values({ sermonId: id }).onConflictDoNothing()
+    console.log(`[sermon] 등록 videoId=${video.videoId} type=${worshipType} "${video.title}"`)
+    await log('create', 'sermon', id, `${video.title} (${worshipType})`)
   }
   return id
 }

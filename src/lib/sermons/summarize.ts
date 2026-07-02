@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
+import { log } from '@/lib/logger'
 import { generateSermonSummary, DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 import { buildTranscriptText, type TranscriptSegment } from '@/lib/transcript/prompt'
@@ -141,9 +142,12 @@ export async function summarizeClaimed(
         summaryModel: result.model ?? model,
       })
       .where(eq(sermonSummaries.sermonId, id))
+    console.log(`[summarize] AI 요약 완료 sermonId=${id} (시도 ${attempts}회, model=${result.model ?? model})`)
+    await log('update', 'sermon', id, `AI 요약 완료 (시도 ${attempts}회)`)
     return 'ready'
   } catch (e) {
     console.error(`[summarize] ${id} failed`, e)
+    await log('error', 'sermon', id, `AI 요약 실패 (시도 ${attempts}회): ${e instanceof Error ? e.message.slice(0, 150) : String(e).slice(0, 150)}`)
     await db
       .update(sermonSummaries)
       .set({
