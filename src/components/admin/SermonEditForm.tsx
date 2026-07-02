@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { generateSummaryAction, updateSermonAction, type SermonEditInput } from '@/lib/actions/sermons'
 import { formatTimestamp } from '@/lib/sermons/format'
 import type { SermonChapter } from '@/lib/types'
-import type { ThumbnailCandidate, ThumbnailStyle } from '@/lib/thumbnails/types'
+import type { ThumbnailCandidate, ThumbnailStyle, ThumbnailText } from '@/lib/thumbnails/types'
 import { worshipTypes } from '@/lib/worship'
 import ThumbnailModal from './ThumbnailModal'
 
@@ -18,6 +18,7 @@ interface Props {
   backgrounds: Partial<Record<ThumbnailStyle, string>>
   cutoutUrl?: string
   candidates: ThumbnailCandidate[]
+  texts: Partial<Record<ThumbnailStyle, ThumbnailText>>
   appliedThumbnailUrl?: string
 }
 
@@ -30,6 +31,7 @@ export default function SermonEditForm({
   backgrounds,
   cutoutUrl,
   candidates,
+  texts,
   appliedThumbnailUrl,
 }: Props) {
   const router = useRouter()
@@ -174,6 +176,7 @@ export default function SermonEditForm({
           backgrounds={backgrounds}
           cutoutUrl={cutoutUrl}
           candidates={candidates}
+          texts={texts}
           appliedThumbnailUrl={appliedThumbnailUrl}
           onClose={() => setThumbOpen(false)}
         />

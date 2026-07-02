@@ -33,7 +33,7 @@ beforeEach(() => {
 })
 
 // 모듈은 mock 설정 이후 import (동적 import로 보장)
-const { storeCandidate, MAX_THUMBNAIL_CANDIDATES } = await import('./store')
+const { storeCandidate, storeText, MAX_THUMBNAIL_CANDIDATES } = await import('./store')
 
 function toKey(url: string) {
   return url.slice('https://r2.example/'.length)
@@ -66,5 +66,21 @@ describe('storeCandidate (integration) — 원자적 append+trim SQL', () => {
     const [row] = await h.db.select().from(sermonThumbnails).where(eq(sermonThumbnails.sermonId, id))
     expect(row.thumbnailCandidates?.some((c) => c.url === first.url)).toBe(false) // 배열에선 밀려남
     expect(deleted).toEqual([]) // 파일은 보존
+  })
+})
+
+describe('storeText (integration) — 스타일별 문구 merge upsert', () => {
+  it('위성 행이 없으면 만들고, 같은 스타일은 덮어쓰되 다른 스타일은 보존한다', async () => {
+    const id = await insertSermonFixture(h.db, { withSummaryRow: false })
+
+    await storeText(id, 'classic', { headline: '제목', scripture: '요 3:16' })
+    await storeText(id, 'hook', { headline: '후킹 문구', scripture: '' })
+    await storeText(id, 'classic', { headline: '수정된 제목', scripture: '요 3:16' })
+
+    const [row] = await h.db.select().from(sermonThumbnails).where(eq(sermonThumbnails.sermonId, id))
+    expect(row.thumbnailTexts).toEqual({
+      classic: { headline: '수정된 제목', scripture: '요 3:16' },
+      hook: { headline: '후킹 문구', scripture: '' },
+    })
   })
 })

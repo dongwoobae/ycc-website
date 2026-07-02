@@ -6,6 +6,7 @@ import {
   applyCandidateThumbnailAction,
   composeAndApplyThumbnailAction,
   resetThumbnailAction,
+  type ThumbnailActionResult,
 } from '@/lib/actions/thumbnails'
 import {
   THUMBNAIL_STYLES,
@@ -29,6 +30,7 @@ interface Props {
   backgrounds: Partial<Record<ThumbnailStyle, string>>
   cutoutUrl?: string
   candidates: ThumbnailCandidate[]
+  texts: Partial<Record<ThumbnailStyle, ThumbnailText>>
   appliedThumbnailUrl?: string
   onClose: () => void
 }
@@ -38,6 +40,7 @@ export default function ThumbnailModal({
   backgrounds,
   cutoutUrl,
   candidates,
+  texts,
   appliedThumbnailUrl,
   onClose,
 }: Props) {
@@ -46,13 +49,17 @@ export default function ThumbnailModal({
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
 
-  // 서버액션이 throw 하면 에러 바운더리로 페이지가 통째로 튕기므로 모달 안에서 잡아 안내한다.
-  // (프로덕션에선 액션 에러 메시지가 마스킹되므로 고정 문구를 쓴다 — 상세는 서버 로그 digest 로 추적)
-  function run(action: () => Promise<void>, failMessage: string) {
+  // 예상 가능한 실패는 액션 반환값(error)으로 구체적 메시지를 보여주고, 예상 밖 throw 는
+  // 에러 바운더리로 페이지가 튕기지 않게 잡아 고정 문구로 안내한다(상세는 서버 로그 digest).
+  function run(action: () => Promise<ThumbnailActionResult>, failMessage: string) {
     setError('')
     start(async () => {
       try {
-        await action()
+        const result = await action()
+        if (!result.ok) {
+          setError(result.error)
+          return
+        }
         router.refresh()
         onClose()
       } catch {
@@ -107,6 +114,7 @@ export default function ThumbnailModal({
               description={DESCRIPTIONS[s]}
               background={backgrounds[s]}
               cutout={cutoutUrl}
+              initialText={texts[s]}
               onApply={apply}
               applying={pending}
             />

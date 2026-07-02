@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import type { BulletinSection, SermonChapter } from '../types'
-import type { ThumbnailCandidate, ThumbnailStyle } from '@/lib/thumbnails/types'
+import type { ThumbnailCandidate, ThumbnailStyle, ThumbnailText } from '@/lib/thumbnails/types'
 
 // Better Auth 테이블 (user/session/account/verification) — drizzle push 포함용 재노출
 export * from './auth-schema'
@@ -80,6 +80,8 @@ export const sermonThumbnails = pgTable('sermon_thumbnails', {
   thumbnailBgKeywords: text('thumbnail_bg_keywords'),
   thumbnailBackgrounds: jsonb('thumbnail_backgrounds').$type<Partial<Record<ThumbnailStyle, string>>>(),
   thumbnailCutoutUrl: text('thumbnail_cutout_url'),
+  // 스타일별 마지막 생성/적용 문구 — 모달 재진입 시 프리필해 불필요한 Gemini 재호출을 줄인다.
+  thumbnailTexts: jsonb('thumbnail_texts').$type<Partial<Record<ThumbnailStyle, ThumbnailText>>>(),
 })
 
 export const posts = pgTable(

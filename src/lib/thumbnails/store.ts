@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { sermons, sermonThumbnails } from '@/lib/db/schema'
 import { deleteFromR2, keyFromUrl, uploadToR2 } from '@/lib/r2'
 import { toWebp } from './webp'
-import type { ThumbnailCandidate, ThumbnailStyle } from './types'
+import type { ThumbnailCandidate, ThumbnailStyle, ThumbnailText } from './types'
 
 // 후보(생성본)는 되돌리기용으로 최근 N건만 유지하고 초과분은 R2에서도 지운다.
 export const MAX_THUMBNAIL_CANDIDATES = 3
@@ -66,6 +66,26 @@ export async function storeBackground(
 
   if (previousUrl && previousUrl !== url) await deleteQuietly(previousUrl)
   return url
+}
+
+/**
+ * 스타일별 마지막 생성/적용 문구를 sermon_thumbnails.thumbnailTexts[style]에 저장한다.
+ * 모달 재진입 시 프리필해 불필요한 Gemini 재호출을 줄인다. (위성 행 부재 시 upsert)
+ */
+export async function storeText(sermonId: string, style: ThumbnailStyle, text: ThumbnailText): Promise<void> {
+  const updated = await db
+    .insert(sermonThumbnails)
+    .values({ sermonId, thumbnailTexts: { [style]: text } })
+    .onConflictDoUpdate({
+      target: sermonThumbnails.sermonId,
+      set: {
+        thumbnailTexts: sql`coalesce(${sermonThumbnails.thumbnailTexts}, '{}'::jsonb) || ${JSON.stringify(
+          { [style]: text }
+        )}::jsonb`,
+      },
+    })
+    .returning({ id: sermonThumbnails.sermonId })
+  if (updated.length === 0) throw new Error('sermon not found')
 }
 
 export async function storeCandidate(

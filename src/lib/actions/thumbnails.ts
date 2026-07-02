@@ -11,7 +11,7 @@ import { composeThumbnailText } from '@/lib/thumbnails/compose-text'
 import { generateThumbnail, type GenerateThumbnailResult } from '@/lib/thumbnails/generate'
 import { geminiHeadline } from '@/lib/thumbnails/headline'
 import { renderThumbnail, toDataUrl } from '@/lib/thumbnails/render'
-import { storeCandidate } from '@/lib/thumbnails/store'
+import { storeCandidate, storeText } from '@/lib/thumbnails/store'
 import {
   DEFAULT_THUMBNAIL_COLORS,
   DEFAULT_THUMBNAIL_POSITION,
@@ -22,6 +22,11 @@ import {
   type ThumbnailStyle,
   type ThumbnailText,
 } from '@/lib/thumbnails/types'
+
+// 프로덕션에선 서버액션이 throw 한 메시지가 마스킹되므로, 사용자에게 보여줄 예상 가능한
+// 실패는 반환값으로 전달한다. 예상 밖 에러는 그대로 throw 해 서버 로그(digest)에 남긴다.
+export type ThumbnailActionResult = { ok: true } | { ok: false; error: string }
+export type ThumbnailTextResult = { ok: true; text: ThumbnailText } | { ok: false; error: string }
 
 function coercePosition(position: ThumbnailPosition | undefined): ThumbnailPosition {
   return isThumbnailPosition(position) ? position : DEFAULT_THUMBNAIL_POSITION
@@ -37,7 +42,7 @@ function coerceColors(colors: ThumbnailColors | undefined): ThumbnailColors {
   }
 }
 
-export async function suggestThumbnailTextAction(id: string, style: ThumbnailStyle): Promise<ThumbnailText> {
+export async function suggestThumbnailTextAction(id: string, style: ThumbnailStyle): Promise<ThumbnailTextResult> {
   await requireAdmin()
   const [row] = await db
     .select({
@@ -50,8 +55,15 @@ export async function suggestThumbnailTextAction(id: string, style: ThumbnailSty
     .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
     .where(eq(sermons.id, id))
     .limit(1)
-  if (!row) throw new Error('sermon not found')
-  return composeThumbnailText(style, row, geminiHeadline)
+  if (!row) return { ok: false, error: '설교를 찾을 수 없습니다.' }
+  try {
+    const text = await composeThumbnailText(style, row, geminiHeadline)
+    await storeText(id, style, text)
+    return { ok: true, text }
+  } catch (e) {
+    console.error('[thumbnails] 문구 생성 실패', e)
+    return { ok: false, error: '문구 생성에 실패했습니다. 잠시 후 다시 시도해주세요.' }
+  }
 }
 
 /**
@@ -78,7 +90,7 @@ export async function composeAndApplyThumbnailAction(
   style: ThumbnailStyle,
   text: ThumbnailText,
   options: ThumbnailRenderOptions
-): Promise<void> {
+): Promise<ThumbnailActionResult> {
   const session = await requireAdmin()
 
   const [row] = await db
@@ -89,18 +101,18 @@ export async function composeAndApplyThumbnailAction(
     .from(sermonThumbnails)
     .where(eq(sermonThumbnails.sermonId, id))
     .limit(1)
-  if (!row) throw new Error('sermon not found')
+  if (!row) return { ok: false, error: '설교를 찾을 수 없습니다.' }
   const backgroundUrl = row.backgrounds?.[style]
-  if (!backgroundUrl) throw new Error('적용할 배경이 없습니다. 먼저 썸네일을 생성하세요.')
+  if (!backgroundUrl) return { ok: false, error: '적용할 배경이 없습니다. 먼저 썸네일을 생성하세요.' }
 
   const res = await fetch(backgroundUrl)
-  if (!res.ok) throw new Error(`배경 이미지를 불러오지 못했습니다: ${res.status}`)
+  if (!res.ok) return { ok: false, error: `배경 이미지를 불러오지 못했습니다: ${res.status}` }
   const background = Buffer.from(await res.arrayBuffer())
 
   let cutoutDataUrl: string | undefined
   if (style === 'cutout' && row.cutoutUrl) {
     const cutoutRes = await fetch(row.cutoutUrl)
-    if (!cutoutRes.ok) throw new Error(`누끼 이미지를 불러오지 못했습니다: ${cutoutRes.status}`)
+    if (!cutoutRes.ok) return { ok: false, error: `누끼 이미지를 불러오지 못했습니다: ${cutoutRes.status}` }
     cutoutDataUrl = toDataUrl(Buffer.from(await cutoutRes.arrayBuffer()))
   }
 
@@ -115,32 +127,37 @@ export async function composeAndApplyThumbnailAction(
 
   const candidate = await storeCandidate(id, style, png)
   await db.update(sermons).set({ customThumbnailUrl: candidate.url }).where(eq(sermons.id, id))
+  // 적용에 쓴 최종 문구(직접 수정분 포함)를 저장해 다음 모달 진입 시 프리필한다.
+  await storeText(id, style, { headline: text.headline, scripture: text.scripture })
   await log('update', 'sermon', id, `thumbnail:apply:${style}`, session.user.id)
   revalidateSermonPaths(id)
+  return { ok: true }
 }
 
 /**
  * 최근 생성본(후보) 중 하나를 설교 썸네일로 재적용한다. (재합성·AI 호출 없음 → 무비용)
  */
-export async function applyCandidateThumbnailAction(id: string, url: string): Promise<void> {
+export async function applyCandidateThumbnailAction(id: string, url: string): Promise<ThumbnailActionResult> {
   const session = await requireAdmin()
   const [row] = await db
     .select({ candidates: sermonThumbnails.thumbnailCandidates })
     .from(sermonThumbnails)
     .where(eq(sermonThumbnails.sermonId, id))
     .limit(1)
-  if (!row) throw new Error('sermon not found')
+  if (!row) return { ok: false, error: '설교를 찾을 수 없습니다.' }
   if (!row.candidates?.some((candidate) => candidate.url === url))
-    throw new Error('해당 생성본을 찾을 수 없습니다.')
+    return { ok: false, error: '해당 생성본을 찾을 수 없습니다.' }
 
   await db.update(sermons).set({ customThumbnailUrl: url }).where(eq(sermons.id, id))
   await log('update', 'sermon', id, 'thumbnail:apply:candidate', session.user.id)
   revalidateSermonPaths(id)
+  return { ok: true }
 }
 
-export async function resetThumbnailAction(id: string): Promise<void> {
+export async function resetThumbnailAction(id: string): Promise<ThumbnailActionResult> {
   const session = await requireAdmin()
   await db.update(sermons).set({ customThumbnailUrl: null }).where(eq(sermons.id, id))
   await log('update', 'sermon', id, 'thumbnail:reset', session.user.id)
   revalidateSermonPaths(id)
+  return { ok: true }
 }

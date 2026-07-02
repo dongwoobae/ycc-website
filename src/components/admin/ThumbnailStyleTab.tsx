@@ -22,12 +22,14 @@ interface Props {
   description: string;
   background?: string;
   cutout?: string;
+  initialText?: ThumbnailText;
   onApply: (text: ThumbnailText, options: ThumbnailRenderOptions) => void;
   applying: boolean;
 }
 
-export default function ThumbnailStyleTab({ sermonId, style, description, background: initialBackground, cutout: initialCutout, onApply, applying }: Props) {
-  const [text, setText] = useState<ThumbnailText>({ headline: "", scripture: "" });
+export default function ThumbnailStyleTab({ sermonId, style, description, background: initialBackground, cutout: initialCutout, initialText, onApply, applying }: Props) {
+  // 이전에 생성/적용한 문구가 저장돼 있으면 프리필 — Gemini 재호출 없이 바로 적용할 수 있다.
+  const [text, setText] = useState<ThumbnailText>(initialText ?? { headline: "", scripture: "" });
   const [background, setBackground] = useState<string | undefined>(initialBackground);
   const [cutout, setCutout] = useState<string | undefined>(initialCutout);
   const [position, setPosition] = useState<ThumbnailPosition>(DEFAULT_THUMBNAIL_POSITION);
@@ -44,9 +46,11 @@ export default function ThumbnailStyleTab({ sermonId, style, description, backgr
     setLoadingText(true);
     start(async () => {
       try {
-        setText(await suggestThumbnailTextAction(sermonId, style));
-      } catch (e) {
-        setMsg(e instanceof Error ? e.message : String(e));
+        const result = await suggestThumbnailTextAction(sermonId, style);
+        if (result.ok) setText(result.text);
+        else setMsg(result.error);
+      } catch {
+        setMsg("문구 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
       } finally {
         setLoadingText(false);
       }
@@ -76,7 +80,7 @@ export default function ThumbnailStyleTab({ sermonId, style, description, backgr
           disabled={pending || loadingText || generating}
           className="shrink-0 rounded-md border border-line px-2.5 py-1 text-xs disabled:opacity-50"
         >
-          {loadingText ? "문구 불러오는 중…" : "문구 생성"}
+          {loadingText ? "문구 불러오는 중…" : text.headline ? "문구 재생성" : "문구 생성"}
         </button>
       </div>
       <div className="grid gap-2">
