@@ -119,6 +119,25 @@ export async function composeAndApplyThumbnailAction(
   revalidateSermonPaths(id)
 }
 
+/**
+ * 최근 생성본(후보) 중 하나를 설교 썸네일로 재적용한다. (재합성·AI 호출 없음 → 무비용)
+ */
+export async function applyCandidateThumbnailAction(id: string, url: string): Promise<void> {
+  const session = await requireAdmin()
+  const [row] = await db
+    .select({ candidates: sermonThumbnails.thumbnailCandidates })
+    .from(sermonThumbnails)
+    .where(eq(sermonThumbnails.sermonId, id))
+    .limit(1)
+  if (!row) throw new Error('sermon not found')
+  if (!row.candidates?.some((candidate) => candidate.url === url))
+    throw new Error('해당 생성본을 찾을 수 없습니다.')
+
+  await db.update(sermons).set({ customThumbnailUrl: url }).where(eq(sermons.id, id))
+  await log('update', 'sermon', id, 'thumbnail:apply:candidate', session.user.id)
+  revalidateSermonPaths(id)
+}
+
 export async function resetThumbnailAction(id: string): Promise<void> {
   const session = await requireAdmin()
   await db.update(sermons).set({ customThumbnailUrl: null }).where(eq(sermons.id, id))

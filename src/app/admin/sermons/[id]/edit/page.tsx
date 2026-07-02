@@ -31,6 +31,8 @@ export default async function EditSermonPage({ params }: { params: Promise<{ id:
           chapters={row.chapters ?? []}
           backgrounds={row.thumbnailBackgrounds ?? {}}
           cutoutUrl={row.thumbnailCutoutUrl ?? undefined}
+          candidates={row.thumbnailCandidates ?? []}
+          appliedThumbnailUrl={row.customThumbnailUrl ?? undefined}
         />
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <div className="rounded-lg border border-line p-4">

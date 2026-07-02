@@ -2,14 +2,20 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { composeAndApplyThumbnailAction, resetThumbnailAction } from '@/lib/actions/thumbnails'
+import {
+  applyCandidateThumbnailAction,
+  composeAndApplyThumbnailAction,
+  resetThumbnailAction,
+} from '@/lib/actions/thumbnails'
 import {
   THUMBNAIL_STYLES,
   THUMBNAIL_STYLE_LABELS,
+  type ThumbnailCandidate,
   type ThumbnailRenderOptions,
   type ThumbnailStyle,
   type ThumbnailText,
 } from '@/lib/thumbnails/types'
+import ThumbnailRecentCandidates from './ThumbnailRecentCandidates'
 import ThumbnailStyleTab from './ThumbnailStyleTab'
 
 const DESCRIPTIONS: Record<ThumbnailStyle, string> = {
@@ -22,10 +28,19 @@ interface Props {
   sermonId: string
   backgrounds: Partial<Record<ThumbnailStyle, string>>
   cutoutUrl?: string
+  candidates: ThumbnailCandidate[]
+  appliedThumbnailUrl?: string
   onClose: () => void
 }
 
-export default function ThumbnailModal({ sermonId, backgrounds, cutoutUrl, onClose }: Props) {
+export default function ThumbnailModal({
+  sermonId,
+  backgrounds,
+  cutoutUrl,
+  candidates,
+  appliedThumbnailUrl,
+  onClose,
+}: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<ThumbnailStyle>('classic')
   const [pending, start] = useTransition()
@@ -33,6 +48,14 @@ export default function ThumbnailModal({ sermonId, backgrounds, cutoutUrl, onClo
   function apply(text: ThumbnailText, options: ThumbnailRenderOptions) {
     start(async () => {
       await composeAndApplyThumbnailAction(sermonId, tab, text, options)
+      router.refresh()
+      onClose()
+    })
+  }
+
+  function applyCandidate(url: string) {
+    start(async () => {
+      await applyCandidateThumbnailAction(sermonId, url)
       router.refresh()
       onClose()
     })
@@ -85,6 +108,12 @@ export default function ThumbnailModal({ sermonId, backgrounds, cutoutUrl, onClo
             />
           </div>
         ))}
+        <ThumbnailRecentCandidates
+          candidates={candidates}
+          appliedUrl={appliedThumbnailUrl}
+          disabled={pending}
+          onApply={applyCandidate}
+        />
         <div className="mt-6 border-t border-line pt-4">
           <button
             type="button"

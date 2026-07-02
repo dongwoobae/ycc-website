@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { generateSummaryAction, updateSermonAction, type SermonEditInput } from '@/lib/actions/sermons'
 import { formatTimestamp } from '@/lib/sermons/format'
 import type { SermonChapter } from '@/lib/types'
-import type { ThumbnailStyle } from '@/lib/thumbnails/types'
+import type { ThumbnailCandidate, ThumbnailStyle } from '@/lib/thumbnails/types'
 import { worshipTypes } from '@/lib/worship'
 import ThumbnailModal from './ThumbnailModal'
 
@@ -17,9 +17,21 @@ interface Props {
   chapters: SermonChapter[]
   backgrounds: Partial<Record<ThumbnailStyle, string>>
   cutoutUrl?: string
+  candidates: ThumbnailCandidate[]
+  appliedThumbnailUrl?: string
 }
 
-export default function SermonEditForm({ id, initial, summaryStatus, quickSummary, chapters, backgrounds, cutoutUrl }: Props) {
+export default function SermonEditForm({
+  id,
+  initial,
+  summaryStatus,
+  quickSummary,
+  chapters,
+  backgrounds,
+  cutoutUrl,
+  candidates,
+  appliedThumbnailUrl,
+}: Props) {
   const router = useRouter()
   const [form, setForm] = useState<SermonEditInput>(initial)
   const [msg, setMsg] = useState('')
@@ -157,7 +169,14 @@ export default function SermonEditForm({ id, initial, summaryStatus, quickSummar
       </div>
 
       {thumbOpen && (
-        <ThumbnailModal sermonId={id} backgrounds={backgrounds} cutoutUrl={cutoutUrl} onClose={() => setThumbOpen(false)} />
+        <ThumbnailModal
+          sermonId={id}
+          backgrounds={backgrounds}
+          cutoutUrl={cutoutUrl}
+          candidates={candidates}
+          appliedThumbnailUrl={appliedThumbnailUrl}
+          onClose={() => setThumbOpen(false)}
+        />
       )}
     </div>
   )

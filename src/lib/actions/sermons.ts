@@ -52,6 +52,7 @@ export async function getSermonForAdmin(id: string) {
       chapters: sermonSummaries.chapters,
       thumbnailBackgrounds: sermonThumbnails.thumbnailBackgrounds,
       thumbnailCutoutUrl: sermonThumbnails.thumbnailCutoutUrl,
+      thumbnailCandidates: sermonThumbnails.thumbnailCandidates,
       customThumbnailUrl: sermons.customThumbnailUrl,
       thumbnailUrl: sermons.thumbnailUrl,
     })
