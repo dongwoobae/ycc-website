@@ -41,6 +41,14 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: true,
   },
+  session: {
+    // 세션을 서명된 쿠키로 캐시해 요청마다 발생하던 세션 DB 왕복(Neon HTTP)을 생략.
+    // 트레이드오프: 강제 로그아웃/세션 폐기가 최대 maxAge까지 지연 반영됨.
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5,
+    },
+  },
   databaseHooks: {
     // 세션 생성 = 로그인. 사용자는 로그 화면에서 created_by 조인으로 표시된다.
     session: {
