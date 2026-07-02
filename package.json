@@ -19,6 +19,7 @@
     "summarize:sermons": "tsx --env-file=.env.local scripts/summarize-sermons.ts",
     "websub:subscribe": "tsx scripts/websub-subscribe.ts",
     "qstash:schedules": "tsx scripts/qstash-schedules.ts",
+    "thumbnails:cleanup": "tsx scripts/cleanup-thumbnails.ts",
     "create-admin": "tsx scripts/create-admin.ts",
     "delete-user": "tsx scripts/delete-user.ts"
   },
