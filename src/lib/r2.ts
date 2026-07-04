@@ -1,6 +1,7 @@
 import 'server-only'
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { isAllowedUploadMime, type UploadMime } from '@/lib/upload-sniff'
 
 // 환경변수에 붙여넣을 때 섞이는 공백/줄바꿈은 SigV4 서명 키를 어긋나게 해
@@ -55,6 +56,47 @@ export function galleryImageKey(filename: string) {
   return `gallery/${crypto.randomUUID()}-${base}.webp`
 }
 
+export function galleryVideoKey(filename: string, ext: string) {
+  const base = sanitizeR2Filename(filename).replace(/\.[^.]+$/, '') || 'video'
+  return `gallery/${crypto.randomUUID()}-${base}.${ext}`
+}
+
+export function publicUrlForKey(key: string) {
+  return `${normalizedPublicUrl()}/${key}`
+}
+
+// 영상은 Vercel 본문 한도(4.5MB) 때문에 서버를 거치지 못한다.
+// 브라우저가 R2에 직접 PUT 하도록 서명 URL을 발급한다. Content-Type이 서명에
+// 포함되므로 클라이언트가 다른 타입으로 올리면 R2가 403으로 거부한다.
+export async function presignGalleryVideoPut(key: string, contentType: string, expiresIn = 600) {
+  if (!key.startsWith('gallery/')) throw new Error('invalid key prefix')
+  return getSignedUrl(
+    getR2Client(),
+    new PutObjectCommand({
+      Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
+      Key: key,
+      ContentType: contentType,
+    }),
+    { expiresIn, signableHeaders: new Set(['content-type']) }
+  )
+}
+
+// presigned PUT은 Content-Length를 서명하지 않아 선언 크기와 실제 업로드 크기가
+// 다를 수 있다. 업로드 완료 후 addVideoRecord가 이걸로 실물을 검증한다.
+export async function headR2Object(key: string): Promise<{ size: number; contentType: string } | null> {
+  try {
+    const res = await getR2Client().send(
+      new HeadObjectCommand({
+        Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
+        Key: key,
+      })
+    )
+    return { size: res.ContentLength ?? 0, contentType: res.ContentType ?? '' }
+  } catch {
+    return null
+  }
+}
+
 export function bulletinHwpKey(filename: string) {
   return `bulletins/${crypto.randomUUID()}-${sanitizeR2Filename(filename)}`
 }
@@ -77,7 +119,7 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: Uploa
       ContentType: contentType,
     })
   )
-  return `${normalizedPublicUrl()}/${key}`
+  return publicUrlForKey(key)
 }
 
 export async function deleteFromR2(key: string) {
