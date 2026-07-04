@@ -10,7 +10,7 @@ import {
 import type { GalleryAlbum, GalleryImage } from '@/lib/types'
 
 type AlbumListRow = Pick<GalleryAlbumRow, 'id' | 'title' | 'description' | 'coverImgUrl' | 'eventDate' | 'isPublished'>
-type ImageListRow = Pick<GalleryImageRow, 'id' | 'imageUrl' | 'caption' | 'alt'>
+type ImageListRow = Pick<GalleryImageRow, 'id' | 'imageUrl' | 'caption' | 'alt' | 'mediaType' | 'posterUrl'>
 
 const albumColumns = {
   id: albumsTable.id,
@@ -26,6 +26,8 @@ const imageColumns = {
   imageUrl: imagesTable.imageUrl,
   caption: imagesTable.caption,
   alt: imagesTable.alt,
+  mediaType: imagesTable.mediaType,
+  posterUrl: imagesTable.posterUrl,
 }
 
 function toAlbum(row: AlbumListRow, images: GalleryImage[], imageCount?: number): GalleryAlbum {
@@ -47,6 +49,8 @@ function toImage(row: ImageListRow): GalleryImage {
     imageUrl: row.imageUrl,
     caption: row.caption ?? undefined,
     alt: row.alt ?? '',
+    mediaType: row.mediaType === 'video' ? 'video' : 'image',
+    posterUrl: row.posterUrl ?? undefined,
   }
 }
 

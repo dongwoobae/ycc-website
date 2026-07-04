@@ -66,9 +66,13 @@ export interface Bulletin {
 
 export interface GalleryImage {
   id: string
+  /** mediaType이 'video'면 영상 파일 URL */
   imageUrl: string
   caption?: string
   alt: string
+  mediaType: 'image' | 'video'
+  /** 영상 썸네일. 추출 실패 시 없을 수 있다 */
+  posterUrl?: string
 }
 
 export interface GalleryAlbum {

@@ -136,6 +136,9 @@ export const galleryImages = pgTable('gallery_images', {
     .notNull()
     .references(() => galleryAlbums.id, { onDelete: 'cascade' }),
   imageUrl: text('image_url').notNull(),
+  // 영상도 이 테이블에 함께 저장한다: mediaType='video'면 imageUrl이 영상 URL, posterUrl이 썸네일
+  mediaType: text('media_type').notNull().default('image'),
+  posterUrl: text('poster_url'),
   caption: text('caption'),
   alt: text('alt'),
   sortOrder: integer('sort_order').notNull().default(0),

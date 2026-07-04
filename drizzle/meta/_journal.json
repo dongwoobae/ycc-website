@@ -106,6 +106,13 @@
       "when": 1782981401423,
       "tag": "0015_thumbnail_texts",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1783156408681,
+      "tag": "0016_zippy_ikaris",
+      "breakpoints": true
     }
   ]
 }
