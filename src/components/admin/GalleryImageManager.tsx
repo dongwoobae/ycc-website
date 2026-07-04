@@ -41,6 +41,8 @@ export default function GalleryImageManager({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [progress, setProgress] = useState('')
+  // 사진·영상 폼이 isPending을 공유하므로, 진행률 텍스트는 실제 작업 중인 폼에만 표시한다
+  const [busyForm, setBusyForm] = useState<'photo' | 'video' | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editCaption, setEditCaption] = useState('')
   const [editAlt, setEditAlt] = useState('')
@@ -74,6 +76,7 @@ export default function GalleryImageManager({
     const caption = String(formData.get('caption') ?? '')
     const alt = String(formData.get('alt') ?? '')
     setError('')
+    setBusyForm('photo')
 
     startTransition(async () => {
       try {
@@ -130,6 +133,7 @@ export default function GalleryImageManager({
         setError(e instanceof Error ? e.message : '이미지 추가에 실패했습니다.')
       } finally {
         setProgress('')
+        setBusyForm(null)
       }
     })
   }
@@ -150,6 +154,7 @@ export default function GalleryImageManager({
       setError(problem)
       return
     }
+    setBusyForm('video')
 
     startTransition(async () => {
       try {
@@ -178,6 +183,7 @@ export default function GalleryImageManager({
         setError(e instanceof Error ? e.message : '영상 추가에 실패했습니다.')
       } finally {
         setProgress('')
+        setBusyForm(null)
       }
     })
   }
@@ -279,10 +285,10 @@ export default function GalleryImageManager({
         <div className="flex justify-end">
           <SubmitButton
             pendingOverride={isPending}
-            pendingLabel={progress || '처리 중...'}
+            pendingLabel={busyForm === 'photo' ? progress || '처리 중...' : '사진 추가'}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending ? progress || '처리 중...' : '사진 추가'}
+            {isPending && busyForm === 'photo' ? progress || '처리 중...' : '사진 추가'}
           </SubmitButton>
         </div>
       </form>
@@ -330,10 +336,10 @@ export default function GalleryImageManager({
         <div className="flex justify-end">
           <SubmitButton
             pendingOverride={isPending}
-            pendingLabel={progress || '처리 중...'}
+            pendingLabel={busyForm === 'video' ? progress || '처리 중...' : '영상 추가'}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending ? progress || '처리 중...' : '영상 추가'}
+            {isPending && busyForm === 'video' ? progress || '처리 중...' : '영상 추가'}
           </SubmitButton>
         </div>
       </form>
