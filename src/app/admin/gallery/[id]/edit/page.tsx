@@ -2,7 +2,15 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import AlbumForm, { type AlbumFormInitialValue } from '@/components/admin/AlbumForm'
 import GalleryImageManager from '@/components/admin/GalleryImageManager'
-import { addImageRecord, deleteImage, reorderImages, updateAlbum, updateImageMeta } from '@/lib/actions/gallery'
+import {
+  addImageRecord,
+  addVideoRecord,
+  createVideoUploadUrl,
+  deleteImage,
+  reorderImages,
+  updateAlbum,
+  updateImageMeta,
+} from '@/lib/actions/gallery'
 import { getAlbumForAdmin } from '@/lib/data/gallery'
 import { verifySession } from '@/lib/dal'
 
@@ -44,6 +52,8 @@ export default async function EditGalleryAlbumPage({ params }: EditGalleryAlbumP
         <GalleryImageManager
           images={album.images}
           saveImageAction={addImageRecord.bind(null, id)}
+          saveVideoAction={addVideoRecord.bind(null, id)}
+          createVideoUploadAction={createVideoUploadUrl}
           updateImageAction={updateImageMeta}
           deleteAction={deleteImage}
           reorderAction={reorderImages.bind(null, id)}
