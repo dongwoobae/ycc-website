@@ -56,8 +56,10 @@ export default function GalleryGrid({ images, albumTitle }: Props) {
     if (!isOpen) return
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') close()
-      if (e.key === 'ArrowLeft') prev()
-      if (e.key === 'ArrowRight') next()
+      // 영상에 포커스가 있을 때 ←/→는 시킹 용도 — 슬라이드 이동과 충돌 방지
+      const isVideoTarget = e.target instanceof HTMLElement && e.target.tagName === 'VIDEO'
+      if (e.key === 'ArrowLeft' && !isVideoTarget) prev()
+      if (e.key === 'ArrowRight' && !isVideoTarget) next()
       if (e.key === 'Tab') {
         const f = dialogRef.current?.querySelectorAll<HTMLElement>('button, [href], [tabindex]:not([tabindex="-1"])')
         if (!f || f.length === 0) return
