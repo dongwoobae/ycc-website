@@ -3,6 +3,7 @@
 import { FormEvent, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import SubmitButton from './SubmitButton'
+import { compressFormDataImage } from '@/lib/client-image-compress'
 
 export interface AlbumFormInitialValue {
   title: string
@@ -39,6 +40,7 @@ export default function AlbumForm({ initialValue, submitLabel, submitAction, cov
     const formData = new FormData(formRef.current)
     startTransition(async () => {
       try {
+        await compressFormDataImage(formData, 'cover')
         await submitAction(formData)
         router.push('/admin/gallery')
         router.refresh()

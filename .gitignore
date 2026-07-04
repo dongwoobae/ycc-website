@@ -46,3 +46,6 @@ next-env.d.ts
 
 # claude code local settings (personal, not committed)
 .claude/settings.local.json
+# playwright
+/test-results/
+/playwright-report/

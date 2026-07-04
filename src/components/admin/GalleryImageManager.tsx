@@ -3,6 +3,7 @@
 import { FormEvent, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import SubmitButton from './SubmitButton'
+import { compressFormDataImage } from '@/lib/client-image-compress'
 import type { GalleryImage } from '@/lib/types'
 
 interface GalleryImageManagerProps {
@@ -51,6 +52,7 @@ export default function GalleryImageManager({
     const formData = new FormData(addFormRef.current)
     startTransition(async () => {
       try {
+        await compressFormDataImage(formData, 'image')
         await addAction(formData)
         addFormRef.current?.reset()
         router.refresh()

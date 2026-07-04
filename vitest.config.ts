@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import path from 'node:path'
 
 export default defineConfig({
@@ -10,5 +10,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    // e2e는 Playwright 전용 — vitest가 집지 않게 제외
+    exclude: [...configDefaults.exclude, 'e2e/**'],
   },
 })
