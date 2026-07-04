@@ -25,6 +25,14 @@ function IconChevron({ dir }: { dir: 'left' | 'right' }) {
   )
 }
 
+function IconPlay() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l10.5-6.86a1.03 1.03 0 0 0 0-1.76L9.56 4.26A1.03 1.03 0 0 0 8 5.14Z" />
+    </svg>
+  )
+}
+
 export default function GalleryGrid({ images, albumTitle }: Props) {
   const [index, setIndex] = useState<number | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -98,13 +106,24 @@ export default function GalleryGrid({ images, albumTitle }: Props) {
             className="group block overflow-hidden rounded-lg border border-line bg-paper text-left shadow-subtle transition hover:shadow-soft"
           >
             <div className="relative aspect-[4/3] bg-surface">
-              <Image
-                src={image.imageUrl}
-                alt={image.alt}
-                fill
-                sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                className="object-cover transition duration-500 group-hover:scale-105"
-              />
+              {image.mediaType === 'video' && !image.posterUrl ? (
+                <div className="h-full w-full bg-ink/80" />
+              ) : (
+                <Image
+                  src={image.mediaType === 'video' ? image.posterUrl! : image.imageUrl}
+                  alt={image.alt}
+                  fill
+                  sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                />
+              )}
+              {image.mediaType === 'video' && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 text-white transition group-hover:bg-black/70">
+                    <IconPlay />
+                  </span>
+                </span>
+              )}
             </div>
             {image.caption && <p className="p-4 text-sm text-ink-muted">{image.caption}</p>}
           </button>
@@ -116,7 +135,7 @@ export default function GalleryGrid({ images, albumTitle }: Props) {
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
-          aria-label={`${albumTitle} 사진 확대 보기`}
+          aria-label={`${albumTitle} 사진·영상 확대 보기`}
           tabIndex={-1}
           className="fixed inset-0 z-[100] flex flex-col bg-[rgba(8,14,26,0.92)] backdrop-blur-md"
           onClick={close}
@@ -161,15 +180,27 @@ export default function GalleryGrid({ images, albumTitle }: Props) {
               style={{ width: 'min(900px, 85vw)', height: 'calc(100vh - 200px)' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <Image
-                key={current.imageUrl}
-                src={current.imageUrl}
-                alt={current.caption ?? current.alt}
-                fill
-                className="rounded-lg object-contain"
-                sizes="(min-width: 900px) 900px, 85vw"
-                priority
-              />
+              {current.mediaType === 'video' ? (
+                <video
+                  key={current.id}
+                  src={current.imageUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  poster={current.posterUrl || undefined}
+                  className="h-full w-full rounded-lg object-contain"
+                />
+              ) : (
+                <Image
+                  key={current.imageUrl}
+                  src={current.imageUrl}
+                  alt={current.caption ?? current.alt}
+                  fill
+                  className="rounded-lg object-contain"
+                  sizes="(min-width: 900px) 900px, 85vw"
+                  priority
+                />
+              )}
             </div>
 
             {images.length > 1 && (
@@ -202,14 +233,18 @@ export default function GalleryGrid({ images, albumTitle }: Props) {
                       : 'border-transparent opacity-50 hover:-translate-y-0.5 hover:opacity-85'
                   }`}
                 >
-                  <Image
-                    src={image.imageUrl}
-                    alt=""
-                    width={120}
-                    height={88}
-                    className="h-full w-full object-cover"
-                    unoptimized
-                  />
+                  {image.mediaType === 'video' && !image.posterUrl ? (
+                    <span className="flex h-full w-full items-center justify-center bg-ink text-[10px] text-white">▶</span>
+                  ) : (
+                    <Image
+                      src={image.mediaType === 'video' ? image.posterUrl! : image.imageUrl}
+                      alt=""
+                      width={120}
+                      height={88}
+                      className="h-full w-full object-cover"
+                      unoptimized
+                    />
+                  )}
                 </button>
               ))}
             </div>
