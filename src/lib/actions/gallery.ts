@@ -1,16 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import sharp from 'sharp'
 import { asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { galleryAlbums, galleryImages } from '@/lib/db/schema'
+import { maxImageSize, processAndUploadImage } from '@/lib/gallery-image'
 import { log } from '@/lib/logger'
-import { deleteFromR2, galleryImageKey, keyFromUrl, uploadToR2 } from '@/lib/r2'
-import { sniffImageMime } from '@/lib/upload-sniff'
-
-const maxImageSize = 8 * 1024 * 1024
+import { deleteFromR2, keyFromUrl } from '@/lib/r2'
 
 function textValue(formData: FormData, name: string) {
   const value = formData.get(name)
@@ -35,17 +32,6 @@ function getImageFile(formData: FormData, name: string, required: boolean) {
   }
   if (value.size > maxImageSize) throw new Error('image must be 8MB or less')
   return value
-}
-
-async function uploadImage(file: File) {
-  const buffer = Buffer.from(await file.arrayBuffer())
-  if (!sniffImageMime(buffer)) throw new Error('unsupported image file')
-  const webp = await sharp(buffer)
-    .rotate()
-    .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
-    .webp({ quality: 75 })
-    .toBuffer()
-  return uploadToR2(webp, galleryImageKey(file.name), 'image/webp')
 }
 
 function revalidateGalleryPaths(albumId?: string) {
@@ -84,7 +70,7 @@ export async function createAlbum(formData: FormData) {
 
   const cover = getImageFile(formData, 'cover', true)
   if (!cover) throw new Error('cover is required')
-  const coverImgUrl = await uploadImage(cover)
+  const coverImgUrl = await processAndUploadImage(cover)
   let created: { id: string; title: string } | undefined
   try {
     const result = await db
@@ -118,7 +104,7 @@ export async function updateAlbum(id: string, formData: FormData) {
   if (!current) throw new Error('album not found')
 
   const cover = getImageFile(formData, 'cover', false)
-  const nextCoverUrl = cover ? await uploadImage(cover) : current.coverImgUrl
+  const nextCoverUrl = cover ? await processAndUploadImage(cover) : current.coverImgUrl
   let updated: { id: string; title: string } | undefined
   try {
     const result = await db
@@ -165,14 +151,18 @@ export async function deleteAlbum(id: string) {
   revalidateGalleryPaths(deleted.id)
 }
 
-export async function addImage(albumId: string, formData: FormData) {
+// 파일 업로드는 /api/admin/gallery/upload(병렬)로 끝난 상태에서 DB 행만 순차로 넣는다.
+export async function addImageRecord(albumId: string, imageUrl: string, caption: string, alt: string) {
   const s = await requireSession()
-  const [album] = await db.select().from(galleryAlbums).where(eq(galleryAlbums.id, albumId)).limit(1)
-  if (!album) throw new Error('album not found')
+  // 우리 R2 gallery/ 키가 아닌 URL은 거부 — Route 응답 외의 임의 값 차단
+  if (!keyFromUrl(imageUrl).startsWith('gallery/')) throw new Error('invalid image url')
 
-  const file = getImageFile(formData, 'image', true)
-  if (!file) throw new Error('image is required')
-  const imageUrl = await uploadImage(file)
+  const [album] = await db.select().from(galleryAlbums).where(eq(galleryAlbums.id, albumId)).limit(1)
+  if (!album) {
+    await deleteR2BestEffort(keyFromUrl(imageUrl), s.user.id)
+    throw new Error('album not found')
+  }
+
   const [lastImage] = await db
     .select({ sortOrder: galleryImages.sortOrder })
     .from(galleryImages)
@@ -187,8 +177,8 @@ export async function addImage(albumId: string, formData: FormData) {
       .values({
         albumId,
         imageUrl,
-        caption: textValue(formData, 'caption') || null,
-        alt: textValue(formData, 'alt') || album.title,
+        caption: caption.trim() || null,
+        alt: alt.trim() || album.title,
         sortOrder: (lastImage?.sortOrder ?? -1) + 1,
       })
       .returning({ id: galleryImages.id })
@@ -201,6 +191,34 @@ export async function addImage(albumId: string, formData: FormData) {
   if (!created) throw new Error('failed to add image')
   await log('create', 'gallery_image', created.id, album.title, s.user.id)
   revalidateGalleryPaths(albumId)
+}
+
+export async function updateImageMeta(imageId: string, caption: string, alt: string) {
+  const s = await requireSession()
+  const [image] = await db
+    .select({ id: galleryImages.id, albumId: galleryImages.albumId })
+    .from(galleryImages)
+    .where(eq(galleryImages.id, imageId))
+    .limit(1)
+  if (!image) throw new Error('image not found')
+
+  const [album] = await db
+    .select({ title: galleryAlbums.title })
+    .from(galleryAlbums)
+    .where(eq(galleryAlbums.id, image.albumId))
+    .limit(1)
+
+  await db
+    .update(galleryImages)
+    .set({
+      caption: caption.trim() || null,
+      // 등록 시와 동일하게 빈 대체 텍스트는 앨범명으로 폴백
+      alt: alt.trim() || album?.title || '',
+    })
+    .where(eq(galleryImages.id, imageId))
+
+  await log('update', 'gallery_image', imageId, image.albumId, s.user.id)
+  revalidateGalleryPaths(image.albumId)
 }
 
 export async function deleteImage(imageId: string) {

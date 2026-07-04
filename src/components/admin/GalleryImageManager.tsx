@@ -3,19 +3,22 @@
 import { FormEvent, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import SubmitButton from './SubmitButton'
-import { compressFormDataImage } from '@/lib/client-image-compress'
+import { compressImageFile } from '@/lib/client-image-compress'
+import type { GalleryUploadResponse } from '@/app/api/admin/gallery/upload/route'
 import type { GalleryImage } from '@/lib/types'
 
 interface GalleryImageManagerProps {
   images: GalleryImage[]
-  addAction: (formData: FormData) => Promise<void>
+  saveImageAction: (imageUrl: string, caption: string, alt: string) => Promise<void>
+  updateImageAction: (imageId: string, caption: string, alt: string) => Promise<void>
   deleteAction: (imageId: string) => Promise<void>
   reorderAction: (imageIds: string[]) => Promise<void>
 }
 
 export default function GalleryImageManager({
   images,
-  addAction,
+  saveImageAction,
+  updateImageAction,
   deleteAction,
   reorderAction,
 }: GalleryImageManagerProps) {
@@ -26,6 +29,10 @@ export default function GalleryImageManager({
   const [prevImages, setPrevImages] = useState(images)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
+  const [progress, setProgress] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editCaption, setEditCaption] = useState('')
+  const [editAlt, setEditAlt] = useState('')
 
   if (prevImages !== images) {
     const nextDeletedIds = new Set([...optimisticDeletedIds].filter((id) => images.some((image) => image.id === id)))
@@ -45,19 +52,73 @@ export default function GalleryImageManager({
     })
   }
 
+  // 압축(순차) → R2 업로드(병렬, API Route) → DB 저장(순차 서버 액션) 3단계.
+  // 서버 액션은 React가 직렬화하므로 업로드 단계만 fetch로 병렬 처리한다.
   function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!addFormRef.current) return
-    setError('')
     const formData = new FormData(addFormRef.current)
+    const files = formData.getAll('image').filter((value): value is File => value instanceof File && value.size > 0)
+    if (files.length === 0) return
+    const caption = String(formData.get('caption') ?? '')
+    const alt = String(formData.get('alt') ?? '')
+    setError('')
+
     startTransition(async () => {
       try {
-        await compressFormDataImage(formData, 'image')
-        await addAction(formData)
-        addFormRef.current?.reset()
+        // 1) 클라이언트 압축 — 캔버스는 메인 스레드라 순차로 돌리고 진행률만 표시
+        const compressed: File[] = []
+        for (const [index, file] of files.entries()) {
+          setProgress(`압축 중 (${index + 1}/${files.length})`)
+          compressed.push(await compressImageFile(file))
+        }
+
+        // 2) R2 병렬 업로드
+        let uploadedCount = 0
+        setProgress(`업로드 중 (0/${compressed.length})`)
+        type UploadResult = { name: string; url: string } | { name: string; url?: never; error: string }
+        const results = await Promise.all(
+          compressed.map(async (file): Promise<UploadResult> => {
+            try {
+              const body = new FormData()
+              body.append('image', file)
+              const res = await fetch('/api/admin/gallery/upload', { method: 'POST', body })
+              const data = (await res.json()) as GalleryUploadResponse
+              if (!res.ok || !('url' in data)) {
+                return { name: file.name, error: 'error' in data ? data.error : '업로드 실패' }
+              }
+              return { name: file.name, url: data.url }
+            } catch {
+              return { name: file.name, error: '네트워크 오류' }
+            } finally {
+              uploadedCount += 1
+              setProgress(`업로드 중 (${uploadedCount}/${compressed.length})`)
+            }
+          })
+        )
+
+        // 3) DB 저장 — sortOrder 경합을 피해 순차 실행
+        setProgress('저장 중...')
+        const failures = results.filter((result): result is { name: string; error: string } => 'error' in result)
+        for (const result of results) {
+          if (!result.url) continue
+          try {
+            await saveImageAction(result.url, caption, alt)
+          } catch {
+            failures.push({ name: result.name, error: '저장 실패' })
+          }
+        }
+
+        if (failures.length > 0) {
+          setError(failures.map((failure) => `${failure.name}: ${failure.error}`).join(' / '))
+        } else {
+          addFormRef.current?.reset()
+        }
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : '이미지 추가에 실패했습니다.')
+      } finally {
+        setProgress('')
       }
     })
   }
@@ -72,6 +133,34 @@ export default function GalleryImageManager({
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : '이미지 삭제에 실패했습니다.')
+      }
+    })
+  }
+
+  function startEditMeta(imageId: string) {
+    const image = orderedImages.find((item) => item.id === imageId)
+    if (!image) return
+    setEditingId(imageId)
+    setEditCaption(image.caption ?? '')
+    setEditAlt(image.alt ?? '')
+  }
+
+  function handleSaveMeta() {
+    if (!editingId) return
+    const imageId = editingId
+    setError('')
+    startTransition(async () => {
+      try {
+        await updateImageAction(imageId, editCaption, editAlt)
+        setOrderedImages((current) =>
+          current.map((image) =>
+            image.id === imageId ? { ...image, caption: editCaption.trim() || undefined, alt: editAlt.trim() || image.alt } : image
+          )
+        )
+        setEditingId(null)
+        router.refresh()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '캡션 저장에 실패했습니다.')
       }
     })
   }
@@ -95,13 +184,14 @@ export default function GalleryImageManager({
         <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label htmlFor="image" className="mb-2 block text-sm font-medium text-ink">
-              이미지
+              이미지 (여러 장 선택 가능)
             </label>
             <input
               id="image"
               name="image"
               type="file"
               accept="image/*"
+              multiple
               required
               className="w-full rounded-lg border border-line bg-bg px-4 py-2.5 text-sm text-ink file:mr-4 file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-bg"
             />
@@ -130,10 +220,10 @@ export default function GalleryImageManager({
         <div className="flex justify-end">
           <SubmitButton
             pendingOverride={isPending}
-            pendingLabel="처리 중..."
+            pendingLabel={progress || '처리 중...'}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending ? '처리 중...' : '사진 추가'}
+            {isPending ? progress || '처리 중...' : '사진 추가'}
           </SubmitButton>
         </div>
       </form>
@@ -164,33 +254,78 @@ export default function GalleryImageManager({
                   <img src={image.imageUrl} alt={image.alt} className="h-full w-full object-cover" />
                 </div>
                 <figcaption className="space-y-3 p-4">
-                  <p className="min-h-5 text-sm text-ink-muted">{image.caption || image.alt || '-'}</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => moveImage(index, -1)}
-                      disabled={index === 0 || isPending}
-                      className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      위로
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveImage(index, 1)}
-                      disabled={index === orderedImages.length - 1 || isPending}
-                      className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      아래로
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(image.id)}
-                      disabled={isPending}
-                      className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      삭제
-                    </button>
-                  </div>
+                  {editingId === image.id ? (
+                    <div className="space-y-2">
+                      <input
+                        value={editCaption}
+                        onChange={(event) => setEditCaption(event.target.value)}
+                        placeholder="캡션"
+                        className="w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none transition focus:border-accent"
+                      />
+                      <input
+                        value={editAlt}
+                        onChange={(event) => setEditAlt(event.target.value)}
+                        placeholder="대체 텍스트"
+                        className="w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none transition focus:border-accent"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveMeta}
+                          disabled={isPending}
+                          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-bg transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          저장
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          disabled={isPending}
+                          className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="min-h-5 text-sm text-ink-muted">{image.caption || image.alt || '-'}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => moveImage(index, -1)}
+                          disabled={index === 0 || isPending}
+                          className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          위로
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveImage(index, 1)}
+                          disabled={index === orderedImages.length - 1 || isPending}
+                          className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          아래로
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => startEditMeta(image.id)}
+                          disabled={isPending}
+                          className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          수정
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(image.id)}
+                          disabled={isPending}
+                          className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </figcaption>
               </figure>
             ))}

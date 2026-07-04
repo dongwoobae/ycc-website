@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import AlbumForm, { type AlbumFormInitialValue } from '@/components/admin/AlbumForm'
 import GalleryImageManager from '@/components/admin/GalleryImageManager'
-import { addImage, deleteImage, reorderImages, updateAlbum } from '@/lib/actions/gallery'
+import { addImageRecord, deleteImage, reorderImages, updateAlbum, updateImageMeta } from '@/lib/actions/gallery'
 import { getAlbumForAdmin } from '@/lib/data/gallery'
 import { verifySession } from '@/lib/dal'
 
@@ -43,7 +43,8 @@ export default async function EditGalleryAlbumPage({ params }: EditGalleryAlbumP
         <AlbumForm submitLabel="변경 저장" initialValue={initialValue} submitAction={updateAlbum.bind(null, id)} />
         <GalleryImageManager
           images={album.images}
-          addAction={addImage.bind(null, id)}
+          saveImageAction={addImageRecord.bind(null, id)}
+          updateImageAction={updateImageMeta}
           deleteAction={deleteImage}
           reorderAction={reorderImages.bind(null, id)}
         />
