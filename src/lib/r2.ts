@@ -92,8 +92,12 @@ export async function headR2Object(key: string): Promise<{ size: number; content
       })
     )
     return { size: res.ContentLength ?? 0, contentType: res.ContentType ?? '' }
-  } catch {
-    return null
+  } catch (error) {
+    // 404(객체 없음)만 null — 일시 장애를 "없음"으로 오판해 정상 업로드를 버리지 않도록 그 외는 던진다
+    const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode
+    const name = (error as { name?: string })?.name
+    if (status === 404 || name === 'NotFound' || name === 'NoSuchKey') return null
+    throw error
   }
 }
 

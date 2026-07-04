@@ -228,7 +228,7 @@ export default function GalleryGrid({ images, albumTitle }: Props) {
                   key={image.id}
                   type="button"
                   onClick={() => setIndex(i)}
-                  aria-label={`${i + 1}번째 사진`}
+                  aria-label={`${i + 1}번째 항목`}
                   className={`h-11 w-[60px] flex-shrink-0 cursor-pointer overflow-hidden rounded border-2 transition-all ${
                     i === index
                       ? 'border-white opacity-100'

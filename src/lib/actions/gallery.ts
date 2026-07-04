@@ -220,7 +220,13 @@ export async function addVideoRecord(albumId: string, videoUrl: string, posterUr
 
   // presigned PUT은 Content-Length를 서명하지 않으므로 선언 크기를 믿을 수 없다.
   // 업로드된 실물의 존재·크기·타입을 HEAD로 확인하고, 위반이면 R2에서 바로 지운다.
-  const head = await headR2Object(videoKey)
+  let head: Awaited<ReturnType<typeof headR2Object>>
+  try {
+    head = await headR2Object(videoKey)
+  } catch {
+    // 일시 장애 — 업로드된 객체는 그대로 두고 재시도 안내만
+    throw new Error('영상 확인 중 일시 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.')
+  }
   if (!head) throw new Error('업로드된 영상을 찾을 수 없습니다.')
   if (head.size > maxVideoSize || !isAllowedVideoMime(head.contentType)) {
     await cleanupR2()
