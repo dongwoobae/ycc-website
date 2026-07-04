@@ -1,6 +1,6 @@
 import { normalizeOrigin } from './auth-origin'
 
-export const DEFAULT_SITE_ORIGIN = 'https://ycjc.kr'
+export const DEFAULT_SITE_ORIGIN = 'https://www.ycjc.kr'
 
 export function getCanonicalSiteOrigin() {
   return (
