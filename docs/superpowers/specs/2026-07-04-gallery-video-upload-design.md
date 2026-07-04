@@ -52,11 +52,17 @@
 - **DB 저장**: 새 서버 액션 `saveVideoRecord(videoUrl, posterUrl, caption, alt)` — sortOrder는
   기존 이미지 저장과 동일하게 순차 부여.
 
-### 검증의 한계(의도된 트레이드오프)
+### 검증의 한계와 보강 (codex 리뷰 반영)
 
-직접 업로드라 서버가 파일 내용을 스니핑할 수 없다. presign 시점의 선언된 타입·크기 검증 +
-관리자 전용 기능이라는 신뢰 경계로 충분하다고 판단. presigned URL은 Content-Type을 서명에
-포함해 임의 타입 업로드를 막는다.
+직접 업로드라 서버가 파일 내용을 스니핑할 수 없고, presigned PUT은 Content-Length를
+서명하지 않아 선언 크기와 실제 크기가 다를 수 있다. 이를 다음 두 겹으로 보강한다:
+
+1. **Content-Type 서명 강제**: presigned URL의 `X-Amz-SignedHeaders`에 content-type이
+   포함되는지 단위 테스트로 고정 (가정이 아닌 검증된 불변식으로).
+2. **업로드 후 실물 검증**: `addVideoRecord`가 R2 HeadObject로 객체 존재·실제 크기(≤200MB)·
+   실제 Content-Type(video/*)을 확인하고, 위반 시 R2에서 즉시 삭제 + 에러.
+
+나머지(파일 내용이 진짜 영상인지)는 관리자 전용 기능이라는 신뢰 경계로 허용한다.
 
 ## 3. 관리자 UI (`GalleryImageManager`)
 
