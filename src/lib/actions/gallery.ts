@@ -6,8 +6,9 @@ import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { galleryAlbums, galleryImages } from '@/lib/db/schema'
 import { maxImageSize, processAndUploadImage } from '@/lib/gallery-image'
+import { isAllowedVideoMime, maxVideoSize, videoExtByMime, videoUploadProblem, type AllowedVideoMime } from '@/lib/gallery-video'
 import { log } from '@/lib/logger'
-import { deleteFromR2, keyFromUrl } from '@/lib/r2'
+import { deleteFromR2, galleryVideoKey, headR2Object, keyFromUrl, presignGalleryVideoPut, publicUrlForKey } from '@/lib/r2'
 
 function textValue(formData: FormData, name: string) {
   const value = formData.get(name)
@@ -138,7 +139,9 @@ export async function deleteAlbum(id: string) {
   if (!album) throw new Error('album not found')
 
   const images = await db.select().from(galleryImages).where(eq(galleryImages.albumId, id))
-  const keys = [album.coverImgUrl, ...images.map((image) => image.imageUrl)].map(keyFromUrl).filter(Boolean)
+  const keys = [album.coverImgUrl, ...images.flatMap((image) => [image.imageUrl, image.posterUrl])]
+    .map(keyFromUrl)
+    .filter(Boolean)
 
   const [deleted] = await db
     .delete(galleryAlbums)
@@ -149,6 +152,17 @@ export async function deleteAlbum(id: string) {
   await Promise.all(keys.map((key) => deleteR2BestEffort(key, s.user.id)))
   await log('delete', 'gallery_album', deleted.id, deleted.title, s.user.id)
   revalidateGalleryPaths(deleted.id)
+}
+
+// 영상은 브라우저가 R2로 직접 PUT 한다(Vercel 4.5MB 본문 한도 우회).
+// 여기서는 검증 + 서명 URL 발급만 하고, DB 저장은 addVideoRecord가 담당.
+export async function createVideoUploadUrl(fileName: string, contentType: string, size: number) {
+  await requireSession()
+  const problem = videoUploadProblem(contentType, size)
+  if (problem) throw new Error(problem)
+  const key = galleryVideoKey(fileName, videoExtByMime[contentType as AllowedVideoMime])
+  const uploadUrl = await presignGalleryVideoPut(key, contentType)
+  return { uploadUrl, publicUrl: publicUrlForKey(key) }
 }
 
 // 파일 업로드는 /api/admin/gallery/upload(병렬)로 끝난 상태에서 DB 행만 순차로 넣는다.
@@ -193,6 +207,64 @@ export async function addImageRecord(albumId: string, imageUrl: string, caption:
   revalidateGalleryPaths(albumId)
 }
 
+export async function addVideoRecord(albumId: string, videoUrl: string, posterUrl: string, caption: string, alt: string) {
+  const s = await requireSession()
+  const videoKey = keyFromUrl(videoUrl)
+  if (!videoKey.startsWith('gallery/')) throw new Error('invalid video url')
+  if (posterUrl && !keyFromUrl(posterUrl).startsWith('gallery/')) throw new Error('invalid poster url')
+
+  const cleanupR2 = async () => {
+    await deleteR2BestEffort(videoKey, s.user.id)
+    if (posterUrl) await deleteR2BestEffort(keyFromUrl(posterUrl), s.user.id)
+  }
+
+  // presigned PUT은 Content-Length를 서명하지 않으므로 선언 크기를 믿을 수 없다.
+  // 업로드된 실물의 존재·크기·타입을 HEAD로 확인하고, 위반이면 R2에서 바로 지운다.
+  const head = await headR2Object(videoKey)
+  if (!head) throw new Error('업로드된 영상을 찾을 수 없습니다.')
+  if (head.size > maxVideoSize || !isAllowedVideoMime(head.contentType)) {
+    await cleanupR2()
+    throw new Error('영상 검증에 실패했습니다 (크기 또는 형식).')
+  }
+
+  const [album] = await db.select().from(galleryAlbums).where(eq(galleryAlbums.id, albumId)).limit(1)
+  if (!album) {
+    await cleanupR2()
+    throw new Error('album not found')
+  }
+
+  const [lastImage] = await db
+    .select({ sortOrder: galleryImages.sortOrder })
+    .from(galleryImages)
+    .where(eq(galleryImages.albumId, albumId))
+    .orderBy(desc(galleryImages.sortOrder))
+    .limit(1)
+
+  let created: { id: string } | undefined
+  try {
+    const result = await db
+      .insert(galleryImages)
+      .values({
+        albumId,
+        imageUrl: videoUrl,
+        mediaType: 'video',
+        posterUrl: posterUrl || null,
+        caption: caption.trim() || null,
+        alt: alt.trim() || album.title,
+        sortOrder: (lastImage?.sortOrder ?? -1) + 1,
+      })
+      .returning({ id: galleryImages.id })
+    created = result[0]
+  } catch (e) {
+    await cleanupR2()
+    throw e
+  }
+
+  if (!created) throw new Error('failed to add video')
+  await log('create', 'gallery_image', created.id, `${album.title} (영상)`, s.user.id)
+  revalidateGalleryPaths(albumId)
+}
+
 export async function updateImageMeta(imageId: string, caption: string, alt: string) {
   const s = await requireSession()
   const [image] = await db
@@ -233,6 +305,7 @@ export async function deleteImage(imageId: string) {
 
   if (!deleted) throw new Error('image not found')
   await deleteR2BestEffort(keyFromUrl(image.imageUrl), s.user.id)
+  if (image.posterUrl) await deleteR2BestEffort(keyFromUrl(image.posterUrl), s.user.id)
   await normalizeImageOrder(deleted.albumId)
   await log('delete', 'gallery_image', deleted.id, deleted.albumId, s.user.id)
   revalidateGalleryPaths(deleted.albumId)
