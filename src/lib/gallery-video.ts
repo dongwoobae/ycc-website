@@ -11,7 +11,7 @@ export const videoExtByMime = {
 export type AllowedVideoMime = keyof typeof videoExtByMime
 
 export function isAllowedVideoMime(contentType: string): contentType is AllowedVideoMime {
-  return contentType in videoExtByMime
+  return Object.prototype.hasOwnProperty.call(videoExtByMime, contentType)
 }
 
 export function videoUploadProblem(contentType: string, size: number): string | null {
