@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import Container from '@/components/layout/Container'
 import KakaoMap from '@/components/layout/KakaoMap'
-import VisitBlock, { VisitInfo } from '@/components/layout/VisitBlock'
+import VisitBlock from '@/components/layout/VisitBlock'
 import Reveal from '@/components/ui/Reveal'
 import SectionTitle from '@/components/ui/SectionTitle'
 import { Eyebrow, HomeButton, ImagePlaceholder } from '@/components/home/HomePrimitives'
@@ -145,6 +146,8 @@ function Welcome() {
 }
 
 function ServiceFlow() {
+  const flowWorshipItems = adultWorshipSchedule.slice(0, 4)
+
   return (
     <section id="flow" className="scroll-mt-28 bg-paper py-20 min-[960px]:py-28">
       <Container>
@@ -156,7 +159,24 @@ function ServiceFlow() {
             align="center"
           />
         </Reveal>
-        <div className="mx-auto mt-12 grid max-w-3xl gap-0">
+        <Reveal delay={90}>
+          <div className="mx-auto mt-10 grid max-w-3xl gap-3 sm:grid-cols-2">
+            {flowWorshipItems.map((item) => (
+              <div key={item.name} className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-5 py-4">
+                <span className="font-serif text-lg font-extrabold text-ink">{item.name}</span>
+                <span className="text-sm font-semibold text-ink-muted">{item.displayTime}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 text-center text-sm text-ink-muted">
+            다음세대 예배와 장소 안내는{' '}
+            <Link href="/worship" className="font-bold text-accent-deep underline-offset-4 hover:underline">
+              전체 예배 안내
+            </Link>
+            에서 확인하실 수 있습니다.
+          </p>
+        </Reveal>
+        <div className="mx-auto mt-14 grid max-w-3xl gap-0">
           {timeline.map((item, index) => (
             <Reveal key={item.title} delay={index * 90}>
               <div className="relative grid grid-cols-[56px_1fr] gap-5 pb-9 last:pb-0 sm:grid-cols-[64px_1fr] sm:gap-6">
@@ -245,30 +265,16 @@ function NextGeneration() {
 }
 
 function Visit() {
-  const visitWorshipItems = adultWorshipSchedule.slice(0, 4)
-
   return (
     <VisitBlock
       eyebrow="Visit us"
       title="다시 오시는 길"
-      description="처음 오시는 길이 어렵지 않도록 지도와 연락처, 예배 시간을 함께 안내합니다."
+      description="처음 오시는 길이 어렵지 않도록 지도와 연락처를 함께 안내합니다."
       showPastorKakao
       media={
         <div className="overflow-hidden rounded-[20px] border border-line">
           <KakaoMap />
         </div>
-      }
-      details={
-        <VisitInfo label="Worship">
-          <dl className="grid gap-2.5 text-sm leading-6">
-            {visitWorshipItems.map((item) => (
-              <div key={item.name} className="flex justify-between gap-4">
-                <dt className="font-bold text-ink">{item.name}</dt>
-                <dd className="text-ink-muted">{item.displayTime}</dd>
-              </div>
-            ))}
-          </dl>
-        </VisitInfo>
       }
     />
   )
@@ -292,7 +298,7 @@ function Cta() {
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <HomeButton href={`tel:${churchInfo.phone}`}>전화 문의</HomeButton>
             <HomeButton href="/worship" variant="ghost">
-              예배시간 보기
+              전체 예배 안내
             </HomeButton>
           </div>
         </Reveal>
