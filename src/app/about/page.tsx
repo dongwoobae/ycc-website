@@ -97,7 +97,7 @@ export default function AboutPage() {
                   섬기는 분들
                 </Link>
                 <Link
-                  href="/about/visit"
+                  href="/newfamily#visit"
                   className="inline-flex items-center rounded-full border-[1.5px] border-line bg-paper px-6 py-3.5 text-[15px] font-bold text-ink transition hover:border-accent hover:text-accent-deep"
                 >
                   예배시간·오시는 길

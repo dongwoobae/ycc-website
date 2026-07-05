@@ -15,7 +15,6 @@ const staticRoutes = [
   '/about/greeting',
   '/about/history',
   '/about/serving',
-  '/about/visit',
   '/worship',
   '/happiness',
   '/faq',

@@ -31,7 +31,7 @@ export default function FullBleedBand() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <HomeButton href="/worship">예배 안내</HomeButton>
-            <HomeButton href="/about/visit" variant="ghost">
+            <HomeButton href="/newfamily#visit" variant="ghost">
               오시는 길
             </HomeButton>
           </div>

@@ -4,7 +4,7 @@ import { isTrackablePath } from './paths'
 describe('isTrackablePath', () => {
   it('allows public content paths', () => {
     expect(isTrackablePath('/')).toBe(true)
-    expect(isTrackablePath('/about/visit')).toBe(true)
+    expect(isTrackablePath('/newfamily')).toBe(true)
     expect(isTrackablePath('/sermons/abc')).toBe(true)
   })
 
