@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Container from '@/components/layout/Container'
+import KakaoMap from '@/components/layout/KakaoMap'
 import VisitBlock, { VisitInfo } from '@/components/layout/VisitBlock'
 import Reveal from '@/components/ui/Reveal'
 import SectionTitle from '@/components/ui/SectionTitle'
@@ -145,7 +146,7 @@ function Welcome() {
 
 function ServiceFlow() {
   return (
-    <section className="bg-paper py-20 min-[960px]:py-28">
+    <section id="flow" className="scroll-mt-28 bg-paper py-20 min-[960px]:py-28">
       <Container>
         <Reveal>
           <SectionTitle
@@ -179,7 +180,7 @@ function ServiceFlow() {
 
 function Faq() {
   return (
-    <section className="bg-surface py-20 min-[960px]:py-28">
+    <section id="faq" className="scroll-mt-28 bg-surface py-20 min-[960px]:py-28">
       <Container>
         <Reveal>
           <SectionTitle eyebrow="FAQ" title="처음 오시는 분들이 자주 묻는 질문" align="center" />
@@ -206,7 +207,7 @@ function Faq() {
 
 function NextGeneration() {
   return (
-    <section className="bg-bg py-20 min-[960px]:py-28">
+    <section id="nextgen" className="scroll-mt-28 bg-bg py-20 min-[960px]:py-28">
       <Container size="wide">
         <Reveal>
           <SectionTitle
@@ -250,10 +251,11 @@ function Visit() {
     <VisitBlock
       eyebrow="Visit us"
       title="다시 오시는 길"
-      description="처음 오시는 길이 어렵지 않도록 예배 시간과 문의 방법을 함께 안내합니다."
+      description="처음 오시는 길이 어렵지 않도록 지도와 연락처, 예배 시간을 함께 안내합니다."
+      showPastorKakao
       media={
-        <div className="min-h-[340px] overflow-hidden rounded-[20px] border border-line min-[960px]:min-h-[390px]">
-          <ImagePlaceholder label="지도 이미지 자리" />
+        <div className="overflow-hidden rounded-[20px] border border-line">
+          <KakaoMap />
         </div>
       }
       details={

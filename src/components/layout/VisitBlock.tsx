@@ -4,6 +4,8 @@ import PastorKakaoCard from '@/components/layout/PastorKakaoCard'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
 
+const kakaoMapUrl = `https://map.kakao.com/?q=${encodeURIComponent(churchInfo.address)}`
+
 interface VisitBlockProps {
   eyebrow: ReactNode
   title: ReactNode
@@ -24,7 +26,7 @@ export default function VisitBlock({
   className = 'bg-surface py-20 min-[960px]:py-28',
 }: VisitBlockProps) {
   return (
-    <section id="visit" className={className}>
+    <section id="visit" className={`scroll-mt-28 ${className}`}>
       <Container size="wide">
         <Reveal>
           <div>
@@ -58,6 +60,14 @@ export default function VisitBlock({
                     className="motion-hover rounded-full border border-line bg-paper px-5 py-3 text-sm font-bold text-ink transition hover:border-accent"
                   >
                     Blog
+                  </a>
+                  <a
+                    href={kakaoMapUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="motion-hover rounded-full border border-[#FEE500] bg-[#FEE500] px-5 py-3 text-sm font-bold text-[#3a2929] transition hover:brightness-95"
+                  >
+                    카카오맵 길찾기
                   </a>
                 </div>
               </VisitInfo>
