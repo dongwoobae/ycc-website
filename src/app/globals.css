@@ -34,6 +34,7 @@
   --font-serif: var(--font-nanum-myeongjo), "Nanum Myeongjo", serif;
   --shadow-soft: 0 18px 50px rgb(var(--ink) / 0.08);
   --shadow-subtle: 0 8px 26px rgb(var(--ink) / 0.06);
+  --shadow-lifted: 0 22px 55px rgb(var(--ink) / 0.16);
 }
 
 * {

@@ -24,7 +24,7 @@ export default async function BulletinsPage() {
               <Reveal key={bulletin.id} variant="fade-up" delay={(i % 2) * 100}>
                 <Link
                   href={`/bulletins/${bulletin.id}`}
-                  className="group relative block h-full overflow-hidden rounded-2xl border border-line bg-paper p-8 shadow-subtle transition hover:-translate-y-1 hover:border-accent hover:shadow-soft"
+                  className="group relative block h-full overflow-hidden rounded-2xl border border-line bg-paper p-8 shadow-subtle transition hover:-translate-y-1 hover:shadow-lifted"
                 >
                   <span className="pointer-events-none absolute -right-[30px] -top-[30px] h-[110px] w-[110px] rounded-full bg-accent/15 opacity-60 transition duration-300 group-hover:scale-125" />
                   <span className="relative z-[1] mb-[18px] flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line bg-bg text-accent-deep">

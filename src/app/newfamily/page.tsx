@@ -240,7 +240,7 @@ function NextGeneration() {
         <div className="mt-12 grid gap-6 min-[960px]:grid-cols-3">
           {nextGen.map((group, index) => (
             <Reveal key={group.title} delay={index * 110}>
-              <article className="motion-hover h-full overflow-hidden rounded-2xl border border-line bg-paper transition hover:-translate-y-1 hover:border-accent">
+              <article className="motion-hover h-full overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:shadow-lifted">
                 <div className="h-56 overflow-hidden">
                   <ImagePlaceholder label={group.label} />
                 </div>

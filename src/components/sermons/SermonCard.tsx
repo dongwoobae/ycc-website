@@ -8,7 +8,7 @@ export default function SermonCard({ sermon }: { sermon: Sermon }) {
   return (
     <Link
       href={`/sermons/${sermon.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:border-accent hover:shadow-soft"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:shadow-lifted"
     >
       <div className="relative">
         <div className="relative aspect-video overflow-hidden bg-surface">

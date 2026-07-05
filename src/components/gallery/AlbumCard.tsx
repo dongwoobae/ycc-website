@@ -8,7 +8,7 @@ export default function AlbumCard({ album }: { album: GalleryAlbum }) {
   return (
     <Link
       href={`/gallery/${album.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:border-accent hover:shadow-soft"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:shadow-lifted"
     >
       <div className="relative">
         <div className="relative aspect-[4/3] overflow-hidden bg-surface">

@@ -66,7 +66,7 @@ export default function ServingPage() {
             <div className="mt-6 grid grid-cols-2 gap-5 sm:gap-6 lg:grid-cols-4">
               {staff.map((person, i) => (
                 <Reveal key={`${person.role}-${person.name}`} variant="zoom" delay={i * 80}>
-                  <figure className="overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:border-accent hover:shadow-soft">
+                  <figure className="overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:shadow-lifted">
                     <div className="relative aspect-[3/4] bg-surface">
                       <Image
                         src={person.photo}
@@ -90,7 +90,7 @@ export default function ServingPage() {
           <div className="mt-6 grid gap-6 md:grid-cols-2">
             {groups.map((group, i) => (
               <Reveal key={group.title} variant="zoom" delay={i * 90}>
-                <section className="h-full rounded-2xl border border-line bg-paper p-8 shadow-subtle transition hover:-translate-y-1 hover:border-accent hover:shadow-soft">
+                <section className="h-full rounded-2xl border border-line bg-paper p-8 shadow-subtle transition hover:-translate-y-1 hover:shadow-lifted">
                   <h2 className="flex items-center gap-3 font-serif text-2xl font-extrabold tracking-tight text-ink">
                     <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
                     {group.title}
