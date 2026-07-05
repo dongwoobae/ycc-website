@@ -128,7 +128,7 @@ export default function FaqPage() {
 
             <Reveal>
               <p className="text-center text-[15px] leading-7 text-ink-muted">
-                더 궁금한 점이 있으신가요? <Link href="/worship" className="font-bold text-accent-deep underline-offset-4 hover:underline">예배 안내</Link>
+                더 궁금한 점이 있으신가요? <Link href="/worship" className="font-bold text-accent-deep underline-offset-4 hover:underline">예배 시간</Link>
                 와 <Link href="/newfamily#visit" className="font-bold text-accent-deep underline-offset-4 hover:underline">오시는 길</Link>
                 도 함께 확인해 보세요.
               </p>

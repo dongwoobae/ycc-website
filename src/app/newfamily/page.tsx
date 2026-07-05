@@ -171,7 +171,7 @@ function ServiceFlow() {
           <p className="mt-5 text-center text-sm text-ink-muted">
             다음세대 예배와 장소 안내는{' '}
             <Link href="/worship" className="font-bold text-accent-deep underline-offset-4 hover:underline">
-              전체 예배 안내
+              전체 예배 시간표
             </Link>
             에서 확인하실 수 있습니다.
           </p>
@@ -298,7 +298,7 @@ function Cta() {
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <HomeButton href={`tel:${churchInfo.phone}`}>전화 문의</HomeButton>
             <HomeButton href="/worship" variant="ghost">
-              전체 예배 안내
+              전체 예배 시간표
             </HomeButton>
           </div>
         </Reveal>

@@ -10,7 +10,7 @@ import {
 } from '@/lib/worship'
 
 export const metadata: Metadata = {
-  title: '예배 안내',
+  title: '예배 시간',
   description: '영천중앙교회 주일예배·주일학교·청년부·수요예배·새벽예배·금요기도회의 요일과 시간, 장소를 안내합니다.',
 }
 
@@ -94,7 +94,7 @@ export default function WorshipPage() {
     <>
       <PageHero
         eyebrow="Guide"
-        title="예배 안내"
+        title="예배 시간"
         subtitle="영천중앙교회의 예배와 모임을 요일·시간·장소와 함께 안내합니다."
         image="https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=1600&q=80"
       />
