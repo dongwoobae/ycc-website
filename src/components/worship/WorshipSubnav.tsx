@@ -1,8 +1,8 @@
 import Subnav from '@/components/layout/Subnav'
 
 const tabs = [
-  { label: '예배 안내', href: '/worship' },
   { label: '행복선언', href: '/happiness' },
+  { label: '예배 안내', href: '/worship' },
 ]
 
 export default function WorshipSubnav() {
