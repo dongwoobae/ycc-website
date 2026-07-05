@@ -56,7 +56,12 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/contact',
-        destination: '/about/visit',
+        destination: '/newfamily#visit',
+        permanent: true,
+      },
+      {
+        source: '/about/visit',
+        destination: '/newfamily#visit',
         permanent: true,
       },
     ]
