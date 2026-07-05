@@ -23,7 +23,7 @@ const aboutLinks: NavChild[] = [
 
 const guideLinks: NavChild[] = [
   { label: '행복선언', href: '/happiness', desc: '예배 때 함께하는 고백' },
-  { label: '예배 안내', href: '/worship', desc: '예배 시간과 위치 안내' },
+  { label: '예배 시간', href: '/worship', desc: '요일·시간·장소 안내' },
 ]
 
 const wordLinks: NavChild[] = [
@@ -47,7 +47,7 @@ const newsLinks: NavChild[] = [
 
 export const navLinks: NavSection[] = [
   { label: '소개', href: '/about', section: '/about', eyebrow: 'About', children: aboutLinks },
-  { label: '안내', href: '/worship', section: '/worship', eyebrow: 'Guide', children: guideLinks },
+  { label: '안내', href: '/happiness', section: '/happiness', eyebrow: 'Guide', children: guideLinks },
   { label: '말씀과 찬양', href: '/sermons', section: '/sermons', eyebrow: 'Worship', children: wordLinks },
   { label: '처음 오셨나요?', href: '/newfamily', section: '/newfamily', eyebrow: 'Welcome', children: newcomerLinks },
   { label: '소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
