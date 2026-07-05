@@ -22,8 +22,8 @@ const aboutLinks: NavChild[] = [
 ]
 
 const guideLinks: NavChild[] = [
-  { label: '예배 안내', href: '/worship', desc: '예배 시간과 위치 안내' },
   { label: '행복선언', href: '/happiness', desc: '예배 때 함께하는 고백' },
+  { label: '예배 안내', href: '/worship', desc: '예배 시간과 위치 안내' },
 ]
 
 const wordLinks: NavChild[] = [
