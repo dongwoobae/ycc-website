@@ -42,7 +42,6 @@ export function ImagePlaceholder({ label, className = '' }: { label: string; cla
     >
       {/* TODO: 실제 교회 사진으로 교체 */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_22%,rgb(var(--accent)/0.22),transparent_34%),linear-gradient(160deg,rgb(var(--accent-deep)/0.22),transparent_60%)]" />
-      <div className="absolute inset-x-5 top-5 h-px bg-white/50" />
       <div className="absolute bottom-5 left-5 right-5 text-xs font-semibold leading-5 text-ink-muted/80">{label}</div>
     </div>
   )
