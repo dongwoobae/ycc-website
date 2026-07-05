@@ -37,7 +37,7 @@ const newcomerLinks: NavChild[] = [
   { label: '예배 안내', href: '/newfamily#flow', desc: '예배 시간과 진행 순서' },
   { label: '자주 묻는 질문', href: '/newfamily#faq', desc: '새가족 FAQ' },
   { label: '다음세대 안내', href: '/newfamily#nextgen', desc: '아이와 함께 오세요' },
-  { label: '다시 오시는 길', href: '/newfamily#visit', desc: '지도 · 주소 · 연락처' },
+  { label: '오시는 길', href: '/newfamily#visit', desc: '지도 · 주소 · 연락처' },
 ]
 
 const newsLinks: NavChild[] = [

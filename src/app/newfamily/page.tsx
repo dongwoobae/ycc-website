@@ -268,7 +268,7 @@ function Visit() {
   return (
     <VisitBlock
       eyebrow="Visit us"
-      title="다시 오시는 길"
+      title="오시는 길"
       description="처음 오시는 길이 어렵지 않도록 지도와 연락처를 함께 안내합니다."
       showPastorKakao
       media={
