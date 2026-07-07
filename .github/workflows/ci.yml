@@ -25,3 +25,43 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Pin npm to match local (lockfile resolution 일치)
+        run: npm install -g npm@11
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  test:
+    name: Test (unit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Pin npm to match local (lockfile resolution 일치)
+        run: npm install -g npm@11
+
+      - run: npm ci
+
+      # e2e(Playwright)는 실제 DB/R2 크리덴셜이 필요해 CI에서 제외.
+      # 유닛 테스트는 pglite(in-memory Postgres) 사용으로 외부 의존성 없이 실행됨.
+      - name: Unit tests
+        run: npm run test
