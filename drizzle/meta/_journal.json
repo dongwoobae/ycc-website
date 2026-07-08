@@ -101,6 +101,13 @@
       "breakpoints": true
     },
     {
+      "idx": 14,
+      "version": "7",
+      "when": 1782900000000,
+      "tag": "0014_visitor_analytics",
+      "breakpoints": true
+    },
+    {
       "idx": 15,
       "version": "7",
       "when": 1782981401423,
@@ -112,6 +119,13 @@
       "version": "7",
       "when": 1783156408681,
       "tag": "0016_zippy_ikaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1783481239608,
+      "tag": "0017_page_views_geo",
       "breakpoints": true
     }
   ]

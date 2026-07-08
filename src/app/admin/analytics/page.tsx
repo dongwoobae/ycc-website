@@ -4,6 +4,7 @@ import { verifySession } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { dailyPageStats, pageViews } from '@/lib/db/schema'
 import { formatKstDateTime, todayKst } from '@/lib/date'
+import { formatRegionKo } from '@/lib/analytics/region-ko'
 import AdminPageHero from '@/components/admin/AdminPageHero'
 import RefreshButton from '@/components/admin/RefreshButton'
 
@@ -24,6 +25,8 @@ interface SessionRow {
   sessionId: string
   startedAt: Date
   region: string | null
+  country: string | null
+  countryRegion: string | null
   ipMasked: string | null
   pageCount: number | string
   totalDurationSeconds: number | string | null
@@ -99,6 +102,8 @@ async function loadSessions(period: Period, page: number, today: string): Promis
       session_id AS "sessionId",
       min(created_at) AS "startedAt",
       max(region) AS "region",
+      max(country) AS "country",
+      max(country_region) AS "countryRegion",
       max(ip_masked) AS "ipMasked",
       count(*)::int AS "pageCount",
       coalesce(sum(duration_seconds), 0)::int AS "totalDurationSeconds"
@@ -291,7 +296,13 @@ export default async function AdminAnalyticsPage({
                     <details>
                       <summary className="grid cursor-pointer list-none grid-cols-[1.5fr_1fr_1fr_0.7fr_1fr] gap-4 text-left [&::-webkit-details-marker]:hidden">
                         <span className="text-ink-muted">{formatKstDateTime(row.startedAt)}</span>
-                        <span>{row.region || '알수없음'}</span>
+                        <span>
+                          {formatRegionKo({
+                            city: row.region,
+                            country: row.country,
+                            countryRegion: row.countryRegion,
+                          }) || '알수없음'}
+                        </span>
                         <span className="font-mono text-xs text-ink-muted">{row.ipMasked || '-'}</span>
                         <span>{numberValue(row.pageCount).toLocaleString()}</span>
                         <span>{formatDuration(row.totalDurationSeconds)}</span>

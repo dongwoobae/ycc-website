@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { pageViews } from '@/lib/db/schema'
 import { formatKstDate } from '@/lib/date'
 import { isBot } from '@/lib/analytics/bots'
+import { isDatacenterIp } from '@/lib/analytics/datacenter'
 import { hashVisitor, maskIp, sessionId } from '@/lib/analytics/ip'
 import { isTrackablePath } from '@/lib/analytics/paths'
 import { clampDurationSeconds } from '@/lib/analytics/server'
@@ -29,7 +30,11 @@ function getClientIp(headers: Headers): string {
 }
 
 function getRegion(headers: Headers): string | null {
-  const value = headers.get('x-vercel-ip-city') || headers.get('x-vercel-ip-region')
+  return getGeoHeader(headers, 'x-vercel-ip-city') || getGeoHeader(headers, 'x-vercel-ip-region')
+}
+
+function getGeoHeader(headers: Headers, name: string): string | null {
+  const value = headers.get(name)
   if (!value) return null
   try {
     return decodeURIComponent(value)
@@ -74,6 +79,7 @@ export async function POST(req: Request) {
     const now = new Date()
     const kstDate = formatKstDate(now)
     const ip = getClientIp(req.headers)
+    if (isDatacenterIp(ip)) return noContent()
     const visitorId = hashVisitor(process.env.ANALYTICS_SALT, kstDate, ip, userAgent)
     if (isRateLimited(visitorId, now.getTime())) return noContent()
 
@@ -87,6 +93,8 @@ export async function POST(req: Request) {
           path: parsed.path,
           referrer: parsed.referrer?.slice(0, 2048) || null,
           region: getRegion(req.headers),
+          country: getGeoHeader(req.headers, 'x-vercel-ip-country'),
+          countryRegion: getGeoHeader(req.headers, 'x-vercel-ip-country-region'),
           ipMasked: maskIp(ip),
           userAgent: userAgent.slice(0, 1024) || null,
           durationSeconds: 0,

@@ -162,6 +162,8 @@ export const pageViews = pgTable('page_views', {
   path: text('path').notNull(),
   referrer: text('referrer'),
   region: text('region'),
+  country: text('country'),
+  countryRegion: text('country_region'),
   ipMasked: text('ip_masked'),
   userAgent: text('user_agent'),
   durationSeconds: integer('duration_seconds').notNull().default(0),
