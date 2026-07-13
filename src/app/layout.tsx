@@ -56,6 +56,12 @@ export const metadata: Metadata = {
     template: '%s | 영천중앙교회',
   },
   description: '영천중앙교회 공식 홈페이지입니다.',
+  verification: {
+    google: 'i76ulv_84QEDrKNinruYNDKmrFlGOQ7c4XbdKbCoieI',
+    other: {
+      'naver-site-verification': '65e50e8f993270d87b9df318727ec21fa546409d',
+    },
+  },
   icons: {
     icon: [
       { url: '/brand/pck-icon-32.png', sizes: '32x32', type: 'image/png' },
