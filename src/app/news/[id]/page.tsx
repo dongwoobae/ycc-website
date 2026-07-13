@@ -32,6 +32,9 @@ export async function generateMetadata({ params }: NewsDetailProps): Promise<Met
   return {
     title: post.title,
     description: truncateDescription(post.content),
+    alternates: {
+      canonical: `/news/${post.id}`,
+    },
   }
 }
 

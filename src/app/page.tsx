@@ -1,8 +1,15 @@
+import type { Metadata } from 'next'
 import ImmersiveHero from '@/components/home/ImmersiveHero'
 import Manifesto from '@/components/home/Manifesto'
 import FullBleedBand from '@/components/home/FullBleedBand'
 import EntryCards from '@/components/home/EntryCards'
 import { getLatestSermons } from '@/lib/data/sermons'
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+}
 
 export const revalidate = 3600
 

@@ -7,6 +7,10 @@ import Reveal from '@/components/ui/Reveal'
 
 export const metadata: Metadata = {
   title: '담임목사 인사말',
+  description: '영천중앙교회 담임목사의 인사말입니다.',
+  alternates: {
+    canonical: '/about/greeting',
+  },
 }
 
 export default function GreetingPage() {

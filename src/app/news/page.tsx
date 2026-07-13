@@ -10,6 +10,10 @@ import type { Post } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: '교회소식',
+  description: '영천중앙교회의 새로운 소식과 공지사항을 전합니다.',
+  alternates: {
+    canonical: '/news',
+  },
 }
 
 export const revalidate = 3600

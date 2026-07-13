@@ -13,6 +13,9 @@ import { adultWorshipSchedule } from '@/lib/worship'
 export const metadata: Metadata = {
   title: '처음 오세요',
   description: '영천중앙교회에 처음 방문하는 분들을 위한 예배 안내, FAQ, 다음세대, 오시는 길 안내입니다.',
+  alternates: {
+    canonical: '/newfamily',
+  },
 }
 
 const timeline = [

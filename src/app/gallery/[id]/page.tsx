@@ -24,6 +24,9 @@ export async function generateMetadata({ params }: GalleryDetailProps): Promise<
   return {
     title: album.title,
     description: album.description,
+    alternates: {
+      canonical: `/gallery/${album.id}`,
+    },
     openGraph: {
       title: album.title,
       images: [album.coverImgUrl],

@@ -6,6 +6,10 @@ import Reveal from '@/components/ui/Reveal'
 
 export const metadata: Metadata = {
   title: '교회연혁',
+  description: '영천중앙교회가 걸어온 역사와 발자취를 소개합니다.',
+  alternates: {
+    canonical: '/about/history',
+  },
 }
 
 const history = [

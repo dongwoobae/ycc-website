@@ -7,6 +7,9 @@ import Reveal from '@/components/ui/Reveal'
 export const metadata: Metadata = {
   title: '행복선언',
   description: '영천중앙교회가 예배 때마다 축도 전에 함께 고백하는 행복선언입니다.',
+  alternates: {
+    canonical: '/happiness',
+  },
 }
 
 const confessions = [

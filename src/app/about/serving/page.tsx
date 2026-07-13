@@ -7,6 +7,10 @@ import Reveal from '@/components/ui/Reveal'
 
 export const metadata: Metadata = {
   title: '섬기는 분들',
+  description: '영천중앙교회를 섬기는 교역자와 사역자를 소개합니다.',
+  alternates: {
+    canonical: '/about/serving',
+  },
 }
 
 const staff: { role: string; name: string; photo: string }[] = [

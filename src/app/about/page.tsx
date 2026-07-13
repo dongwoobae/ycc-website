@@ -7,6 +7,10 @@ import Reveal from "@/components/ui/Reveal";
 
 export const metadata: Metadata = {
   title: "교회소개",
+  description: "영천중앙교회의 비전과 사명, 걸어온 발자취를 소개합니다.",
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 const visions = [

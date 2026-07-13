@@ -26,6 +26,9 @@ export async function generateMetadata({ params }: SermonDetailProps): Promise<M
   return {
     title: displayTitle,
     description: sermon.summary ?? sermon.worshipType,
+    alternates: {
+      canonical: `/sermons/${sermon.id}`,
+    },
     openGraph: {
       title: displayTitle,
       description: sermon.summary,

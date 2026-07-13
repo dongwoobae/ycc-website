@@ -8,6 +8,10 @@ import { getGalleryAlbums } from '@/lib/data/gallery'
 
 export const metadata: Metadata = {
   title: '갤러리',
+  description: '영천중앙교회의 예배와 행사, 공동체 활동 사진을 모았습니다.',
+  alternates: {
+    canonical: '/gallery',
+  },
 }
 
 export const revalidate = 3600

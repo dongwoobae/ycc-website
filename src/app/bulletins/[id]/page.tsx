@@ -20,8 +20,13 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: BulletinDetailProps): Promise<Metadata> {
   const { id } = await params
   const bulletin = await getBulletinById(id)
+  if (!bulletin) return { title: '주보' }
   return {
-    title: bulletin ? `${bulletin.bulletinDate} 주보` : '주보',
+    title: `${bulletin.bulletinDate} 주보`,
+    description: `영천중앙교회 ${bulletin.bulletinDate} 주보입니다.`,
+    alternates: {
+      canonical: `/bulletins/${bulletin.id}`,
+    },
   }
 }
 

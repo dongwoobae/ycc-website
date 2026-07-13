@@ -56,9 +56,6 @@ export const metadata: Metadata = {
     template: '%s | 영천중앙교회',
   },
   description: '영천중앙교회 공식 홈페이지입니다.',
-  alternates: {
-    canonical: '/',
-  },
   icons: {
     icon: [
       { url: '/brand/pck-icon-32.png', sizes: '32x32', type: 'image/png' },
@@ -68,8 +65,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: '영천중앙교회',
-    description: '영천중앙교회',
-    url: '/',
+    description: '영천중앙교회 공식 홈페이지입니다.',
     locale: 'ko_KR',
     siteName: '영천중앙교회',
     type: 'website',
@@ -85,7 +81,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: '영천중앙교회',
-    description: '영천중앙교회',
+    description: '영천중앙교회 공식 홈페이지입니다.',
     images: ['/brand/pck-og.png'],
   },
 }

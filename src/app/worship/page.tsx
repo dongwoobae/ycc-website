@@ -12,6 +12,9 @@ import {
 export const metadata: Metadata = {
   title: '예배 시간',
   description: '영천중앙교회 주일예배·주일학교·청년부·수요예배·새벽예배·금요기도회의 요일과 시간, 장소를 안내합니다.',
+  alternates: {
+    canonical: '/worship',
+  },
 }
 
 const allSchedule: readonly WorshipScheduleItem[] = [

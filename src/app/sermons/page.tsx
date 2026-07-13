@@ -7,6 +7,10 @@ import { getSermons } from '@/lib/data/sermons'
 
 export const metadata: Metadata = {
   title: '예배·설교',
+  description: '영천중앙교회 주일예배·수요예배 설교 영상을 말씀 요약과 함께 제공합니다.',
+  alternates: {
+    canonical: '/sermons',
+  },
 }
 
 export const revalidate = 3600

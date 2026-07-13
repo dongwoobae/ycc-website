@@ -7,6 +7,10 @@ import { getBulletins } from '@/lib/data/bulletins'
 
 export const metadata: Metadata = {
   title: '주보',
+  description: '영천중앙교회 주보를 온라인으로 열람할 수 있습니다.',
+  alternates: {
+    canonical: '/bulletins',
+  },
 }
 
 export const revalidate = 3600

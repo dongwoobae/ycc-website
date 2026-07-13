@@ -8,6 +8,9 @@ import { churchInfo, churchPhoneDisplay } from '@/lib/church'
 export const metadata: Metadata = {
   title: 'FAQ · 자주 묻는 질문',
   description: '영천중앙교회에 처음 오시는 분들이 자주 묻는 질문과 답변을 모았습니다.',
+  alternates: {
+    canonical: '/faq',
+  },
 }
 
 interface FaqItem {
