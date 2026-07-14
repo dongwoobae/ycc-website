@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 }
 
 const confessions = [
-  '예수 안에서 나는 잘되고 있습니다.',
-  '예수 안에서 우리 가정은 잘되고 있습니다.',
-  '예수 안에서 우리 교회는 잘되고 있습니다.',
+  ['예수 안에서', '나는 잘되고 있습니다'],
+  ['예수 안에서', '우리 가정은 잘되고 있습니다'],
+  ['예수 안에서', '우리 교회는 잘되고 있습니다'],
 ]
 
 export default function HappinessPage() {
@@ -25,7 +25,6 @@ export default function HappinessPage() {
         eyebrow="Declaration"
         title="행복선언"
         subtitle="영천중앙교회는 예배 때마다 축도 전에 행복선언을 함께 고백합니다."
-        image="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1600&q=80"
       />
       <WorshipSubnav />
       <section className="py-20 sm:py-24">
@@ -47,12 +46,14 @@ export default function HappinessPage() {
 
             <Reveal variant="fade-up" delay={140}>
               <div className="my-12 grid gap-3.5">
-                {confessions.map((line) => (
+                {confessions.map(([first, second]) => (
                   <p
-                    key={line}
+                    key={second}
                     className="rounded-2xl border border-line bg-paper px-7 py-6 text-center font-serif text-[clamp(20px,2.6vw,26px)] font-bold leading-snug tracking-tight text-accent-deep shadow-subtle"
                   >
-                    “{line}”
+                    {first}
+                    <br />
+                    {second}
                   </p>
                 ))}
               </div>
@@ -71,12 +72,18 @@ export default function HappinessPage() {
             <Reveal variant="fade-up" delay={300}>
               <figure className="mt-14 border-t border-line pt-10 text-center">
                 <blockquote className="font-serif text-[clamp(19px,2.4vw,24px)] font-bold leading-relaxed tracking-tight text-ink">
-                  먼저 그의 나라와 그의 의를 구하라
+                  먼저
                   <br />
-                  그리하면 이 모든 것을 너희에게 더하시리라
+                  그의 나라와 그의 의를 구하라
+                  <br />
+                  그리하면
+                  <br />
+                  이 모든 것을
+                  <br />
+                  너희에게 더하시리라
                 </blockquote>
                 <figcaption className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-accent">
-                  마태복음 6:33
+                  마태복음 6장 33절
                 </figcaption>
               </figure>
             </Reveal>
