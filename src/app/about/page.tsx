@@ -51,7 +51,7 @@ const visions = [
 const stats = [
   { n: "1956", unit: null, label: "창립 연도" },
   { n: "70", unit: "년", label: "함께 걸어온 시간" },
-  { n: "6", unit: "개", label: "교회학교 부서" },
+  { n: "4", unit: "개", label: "교회학교 부서" },
   { n: "4", unit: "곳", label: "국내외 선교지" },
 ];
 
@@ -62,7 +62,6 @@ export default function AboutPage() {
         eyebrow="Welcome"
         title="교회소개"
         subtitle="영천중앙교회는 1956년 창립 이후 말씀과 예배, 선교와 섬김으로 지역 사회와 함께 걸어왔습니다."
-        image="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&q=80"
       />
       <AboutSubnav />
 

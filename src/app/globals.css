@@ -9,15 +9,22 @@
 }
 
 :root {
-  --bg: 228 236 246;
-  --surface: 215 227 242;
-  --paper: 245 249 253;
-  --ink: 30 42 69;
-  --ink-muted: 88 103 129;
-  --faint: 122 135 156;
-  --line: 196 210 228;
-  --accent: 47 108 206;
-  --accent-deep: 33 83 180;
+  --royal: 51 78 172;
+  --midnight: 11 31 92;
+  --china: 112 150 209;
+  --sky: 186 214 235;
+  --dawn: 208 227 255;
+  --porcelain: 229 241 246;
+  --moon: 247 242 235;
+  --bg: var(--porcelain);
+  --surface: var(--dawn);
+  --paper: 255 255 255;
+  --ink: var(--midnight);
+  --ink-muted: 74 91 124;
+  --faint: 112 128 154;
+  --line: 199 216 232;
+  --accent: var(--royal);
+  --accent-deep: var(--midnight);
 }
 
 @theme inline {
@@ -31,7 +38,7 @@
   --color-line: rgb(var(--line));
   --color-paper: rgb(var(--paper));
   --font-sans: var(--font-pretendard), system-ui, sans-serif;
-  --font-serif: var(--font-nanum-myeongjo), "Nanum Myeongjo", serif;
+  --font-serif: var(--font-sans);
   --shadow-soft: 0 18px 50px rgb(var(--ink) / 0.08);
   --shadow-subtle: 0 8px 26px rgb(var(--ink) / 0.06);
   --shadow-lifted: 0 22px 55px rgb(var(--ink) / 0.16);

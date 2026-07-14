@@ -8,10 +8,12 @@ import { useEffect, useRef } from 'react'
  * parallax는 좁은 화면(<md)·prefers-reduced-motion에서 자동 비활성 → jank/접근성 대응.
  * 부모 <section>은 relative + overflow-hidden 이어야 함.
  */
-export default function HeroBackdrop({ image }: { image: string }) {
+export default function HeroBackdrop({ image }: { image?: string }) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!image) return undefined
+
     const el = ref.current
     if (!el) return
 
@@ -53,20 +55,24 @@ export default function HeroBackdrop({ image }: { image: string }) {
       reduce.removeEventListener('change', update)
       wide.removeEventListener('change', update)
     }
-  }, [])
+  }, [image])
 
   return (
     <>
       <div ref={ref} className="absolute inset-0 -z-20 will-change-transform">
-        <Image
-          src={image}
-          alt=""
-          fill
-          sizes="100vw"
-          className="ken-burns !absolute !left-0 !top-[-35%] !h-[170%] w-full object-cover"
-        />
+        {image ? (
+          <Image
+            src={image}
+            alt=""
+            fill
+            sizes="100vw"
+            className="ken-burns !absolute !left-0 !top-[-35%] !h-[170%] w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-[linear-gradient(135deg,rgb(var(--porcelain))_0%,rgb(var(--dawn))_62%,rgb(var(--sky))_100%)]" />
+        )}
       </div>
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-accent-deep/65 via-ink/42 to-ink/55" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_18%,rgb(var(--moon)/0.72),transparent_34%),linear-gradient(180deg,rgb(var(--paper)/0.22),rgb(var(--porcelain)/0.62))]" />
     </>
   )
 }

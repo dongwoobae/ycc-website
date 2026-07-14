@@ -7,7 +7,6 @@ export default function NewsHero() {
       eyebrow="News"
       title="교회소식"
       subtitle="공지와 행사, 공동체 소식을 전합니다."
-      image="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1600&q=80"
     />
   )
 }
