@@ -184,8 +184,26 @@ export default function Header() {
       </header>
 
       {menuOpen && (
-        <div id="mobile-navigation" className="fixed inset-0 top-20 z-40 overflow-y-auto bg-bg min-[960px]:hidden">
-          <Container size="wide" className="py-8">
+        <div id="mobile-navigation" className="fixed inset-0 z-[60] min-[960px]:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-ink/35"
+            onClick={() => setMenuOpen(false)}
+            aria-label="모바일 메뉴 닫기"
+          />
+          <aside className="absolute right-0 top-0 h-full w-[80%] max-w-sm overflow-y-auto bg-bg shadow-lifted transition-transform duration-300 ease-out translate-x-0">
+            <button
+              type="button"
+              className="absolute right-5 top-5 inline-flex h-11 w-11 items-center justify-center rounded-full border border-line bg-paper text-ink transition hover:bg-surface"
+              onClick={() => setMenuOpen(false)}
+              aria-label="메뉴 닫기"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+            <Container size="wide" className="py-24">
             <nav className="grid gap-1" aria-label="모바일 메뉴">
               {navLinks.map((link) => (
                 <div key={link.href} className="border-b border-line">
@@ -213,7 +231,8 @@ export default function Header() {
                 </div>
               ))}
             </nav>
-          </Container>
+            </Container>
+          </aside>
         </div>
       )}
     </>

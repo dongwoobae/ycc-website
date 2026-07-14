@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import { worshipFilterItems, type WorshipFilterValue } from '@/lib/worship'
+import { sermonFilterPills, type WorshipFilterValue } from '@/lib/worship'
 
 export default function WorshipFilter({ current }: { current: WorshipFilterValue }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {worshipFilterItems.map((item) => {
+      {sermonFilterPills.map((item) => {
         const active = item.value === current
         const href = item.value === '전체' ? '/sermons' : `/sermons?worship=${encodeURIComponent(item.value)}`
         return (

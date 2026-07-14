@@ -31,6 +31,7 @@ const wordLinks: NavChild[] = [
   { label: '찬양예배 설교', href: '/sermons?worship=주일찬양예배', desc: '찬양예배 말씀' },
   { label: '수요설교', href: '/sermons?worship=수요예배', desc: '수요예배 말씀' },
   { label: '시온찬양대', href: '/sermons?worship=시온찬양대', desc: '찬양대 영상' },
+  { label: '특송', href: '/sermons?worship=특송', desc: '특송 영상' },
 ]
 
 const newcomerLinks: NavChild[] = [
@@ -43,12 +44,14 @@ const newcomerLinks: NavChild[] = [
 const newsLinks: NavChild[] = [
   { label: '교회소식', href: '/news', desc: '교회 소식과 공지' },
   { label: '행사 사진', href: '/gallery', desc: '사진으로 보는 일상' },
+  { label: '특별행사', href: '/sermons?worship=특별행사', desc: '특별행사 영상' },
+  { label: '기타', href: '/sermons?worship=기타', desc: '기타 영상' },
 ]
 
 export const navLinks: NavSection[] = [
   { label: '소개', href: '/about', section: '/about', eyebrow: 'About', children: aboutLinks },
   { label: '안내', href: '/happiness', section: '/happiness', eyebrow: 'Guide', children: guideLinks },
   { label: '말씀과 찬양', href: '/sermons', section: '/sermons', eyebrow: 'Worship', children: wordLinks },
-  { label: '처음 오셨나요?', href: '/newfamily', section: '/newfamily', eyebrow: 'Welcome', children: newcomerLinks },
   { label: '소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
+  { label: '처음 오셨나요?', href: '/newfamily', section: '/newfamily', eyebrow: 'Welcome', children: newcomerLinks },
 ]
