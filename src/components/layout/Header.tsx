@@ -12,6 +12,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [megaOpen, setMegaOpen] = useState(false)
+  const [openSection, setOpenSection] = useState<string | null>(null)
   const frame = useRef<number | null>(null)
 
   const isImmersive = pathname === '/' || pathname === '/newfamily'
@@ -126,7 +127,14 @@ export default function Header() {
           className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition min-[960px]:hidden ${
             isSolid ? 'border-line text-ink hover:bg-surface' : 'border-white/40 text-white hover:bg-white/10'
           }`}
-          onClick={() => setMenuOpen((value) => !value)}
+          onClick={() => {
+            if (!menuOpen) {
+              // 메뉴를 열 때 현재 보고 있는 섹션을 자동으로 펼친다.
+              const active = navLinks.find((link) => isActiveItem(link))
+              setOpenSection(active ? active.section : null)
+            }
+            setMenuOpen((value) => !value)
+          }}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
           aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
@@ -205,31 +213,60 @@ export default function Header() {
             </button>
             <Container size="wide" className="py-24">
             <nav className="grid gap-1" aria-label="모바일 메뉴">
-              {navLinks.map((link) => (
-                <div key={link.href} className="border-b border-line">
-                  <Link
-                    href={link.href}
-                    onClick={() => setMenuOpen(false)}
-                    className="block px-1 py-4 text-2xl font-extrabold tracking-tight text-ink transition hover:text-accent"
-                  >
-                    {link.label}
-                  </Link>
-                  {link.children && (
-                    <div className="flex flex-wrap gap-x-5 gap-y-2 px-1 pb-4">
-                      {link.children.map((child) => (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          onClick={() => setMenuOpen(false)}
-                          className="text-[15px] font-semibold text-ink-muted transition hover:text-accent"
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {navLinks.map((link) => {
+                const expanded = openSection === link.section
+                const panelId = `mobile-section-${link.section.replace(/\//g, '')}`
+                return (
+                  <div key={link.href} className="border-b border-line">
+                    <button
+                      type="button"
+                      onClick={() => setOpenSection((current) => (current === link.section ? null : link.section))}
+                      aria-expanded={expanded}
+                      aria-controls={panelId}
+                      className="flex w-full items-center justify-between gap-3 px-1 py-4 text-2xl font-extrabold tracking-tight text-ink transition hover:text-accent"
+                    >
+                      <span>{link.label}</span>
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                        className={`shrink-0 text-ink-muted transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                    {link.children && (
+                      <div
+                        id={panelId}
+                        className={`grid transition-all duration-300 ease-out ${
+                          expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                        }`}
+                      >
+                        <div className="overflow-hidden">
+                          <div className="flex flex-col gap-1 px-1 pb-4">
+                            {link.children.map((child) => (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setMenuOpen(false)}
+                                className="py-1.5 text-[15px] font-semibold text-ink-muted transition hover:text-accent"
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </nav>
             </Container>
           </aside>
