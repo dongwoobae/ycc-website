@@ -95,6 +95,7 @@ export default function WorshipPage() {
   return (
     <>
       <PageHero
+        tone="worship"
         eyebrow="Guide"
         title="예배 시간"
         subtitle="영천중앙교회의 예배와 모임을 요일·시간·장소와 함께 안내합니다."

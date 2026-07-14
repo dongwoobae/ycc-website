@@ -11,11 +11,11 @@ export default function Manifesto() {
           <Eyebrow>Welcome</Eyebrow>
         </Reveal>
         <Reveal delay={120}>
-          <p className="mx-auto mt-7 max-w-[24ch] text-[clamp(28px,4.6vw,54px)] font-bold leading-[1.42] tracking-tight text-ink">
+          <p className="mx-auto mt-7 max-w-[60rem] text-balance break-keep text-[clamp(22px,3.4vw,40px)] font-bold leading-[1.5] tracking-tight text-ink">
             오래된 믿음 위에,
-            <br />
+            <br className="hidden min-[600px]:block" />
             새로운 은혜가 머무는 영천중앙교회에 오신
-            <br />
+            <br className="hidden min-[600px]:block" />
             여러분 환영합니다
           </p>
         </Reveal>

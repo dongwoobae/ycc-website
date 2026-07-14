@@ -22,6 +22,7 @@ export default function HappinessPage() {
   return (
     <>
       <PageHero
+        tone="worship"
         eyebrow="Declaration"
         title="행복선언"
         subtitle="영천중앙교회는 예배 때마다 축도 전에 행복선언을 함께 고백합니다."

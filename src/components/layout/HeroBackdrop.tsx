@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react'
  * parallax는 좁은 화면(<md)·prefers-reduced-motion에서 자동 비활성 → jank/접근성 대응.
  * 부모 <section>은 relative + overflow-hidden 이어야 함.
  */
-export default function HeroBackdrop({ image }: { image?: string }) {
+export default function HeroBackdrop({ image, gradient }: { image?: string; gradient?: string }) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -69,10 +69,14 @@ export default function HeroBackdrop({ image }: { image?: string }) {
             className="ken-burns !absolute !left-0 !top-[-35%] !h-[170%] w-full object-cover"
           />
         ) : (
-          <div className="h-full w-full bg-[linear-gradient(135deg,rgb(var(--porcelain))_0%,rgb(var(--dawn))_62%,rgb(var(--sky))_100%)]" />
+          <div
+            className="h-full w-full"
+            style={{ backgroundImage: gradient ?? 'linear-gradient(135deg,rgb(220 231 247),rgb(228 227 244))' }}
+          />
         )}
       </div>
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_18%,rgb(var(--moon)/0.72),transparent_34%),linear-gradient(180deg,rgb(var(--paper)/0.22),rgb(var(--porcelain)/0.62))]" />
+      {/* 톤 중립 레이어: 좌상단 화이트 시닌(가독성) + 하단은 본문색으로 자연스럽게 페이드 */}
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_22%_16%,rgb(255_255_255/0.5),transparent_42%),linear-gradient(180deg,transparent_52%,rgb(var(--bg)/0.55))]" />
     </>
   )
 }

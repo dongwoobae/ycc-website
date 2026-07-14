@@ -21,10 +21,10 @@ const socialLinks = [
 
 export default function Footer() {
   return (
-    <footer className="mt-auto border-t border-line bg-bg">
-      <Container size="wide" className="grid gap-10 py-16 text-sm text-ink-muted md:grid-cols-[1.5fr_1fr_1fr]">
+    <footer className="mt-auto bg-[rgb(var(--midnight))] text-white/70">
+      <Container size="wide" className="grid gap-10 py-16 text-sm md:grid-cols-[1.5fr_1fr_1fr]">
         <div>
-          <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">영천중앙교회</h2>
+          <h2 className="font-serif text-2xl font-extrabold tracking-tight text-white">영천중앙교회</h2>
           <address className="mt-5 not-italic leading-7">
             {churchInfo.address}
             <br />
@@ -40,7 +40,7 @@ export default function Footer() {
                 rel="noreferrer"
                 aria-label={social.label}
                 title={social.label}
-                className="inline-flex transition hover:opacity-75"
+                className="inline-flex opacity-80 transition hover:opacity-100"
               >
                 <Image
                   src={social.src}
@@ -56,7 +56,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-accent">Worship</h3>
+          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--china))]">Worship</h3>
           <ul className="mt-4 space-y-2">
             {adultWorshipSchedule.slice(0, 4).map((item) => (
               <li key={item.name}>
@@ -67,11 +67,11 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-accent">Menu</h3>
+          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--china))]">Menu</h3>
           <ul className="mt-4 space-y-2">
             {menuLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="transition hover:text-ink">
+                <Link href={link.href} className="transition hover:text-white">
                   {link.label}
                 </Link>
               </li>
@@ -80,8 +80,8 @@ export default function Footer() {
         </div>
       </Container>
 
-      <div className="border-t border-line">
-        <Container size="wide" className="flex flex-wrap items-center justify-between gap-3 py-6 text-xs text-faint">
+      <div className="border-t border-white/10">
+        <Container size="wide" className="flex flex-wrap items-center justify-between gap-3 py-6 text-xs text-white/45">
           <span>© {new Date().getFullYear()} 영천중앙교회. All rights reserved.</span>
           <span>대한예수교장로회</span>
         </Container>

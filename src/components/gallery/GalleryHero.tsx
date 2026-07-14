@@ -4,6 +4,7 @@ import PageHero from '@/components/layout/PageHero'
 export default function GalleryHero() {
   return (
     <PageHero
+      tone="gallery"
       eyebrow="Gallery"
       title="갤러리"
       subtitle="교회 공동체의 예배와 섬김, 교제의 순간을 앨범으로 모았습니다."

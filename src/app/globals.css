@@ -16,7 +16,8 @@
   --dawn: 208 227 255;
   --porcelain: 229 241 246;
   --moon: 247 242 235;
-  --bg: var(--porcelain);
+  /* 본문 배경 — 히어로(연하늘 계열)와 구분되는 중립 웜 오프화이트 */
+  --bg: 250 249 246;
   --surface: var(--dawn);
   --paper: 255 255 255;
   --ink: var(--midnight);

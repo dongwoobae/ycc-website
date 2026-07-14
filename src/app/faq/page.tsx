@@ -106,6 +106,7 @@ export default function FaqPage() {
   return (
     <>
       <PageHero
+        tone="newfamily"
         eyebrow="FAQ"
         title="자주 묻는 질문"
         subtitle="영천중앙교회에 처음 오시는 분들이 자주 묻는 질문을 모았습니다."
