@@ -3,6 +3,7 @@ import {
   buildBreadcrumbJsonLd,
   buildChurchJsonLd,
   buildSermonVideoJsonLd,
+  normalizeUploadDate,
   secondsToIsoDuration,
   serializeJsonLd,
 } from './jsonld'
@@ -29,11 +30,30 @@ describe('buildChurchJsonLd', () => {
   })
 })
 
+describe('normalizeUploadDate', () => {
+  it('YYYY-MM-DD에 KST 오프셋을 붙인다', () => {
+    expect(normalizeUploadDate('2026-06-21')).toBe('2026-06-21T00:00:00+09:00')
+  })
+  it('이미 시간대가 있으면 그대로 둔다', () => {
+    expect(normalizeUploadDate('2026-06-21T09:00:00+09:00')).toBe('2026-06-21T09:00:00+09:00')
+    expect(normalizeUploadDate('2026-06-21T00:00:00Z')).toBe('2026-06-21T00:00:00Z')
+  })
+  it('빈 값·파싱 불가는 undefined', () => {
+    expect(normalizeUploadDate('')).toBeUndefined()
+    expect(normalizeUploadDate(undefined)).toBeUndefined()
+    expect(normalizeUploadDate('날짜없음')).toBeUndefined()
+  })
+})
+
 describe('buildSermonVideoJsonLd', () => {
-  it('base 필수 필드(name·uploadDate)는 항상 포함', () => {
+  it('uploadDate는 시간대 포함 ISO 8601로 정규화된다', () => {
     const ld = buildSermonVideoJsonLd({ name: '주일예배', uploadDate: '2026-06-21' })
     expect(ld.name).toBe('주일예배')
-    expect(ld.uploadDate).toBe('2026-06-21')
+    expect(ld.uploadDate).toBe('2026-06-21T00:00:00+09:00')
+  })
+  it('uploadDate가 잘못되면 키를 생략한다', () => {
+    const ld = buildSermonVideoJsonLd({ name: 'x', uploadDate: '' })
+    expect('uploadDate' in ld).toBe(false)
   })
   it('youtubeId가 있으면 embedUrl/contentUrl 포함', () => {
     const ld = buildSermonVideoJsonLd({
