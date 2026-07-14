@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Container from '@/components/layout/Container'
 import BulletinsHero from '@/components/bulletins/BulletinsHero'
+import NewsSubnav from '@/components/news/NewsSubnav'
 import Reveal from '@/components/ui/Reveal'
 import { getBulletins } from '@/lib/data/bulletins'
 
@@ -21,6 +22,7 @@ export default async function BulletinsPage() {
   return (
     <>
       <BulletinsHero />
+      <NewsSubnav />
       <div className="py-20 sm:py-24">
         <Container size="wide">
           <div className="grid gap-6 md:grid-cols-2">
