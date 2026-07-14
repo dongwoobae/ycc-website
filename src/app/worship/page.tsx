@@ -45,8 +45,7 @@ const sections: WorshipSectionData[] = [
   {
     id: 'school',
     title: '주일학교',
-    description: '영아부부터 고등부까지 다음세대가 자기 자리에서 예배합니다.',
-    rows: pick(['영아부', '유치부', '아동부', '중등부', '고등부']),
+    rows: pick(['유치부', '아동부', '중·고등부']),
   },
   {
     id: 'youth',
@@ -99,7 +98,6 @@ export default function WorshipPage() {
         eyebrow="Guide"
         title="예배 시간"
         subtitle="영천중앙교회의 예배와 모임을 요일·시간·장소와 함께 안내합니다."
-        image="https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=1600&q=80"
       />
       <WorshipSubnav />
       <div className="py-20 sm:py-24">

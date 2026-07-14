@@ -61,12 +61,12 @@ const groups: FaqGroup[] = [
       {
         question: '아이와 함께 가도 되나요?',
         answer:
-          '물론입니다. 영아부·유치부·아동부·중등부·고등부 모임이 준비되어 있어 자녀 연령에 맞게 안내해드립니다.',
+          '물론입니다. 유치부·아동부·중고등부 모임이 준비되어 있어 자녀 연령에 맞게 안내해드립니다.',
       },
       {
         question: '주일학교는 몇 시에 모이나요?',
         answer:
-          '영아부·유치부·아동부·중등부·고등부는 주일 오전 9시에 각 부서실에서 모입니다. 청년부는 주일 오후 2시에 청년부실에서 모입니다.',
+          '유치부·아동부·중고등부는 주일 오전 9시에 각 부서실에서 모입니다. 청년부는 주일 오후 2시에 청년부실에서 모입니다.',
       },
     ],
   },
@@ -109,7 +109,6 @@ export default function FaqPage() {
         eyebrow="FAQ"
         title="자주 묻는 질문"
         subtitle="영천중앙교회에 처음 오시는 분들이 자주 묻는 질문을 모았습니다."
-        image="https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?auto=format&fit=crop&w=1600&q=80"
       />
       <section className="py-20 sm:py-24">
         <Container>
