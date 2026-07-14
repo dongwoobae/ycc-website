@@ -39,8 +39,8 @@ const cards: EntryCard[] = [
     title: '찬양',
     photo: '/images/entry/praise.webp',
     desc: '찬양으로 하나님께 영광을 올려 드립니다.',
-    href: '/sermons?worship=시온찬양대',
-    items: ['시온찬양대', '할렐루야찬양대', '호산나찬양대'],
+    href: '/praise',
+    items: ['찬양대', '특송'],
   },
 ]
 

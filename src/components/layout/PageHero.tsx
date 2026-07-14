@@ -10,6 +10,7 @@ const HERO_TONES = {
   about: 'linear-gradient(135deg, rgb(220 231 247), rgb(228 227 244))', // 소프트 블루-라벤더
   worship: 'linear-gradient(135deg, rgb(242 236 220), rgb(233 222 198))', // 웜 샌드
   sermons: 'linear-gradient(135deg, rgb(225 226 243), rgb(210 216 239))', // 더스티 페리윙클
+  praise: 'linear-gradient(135deg, rgb(245 236 222), rgb(240 224 205))', // 웜 골드 (찬양)
   newfamily: 'linear-gradient(135deg, rgb(246 231 231), rgb(240 218 220))', // 웜 로즈
   news: 'linear-gradient(135deg, rgb(226 238 230), rgb(209 228 216))', // 세이지 그린
   bulletins: 'linear-gradient(135deg, rgb(228 234 240), rgb(213 223 233))', // 슬레이트

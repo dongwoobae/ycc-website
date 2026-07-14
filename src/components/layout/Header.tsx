@@ -92,7 +92,11 @@ export default function Header() {
   const matchesSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
 
   const isActiveItem = (item: (typeof navLinks)[number]) =>
-    [item.section, ...(item.children?.map((child) => child.href) ?? [])].some(matchesSection)
+    [
+      item.section,
+      ...(item.groups?.map((group) => group.href) ?? []),
+      ...(item.children?.map((child) => child.href) ?? []),
+    ].some(matchesSection)
 
   return (
     <>
@@ -172,18 +176,45 @@ export default function Header() {
                 >
                   {section.label}
                 </Link>
-                <ul className="space-y-1 border-t border-line pt-3">
-                  {section.children.map((child) => (
-                    <li key={child.href}>
-                      <Link
-                        href={child.href}
-                        className="block py-1 text-[13.5px] font-medium text-ink-muted transition hover:text-accent-deep"
-                      >
-                        {child.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                {section.groups ? (
+                  <div className="space-y-4 border-t border-line pt-3">
+                    {section.groups.map((group) => (
+                      <div key={group.href}>
+                        <Link
+                          href={group.href}
+                          className="block text-[13.5px] font-bold text-ink transition hover:text-accent-deep"
+                        >
+                          {group.label}
+                        </Link>
+                        <ul className="mt-1 space-y-1">
+                          {group.children.map((child) => (
+                            <li key={child.href}>
+                              <Link
+                                href={child.href}
+                                className="block py-1 text-[13px] font-medium text-ink-muted transition hover:text-accent-deep"
+                              >
+                                {child.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ul className="space-y-1 border-t border-line pt-3">
+                    {section.children.map((child) => (
+                      <li key={child.href}>
+                        <Link
+                          href={child.href}
+                          className="block py-1 text-[13.5px] font-medium text-ink-muted transition hover:text-accent-deep"
+                        >
+                          {child.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))}
           </Container>
@@ -250,16 +281,38 @@ export default function Header() {
                       >
                         <div className="overflow-hidden">
                           <div className="flex flex-col gap-1 px-1 pb-4">
-                            {link.children.map((child) => (
-                              <Link
-                                key={child.href}
-                                href={child.href}
-                                onClick={() => setMenuOpen(false)}
-                                className="py-1.5 text-[15px] font-semibold text-ink-muted transition hover:text-accent"
-                              >
-                                {child.label}
-                              </Link>
-                            ))}
+                            {link.groups
+                              ? link.groups.map((group) => (
+                                  <div key={group.href} className="flex flex-col gap-1">
+                                    <Link
+                                      href={group.href}
+                                      onClick={() => setMenuOpen(false)}
+                                      className="pt-2 text-[16px] font-bold text-ink transition hover:text-accent"
+                                    >
+                                      {group.label}
+                                    </Link>
+                                    {group.children.map((child) => (
+                                      <Link
+                                        key={child.href}
+                                        href={child.href}
+                                        onClick={() => setMenuOpen(false)}
+                                        className="py-1.5 pl-3 text-[15px] font-semibold text-ink-muted transition hover:text-accent"
+                                      >
+                                        {child.label}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                ))
+                              : link.children.map((child) => (
+                                  <Link
+                                    key={child.href}
+                                    href={child.href}
+                                    onClick={() => setMenuOpen(false)}
+                                    className="py-1.5 text-[15px] font-semibold text-ink-muted transition hover:text-accent"
+                                  >
+                                    {child.label}
+                                  </Link>
+                                ))}
                           </div>
                         </div>
                       </div>

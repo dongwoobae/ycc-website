@@ -7,12 +7,21 @@ export interface NavChild {
   desc: string
 }
 
+// 한 상위 메뉴 안의 하위 그룹(예: '말씀과 찬양' → 예배·설교 / 찬양).
+export interface NavGroup {
+  label: string
+  href: string
+  children: NavChild[]
+}
+
 export interface NavSection {
   label: string
   href: string
   section: string
   eyebrow: string
   children: NavChild[]
+  /** 하위 그룹으로 나뉘는 섹션이면 사용. 없으면 children을 평면으로 노출. */
+  groups?: NavGroup[]
 }
 
 const aboutLinks: NavChild[] = [
@@ -26,13 +35,25 @@ const guideLinks: NavChild[] = [
   { label: '예배 시간', href: '/worship', desc: '요일·시간·장소 안내' },
 ]
 
-const wordLinks: NavChild[] = [
+const sermonGroupLinks: NavChild[] = [
   { label: '주일설교', href: '/sermons?worship=주일예배', desc: '주일예배 말씀' },
   { label: '찬양예배 설교', href: '/sermons?worship=주일찬양예배', desc: '찬양예배 말씀' },
   { label: '수요설교', href: '/sermons?worship=수요예배', desc: '수요예배 말씀' },
-  { label: '시온찬양대', href: '/sermons?worship=시온찬양대', desc: '찬양대 영상' },
-  { label: '특송', href: '/sermons?worship=특송', desc: '특송 영상' },
 ]
+
+const praiseGroupLinks: NavChild[] = [
+  { label: '찬양대', href: '/praise?worship=시온찬양대', desc: '찬양대 영상' },
+  { label: '특송', href: '/praise?worship=특송', desc: '특송 영상' },
+]
+
+// '말씀과 찬양' 하위 그룹: 예배·설교(/sermons)와 찬양(/praise).
+const worshipGroups: NavGroup[] = [
+  { label: '예배·설교', href: '/sermons', children: sermonGroupLinks },
+  { label: '찬양', href: '/praise', children: praiseGroupLinks },
+]
+
+// 모바일 아코디언 등 평면 목록이 필요한 곳을 위한 폴백.
+const wordLinks: NavChild[] = [...sermonGroupLinks, ...praiseGroupLinks]
 
 const newcomerLinks: NavChild[] = [
   { label: '예배 안내', href: '/newfamily#flow', desc: '예배 시간과 진행 순서' },
@@ -52,7 +73,7 @@ const newsLinks: NavChild[] = [
 export const navLinks: NavSection[] = [
   { label: '소개', href: '/about', section: '/about', eyebrow: 'About', children: aboutLinks },
   { label: '안내', href: '/happiness', section: '/happiness', eyebrow: 'Guide', children: guideLinks },
-  { label: '말씀과 찬양', href: '/sermons', section: '/sermons', eyebrow: 'Worship', children: wordLinks },
+  { label: '말씀과 찬양', href: '/sermons', section: '/sermons', eyebrow: 'Worship', children: wordLinks, groups: worshipGroups },
   { label: '소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
   { label: '처음 오셨나요?', href: '/newfamily', section: '/newfamily', eyebrow: 'Welcome', children: newcomerLinks },
 ]
