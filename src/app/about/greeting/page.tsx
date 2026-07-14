@@ -20,7 +20,6 @@ export default function GreetingPage() {
         eyebrow="Greeting"
         title="담임목사 인사말"
         subtitle="영천중앙교회를 찾아 주신 여러분을 진심으로 환영합니다."
-        image="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80"
       />
       <AboutSubnav />
       <section className="py-20 sm:py-24">
@@ -65,9 +64,6 @@ export default function GreetingPage() {
                 </p>
                 <p>
                   언제든 영천중앙교회로 오십시오. 함께 예배하며 주님의 은혜를 나누기를 소망합니다.
-                </p>
-                <p className="font-serif text-lg font-bold italic text-accent-deep">
-                  Rejoice in the Lord always!
                 </p>
                 <div className="border-t border-line pt-6 text-right">
                   <p className="text-sm font-semibold text-ink-muted">영천중앙교회 담임목사</p>
