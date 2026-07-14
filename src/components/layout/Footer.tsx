@@ -25,9 +25,6 @@ export default function Footer() {
       <Container size="wide" className="grid gap-10 py-16 text-sm text-ink-muted md:grid-cols-[1.5fr_1fr_1fr]">
         <div>
           <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">영천중앙교회</h2>
-          <p className="mt-4 max-w-[36ch] leading-7">
-            삶의 닻을 주는 교회. 말씀과 예배, 서로를 돌보는 공동체로 영천의 이웃과 함께 걷습니다.
-          </p>
           <address className="mt-5 not-italic leading-7">
             {churchInfo.address}
             <br />

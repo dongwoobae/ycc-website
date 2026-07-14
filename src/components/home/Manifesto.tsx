@@ -12,9 +12,9 @@ export default function Manifesto() {
         </Reveal>
         <Reveal delay={120}>
           <p className="mx-auto mt-7 max-w-[24ch] text-[clamp(28px,4.6vw,54px)] font-bold leading-[1.42] tracking-tight text-ink">
-            오래된 믿음 위에, <span className="text-accent">새로운 은혜</span>가 머무는
+            오래된 믿음 위에,
             <br />
-            영천중앙교회에 오신
+            새로운 은혜가 머무는 영천중앙교회에 오신
             <br />
             여러분 환영합니다
           </p>
