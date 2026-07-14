@@ -19,8 +19,11 @@ export default function Subnav({ items, label }: { items: SubnavItem[]; label: s
     .sort((a, b) => b.length - a.length)[0]
 
   return (
-    <nav className="sticky top-20 z-30 border-b border-line bg-paper" aria-label={label}>
-      <Container size="wide" className="flex gap-1.5 overflow-x-auto">
+    <nav
+      className="sticky top-20 z-30 border-b border-line bg-paper/85 shadow-subtle backdrop-blur-md"
+      aria-label={label}
+    >
+      <Container size="wide" className="flex items-center gap-2 overflow-x-auto py-3">
         {items.map((item) => {
           const active = item.href === activeHref
           return (
@@ -28,8 +31,10 @@ export default function Subnav({ items, label }: { items: SubnavItem[]; label: s
               key={item.href}
               href={item.href}
               aria-current={active ? 'page' : undefined}
-              className={`flex-none whitespace-nowrap border-b-2 px-4 py-[18px] text-[15px] font-bold transition ${
-                active ? 'border-accent text-accent-deep' : 'border-transparent text-ink-muted hover:text-ink'
+              className={`flex-none whitespace-nowrap rounded-full px-5 py-2.5 text-[15px] font-bold transition ${
+                active
+                  ? 'bg-accent text-white shadow-subtle'
+                  : 'text-ink-muted hover:bg-surface hover:text-accent-deep'
               }`}
             >
               {item.label}

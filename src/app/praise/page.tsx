@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
 import PraiseHero from '@/components/praise/PraiseHero'
+import WordSubnav from '@/components/sermons/WordSubnav'
 import SermonsGrid from '@/components/sermons/SermonsGrid'
 import { getSermons } from '@/lib/data/sermons'
 
@@ -21,6 +22,7 @@ export default async function PraisePage() {
   return (
     <>
       <PraiseHero />
+      <WordSubnav />
       <div className="py-20 sm:py-24">
         <Container size="wide">
           <Suspense fallback={null}>

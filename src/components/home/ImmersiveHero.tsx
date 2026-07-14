@@ -3,8 +3,7 @@ import Reveal from '@/components/ui/Reveal'
 
 export default function ImmersiveHero() {
   return (
-    <section className="relative isolate flex min-h-[620px] h-[100svh] items-end overflow-hidden bg-[linear-gradient(145deg,rgb(var(--moon))_0%,rgb(var(--dawn))_58%,rgb(var(--porcelain))_100%)] text-ink">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_16%,rgb(var(--sky)/0.68),transparent_36%),radial-gradient(circle_at_86%_24%,rgb(var(--china)/0.28),transparent_34%),linear-gradient(180deg,transparent_0%,rgb(var(--moon)/0.72)_100%)]" />
+    <section className="relative isolate flex min-h-[620px] h-[100svh] items-end overflow-hidden bg-[rgb(240_238_227)] text-ink">
       <Container size="wide" className="pb-24 pt-32 min-[960px]:px-10 min-[960px]:pb-28">
         <div className="min-[960px]:ml-auto min-[960px]:max-w-2xl min-[960px]:text-right">
           <Reveal delay={120}>

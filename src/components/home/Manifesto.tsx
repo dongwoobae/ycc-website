@@ -2,10 +2,11 @@ import Container from "@/components/layout/Container";
 import Reveal from "@/components/ui/Reveal";
 import { Eyebrow } from "./HomePrimitives";
 
-// 홈 스크롤 #2 — 환영 메시지. 부드러운 블루→라벤더 그라데이션 배경.
+// 홈 스크롤 #2 — 환영 메시지. 히어로(#1, 밝은 하늘 단색)보다 한 단계 진한
+// 페리윙클 단색으로 내려, 스크롤이 더 깊은 공간으로 이어지는 느낌을 준다.
 export default function Manifesto() {
   return (
-    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#DCE7F7_0%,#E4E3F4_55%,#ECE6F6_100%)] py-28 min-[960px]:py-36">
+    <section className="relative isolate overflow-hidden border-t border-white/50 bg-[rgb(184_200_234)] py-28 min-[960px]:py-36">
       <Container size="wide" className="text-center">
         <Reveal>
           <Eyebrow>Welcome</Eyebrow>

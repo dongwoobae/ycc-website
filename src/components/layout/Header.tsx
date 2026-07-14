@@ -17,6 +17,8 @@ export default function Header() {
 
   const isImmersive = pathname === '/' || pathname === '/newfamily'
   const isSolid = !isImmersive || isScrolled || menuOpen || megaOpen
+  // 투명 헤더일 때, 히어로가 밝으면(홈: 크림 단색) 어두운 글자, 어두우면(newfamily: 네이비) 흰 글자.
+  const heroIsLight = pathname === '/'
 
   useEffect(() => {
     const id = window.requestAnimationFrame(() => {
@@ -78,16 +80,24 @@ export default function Header() {
         'left-0 right-0 top-0 z-50 border-b transition-[background-color,border-color,color] duration-300',
         isSolid
           ? 'border-line bg-paper text-ink shadow-subtle'
-          : 'border-transparent bg-transparent text-white',
+          : heroIsLight
+            ? 'border-transparent bg-transparent text-ink'
+            : 'border-transparent bg-transparent text-white',
       ].join(' '),
-    [isImmersive, isSolid],
+    [isImmersive, isSolid, heroIsLight],
   )
 
   const navLinkClassName = isSolid
     ? 'text-ink-muted hover:bg-surface hover:text-ink'
-    : 'text-white/90 hover:bg-white/10 hover:text-white'
+    : heroIsLight
+      ? 'text-ink-muted hover:bg-ink/5 hover:text-ink'
+      : 'text-white/90 hover:bg-white/10 hover:text-white'
 
-  const activeNavClassName = isSolid ? 'bg-surface text-accent-deep' : 'bg-white/15 text-white'
+  const activeNavClassName = isSolid
+    ? 'bg-surface text-accent-deep'
+    : heroIsLight
+      ? 'bg-ink/5 text-accent-deep'
+      : 'bg-white/15 text-white'
 
   const matchesSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
 
@@ -129,7 +139,11 @@ export default function Header() {
         <button
           type="button"
           className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition min-[960px]:hidden ${
-            isSolid ? 'border-line text-ink hover:bg-surface' : 'border-white/40 text-white hover:bg-white/10'
+            isSolid
+              ? 'border-line text-ink hover:bg-surface'
+              : heroIsLight
+                ? 'border-ink/25 text-ink hover:bg-ink/5'
+                : 'border-white/40 text-white hover:bg-white/10'
           }`}
           onClick={() => {
             if (!menuOpen) {
