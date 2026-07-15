@@ -81,10 +81,10 @@ const sections: WorshipSectionData[] = [
 
 function ScheduleRow({ item }: { item: WorshipScheduleItem }) {
   return (
-    <div className="grid items-baseline gap-x-3.5 gap-y-1 border-b border-line py-[15px] last:border-b-0 sm:grid-cols-[8rem_1fr_auto]">
-      <strong className="font-serif text-[17px] font-bold text-ink">{item.name}</strong>
-      <span className="text-[14.5px] text-faint">{item.place}</span>
-      <span className="text-[15px] font-bold text-accent-deep sm:justify-self-end sm:whitespace-nowrap">
+    <div className="grid items-baseline gap-x-3.5 gap-y-1 border-b border-line-soft py-[15px] last:border-b-0 sm:grid-cols-[8rem_1fr_auto]">
+      <strong className="text-[17px] font-bold text-accent-deep">{item.name}</strong>
+      <span className="text-[14.5px] text-faint-soft">{item.place}</span>
+      <span className="text-[15px] font-extrabold text-gold-deep sm:justify-self-end sm:whitespace-nowrap">
         {item.displayTime}
       </span>
     </div>
@@ -110,7 +110,7 @@ export default function WorshipPage() {
                   id={section.id}
                   className="h-full scroll-mt-28 rounded-2xl border border-line bg-paper p-8 shadow-subtle"
                 >
-                  <h2 className="font-serif text-[23px] font-extrabold tracking-tight text-ink">{section.title}</h2>
+                  <h2 className="text-2xl font-extrabold tracking-tight text-accent-deep">{section.title}</h2>
                   {section.description && (
                     <p className="mt-2 text-[14.5px] leading-6 text-ink-muted">{section.description}</p>
                   )}

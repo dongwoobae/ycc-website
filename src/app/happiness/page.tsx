@@ -50,7 +50,7 @@ export default function HappinessPage() {
                 {confessions.map(([first, second]) => (
                   <p
                     key={second}
-                    className="rounded-2xl border border-line bg-paper px-7 py-6 text-center font-serif text-[clamp(20px,2.6vw,26px)] font-bold leading-snug tracking-tight text-accent-deep shadow-subtle"
+                    className="rounded-2xl border border-line-strong bg-card-blue px-7 py-[30px] text-center text-[clamp(20px,2.6vw,25px)] font-extrabold leading-[1.5] tracking-tight text-accent-deep"
                   >
                     {first}
                     <br />
@@ -72,7 +72,7 @@ export default function HappinessPage() {
 
             <Reveal variant="fade-up" delay={300}>
               <figure className="mt-14 border-t border-line pt-10 text-center">
-                <blockquote className="font-serif text-[clamp(19px,2.4vw,24px)] font-bold leading-relaxed tracking-tight text-ink">
+                <blockquote className="text-[clamp(19px,2.4vw,24px)] font-extrabold leading-[1.75] tracking-tight text-accent-deep">
                   먼저
                   <br />
                   그의 나라와 그의 의를 구하라
@@ -83,7 +83,7 @@ export default function HappinessPage() {
                   <br />
                   너희에게 더하시리라
                 </blockquote>
-                <figcaption className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-accent">
+                <figcaption className="mt-4 text-sm font-bold uppercase tracking-[0.2em] text-gold-deep">
                   마태복음 6장 33절
                 </figcaption>
               </figure>
