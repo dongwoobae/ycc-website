@@ -38,7 +38,7 @@ export default function GreetingPage() {
                   />
                 </div>
                 <figcaption className="mt-4 text-center">
-                  <p className="font-serif text-lg font-extrabold tracking-tight text-ink">김선찬 목사</p>
+                  <p className="text-lg font-extrabold tracking-tight text-ink">김선찬 목사</p>
                   <p className="mt-1 text-sm font-semibold text-ink-muted">영천중앙교회 담임목사</p>
                 </figcaption>
               </figure>
@@ -46,7 +46,11 @@ export default function GreetingPage() {
 
             <Reveal variant="right" delay={120}>
               <div className="max-w-[640px] space-y-6 text-[17.5px] leading-9 text-ink-muted">
-                <p>영천중앙교회 홈페이지를 방문해 주신 여러분을 진심으로 환영합니다.</p>
+                <p className="text-[clamp(21px,2.4vw,26px)] font-extrabold leading-[1.55] text-accent-deep">
+                  영천중앙교회 홈페이지를 방문해 주신
+                  <br />
+                  여러분을 진심으로 환영합니다.
+                </p>
                 <p>
                   영천중앙교회는 예수 그리스도의 복음 위에 세워진 믿음의 공동체입니다. 우리는 하나님을
                   예배하고, 말씀으로 삶을 세우며, 기도 가운데 주님의 뜻을 구하고, 이웃과 지역을 섬기는
@@ -67,7 +71,7 @@ export default function GreetingPage() {
                 </p>
                 <div className="border-t border-line pt-6 text-right">
                   <p className="text-sm font-semibold text-ink-muted">영천중앙교회 담임목사</p>
-                  <p className="mt-1 font-serif text-xl font-extrabold tracking-tight text-ink">김선찬 목사</p>
+                  <p className="mt-1 text-xl font-extrabold tracking-tight text-ink">김선찬 목사</p>
                 </div>
               </div>
             </Reveal>

@@ -69,10 +69,10 @@ export default function AboutPage() {
         <Container size="wide">
           <div className="max-w-[760px]">
             <Reveal variant="fade">
-              <p className="text-[13px] font-bold text-accent-deep">OUR STORY</p>
+              <p className="text-[13px] font-extrabold uppercase tracking-[0.24em] text-gold-deep">Our Story</p>
             </Reveal>
             <Reveal variant="fade" delay={120}>
-              <h2 className="mt-3 font-serif text-3xl font-extrabold leading-snug tracking-tight text-ink sm:text-4xl">
+              <h2 className="mt-3 text-3xl font-extrabold leading-snug tracking-tight text-ink sm:text-4xl">
                 하나님의 은혜에서
                 <br />
                 시작된 교회
@@ -116,7 +116,7 @@ export default function AboutPage() {
           <Reveal variant="fade-up">
             <div className="max-w-[720px]">
               <p className="text-[12.5px] font-bold uppercase tracking-[0.28em] text-accent">Vision</p>
-              <h2 className="mt-3.5 font-serif text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-4xl">
+              <h2 className="mt-3.5 text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-4xl">
                 우리가 붙드는 세 가지
               </h2>
             </div>
@@ -140,7 +140,7 @@ export default function AboutPage() {
                       {vision.icon}
                     </svg>
                   </div>
-                  <h3 className="font-serif text-xl font-extrabold tracking-tight text-ink">{vision.title}</h3>
+                  <h3 className="text-xl font-extrabold tracking-tight text-ink">{vision.title}</h3>
                   <p className="mt-2.5 text-[15.5px] leading-7 text-ink-muted">{vision.body}</p>
                 </div>
               </Reveal>
@@ -155,7 +155,7 @@ export default function AboutPage() {
             {stats.map((stat, i) => (
               <Reveal key={stat.label} variant="fade-up" delay={i * 80}>
                 <div>
-                  <div className="font-serif text-5xl font-extrabold leading-none text-accent-deep">
+                  <div className="text-5xl font-extrabold leading-none text-accent-deep">
                     {stat.n}
                     {stat.unit && <span className="text-[0.5em]">{stat.unit}</span>}
                   </div>
