@@ -6,7 +6,7 @@ import KakaoMap from '@/components/layout/KakaoMap'
 import VisitBlock from '@/components/layout/VisitBlock'
 import Reveal from '@/components/ui/Reveal'
 import SectionTitle from '@/components/ui/SectionTitle'
-import { Eyebrow, HomeButton, ImagePlaceholder } from '@/components/home/HomePrimitives'
+import { HomeButton, ImagePlaceholder } from '@/components/home/HomePrimitives'
 import { churchInfo } from '@/lib/church'
 import { adultWorshipSchedule } from '@/lib/worship'
 
@@ -69,21 +69,9 @@ const faqs = [
 ]
 
 const nextGen = [
-  {
-    title: '유치부',
-    label: '유치부 사진 자리',
-    checks: ['어린 자녀가 안전한 공간에서 예배하도록 돕습니다.', '아이 눈높이에 맞춘 말씀과 활동을 준비합니다.', '처음 온 아이도 이름을 묻고 반갑게 맞이합니다.'],
-  },
-  {
-    title: '아동부',
-    label: '아동부 사진 자리',
-    checks: ['친구들과 함께 찬양하고 성경 이야기를 배웁니다.', '신앙의 기초를 즐겁고 건강하게 세워갑니다.', '부모님께 모임 장소와 시간을 분명히 안내합니다.'],
-  },
-  {
-    title: '중고등부',
-    label: '중고등부 사진 자리',
-    checks: ['청소년의 질문을 존중하는 예배와 나눔이 있습니다.', '학교와 일상 속 신앙을 함께 고민합니다.', '새로 온 학생도 자연스럽게 연결되도록 돕습니다.'],
-  },
+  { title: '유치부', label: '유치부 사진 자리', info: '본당 1층 유치부실 · 주일 오전 9:00' },
+  { title: '아동부', label: '아동부 사진 자리', info: '교육관 1층 · 주일 오전 9:00' },
+  { title: '중·고등부', label: '중·고등부 사진 자리', info: '교육관 지하 · 주일 오전 9:00' },
 ]
 
 export default function NewFamilyPage() {
@@ -102,23 +90,23 @@ export default function NewFamilyPage() {
 
 function Hero() {
   return (
-    <section className="relative isolate flex min-h-[560px] items-center overflow-hidden bg-[linear-gradient(160deg,oklch(0.32_0.07_256),oklch(0.2_0.05_260))] py-28 text-center text-white min-[960px]:min-h-[74svh]">
-      <Image src="/images/church-hero-still.webp" alt="" fill priority unoptimized sizes="100vw" className="-z-20 object-cover" />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,oklch(0.15_0.05_258/.40)_0%,oklch(0.14_0.05_258/.28)_42%,oklch(0.14_0.05_258/.40)_70%,oklch(0.13_0.055_258/.66)_100%)]" />
+    <section className="flex min-h-[480px] items-center bg-accent-deep py-28 text-center text-white min-[960px]:min-h-[60svh]">
       <Container size="wide" className="pt-14">
         <Reveal>
-          <Eyebrow className="text-white/80">First Visit</Eyebrow>
+          <p className="text-sm font-extrabold uppercase tracking-[0.3em] text-gold">First Visit</p>
         </Reveal>
         <Reveal delay={120}>
-          <h1 className="mx-auto mt-6 max-w-4xl font-serif text-[clamp(38px,6vw,72px)] font-extrabold leading-[1.14] tracking-tight text-white [text-shadow:0_4px_50px_oklch(0.1_0.05_258/.58)]">
+          <h1 className="mx-auto mt-6 max-w-4xl text-[clamp(38px,6vw,62px)] font-extrabold leading-[1.2] tracking-tight">
             교회가 처음이세요?
             <br />
             진심으로 환영합니다.
           </h1>
         </Reveal>
         <Reveal delay={240}>
-          <p className="mx-auto mt-6 max-w-[54ch] text-[clamp(17px,2vw,21px)] font-medium leading-8 text-white/90">
-            낯설고 조심스러운 마음 그대로 오셔도 괜찮습니다. 영천중앙교회가 처음 방문의 길을 차분히 안내해드립니다.
+          <p className="mx-auto mt-6 max-w-[640px] text-[clamp(17px,2vw,20px)] leading-[1.75] text-white/85">
+            낯설고 조심스러운 마음 그대로 오셔도 괜찮습니다.
+            <br className="hidden sm:block" />
+            영천중앙교회가 처음 방문의 길을 차분히 안내해드립니다.
           </p>
         </Reveal>
       </Container>
@@ -128,19 +116,19 @@ function Hero() {
 
 function Welcome() {
   return (
-    <section className="bg-bg py-20 min-[960px]:py-28">
+    <section className="bg-paper py-24 min-[960px]:py-28">
       <Container>
         <Reveal>
           <div className="mx-auto max-w-3xl text-center">
-            <Eyebrow>Welcome</Eyebrow>
-            <blockquote className="mt-6 font-serif text-[clamp(24px,3.2vw,36px)] font-bold leading-[1.55] tracking-tight text-accent-deep">
+            <div className="mx-auto h-1 w-14 bg-gold" aria-hidden />
+            <blockquote className="mt-8 text-[clamp(24px,3.2vw,32px)] font-extrabold leading-[1.6] tracking-tight text-accent-deep">
               신앙의 문턱이 높게 느껴지신다면
               <br />
               그 마음 그대로 오셔도 괜찮습니다.
               <br />
               한 분 한 분을 귀한 가족으로 맞이하겠습니다.
             </blockquote>
-            <p className="mt-7 text-sm font-semibold text-ink-muted">영천중앙교회 담임목사 드림</p>
+            <p className="mt-7 text-sm font-bold text-faint">영천중앙교회 담임목사 드림</p>
           </div>
         </Reveal>
       </Container>
@@ -166,7 +154,7 @@ function ServiceFlow() {
           <div className="mx-auto mt-10 grid max-w-3xl gap-3 sm:grid-cols-2">
             {flowWorshipItems.map((item) => (
               <div key={item.name} className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-5 py-4">
-                <span className="font-serif text-lg font-extrabold text-ink">{item.name}</span>
+                <span className="text-lg font-extrabold text-ink">{item.name}</span>
                 <span className="text-sm font-semibold text-ink-muted">{item.displayTime}</span>
               </div>
             ))}
@@ -184,12 +172,12 @@ function ServiceFlow() {
             <Reveal key={item.title} delay={index * 90}>
               <div className="relative grid grid-cols-[56px_1fr] gap-5 pb-9 last:pb-0 sm:grid-cols-[64px_1fr] sm:gap-6">
                 {index !== timeline.length - 1 && <span className="absolute bottom-0 left-7 top-14 w-px bg-line sm:left-8 sm:top-16" aria-hidden />}
-                <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full border-2 border-paper bg-surface font-serif text-xl font-extrabold text-accent shadow-subtle sm:h-16 sm:w-16 sm:text-2xl">
+                <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full border-2 border-paper bg-surface text-xl font-extrabold text-accent shadow-subtle sm:h-16 sm:w-16 sm:text-2xl">
                   {index + 1}
                 </span>
                 <div className="pt-1.5">
                   <p className="text-sm font-bold uppercase tracking-[0.18em] text-accent">{item.time}</p>
-                  <h3 className="mt-2 font-serif text-2xl font-extrabold text-ink">{item.title}</h3>
+                  <h3 className="mt-2 text-2xl font-extrabold text-ink">{item.title}</h3>
                   <p className="mt-2 leading-7 text-ink-muted">{item.body}</p>
                 </div>
               </div>
@@ -212,7 +200,7 @@ function Faq() {
           {faqs.map((faq, index) => (
             <Reveal key={faq.question} delay={index * 55}>
               <details open={index === 0} className="group overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 font-serif text-lg font-bold text-ink marker:hidden sm:px-6 [&::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-lg font-bold text-ink marker:hidden sm:px-6 [&::-webkit-details-marker]:hidden">
                   <span>{faq.question}</span>
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-xl leading-none text-accent transition group-open:rotate-45" aria-hidden>
                     +
@@ -247,15 +235,8 @@ function NextGeneration() {
                   <ImagePlaceholder label={group.label} />
                 </div>
                 <div className="p-6">
-                  <h3 className="font-serif text-2xl font-extrabold text-ink">{group.title}</h3>
-                  <ul className="mt-5 grid gap-3">
-                    {group.checks.map((check) => (
-                      <li key={check} className="flex gap-3 text-sm leading-6 text-ink-muted">
-                        <CheckIcon />
-                        <span>{check}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <h3 className="text-2xl font-extrabold text-accent-deep">{group.title}</h3>
+                  <p className="mt-3 text-[15px] font-bold text-gold-deep">{group.info}</p>
                 </div>
               </article>
             </Reveal>
@@ -284,12 +265,12 @@ function Visit() {
 
 function Cta() {
   return (
-    <section className="relative isolate overflow-hidden bg-[oklch(0.22_0.05_259)] py-24 text-center text-white min-[960px]:py-[150px]">
+    <section className="relative isolate overflow-hidden bg-accent-deep py-24 text-center text-white min-[960px]:py-[150px]">
       <Image src="/images/church-cta.webp" alt="" fill unoptimized sizes="100vw" className="-z-20 object-cover" />
-      <div className="absolute inset-0 -z-10 bg-[oklch(0.14_0.055_258/.82)]" />
+      <div className="absolute inset-0 -z-10 bg-accent-deep/[0.82]" />
       <Container>
         <Reveal>
-          <h2 className="font-serif text-[clamp(32px,5vw,58px)] font-extrabold leading-[1.15] tracking-tight">
+          <h2 className="text-[clamp(32px,5vw,58px)] font-extrabold leading-[1.15] tracking-tight">
             이번 주일,
             <br />
             함께 예배드려요.
@@ -298,7 +279,9 @@ function Cta() {
             길이 막막하거나 궁금한 점이 있다면 미리 연락 주세요. 방문 전부터 편안히 안내해드리겠습니다.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <HomeButton href={`tel:${churchInfo.phone}`}>전화 문의</HomeButton>
+            <HomeButton href={`tel:${churchInfo.phone}`} variant="white">
+              전화 문의
+            </HomeButton>
             <HomeButton href="/worship" variant="ghost">
               전체 예배 시간표
             </HomeButton>
@@ -306,13 +289,5 @@ function Cta() {
         </Reveal>
       </Container>
     </section>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg className="mt-1 h-4 w-4 shrink-0 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
   )
 }

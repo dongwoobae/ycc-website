@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
+import Image from 'next/image'
 import Container from '@/components/layout/Container'
 import PastorKakaoCard from '@/components/layout/PastorKakaoCard'
 import Reveal from '@/components/ui/Reveal'
-import { ImagePlaceholder } from '@/components/home/HomePrimitives'
 import { churchInfo } from '@/lib/church'
 
 const kakaoMapUrl = `https://map.kakao.com/?q=${encodeURIComponent(churchInfo.address)}`
@@ -43,10 +43,17 @@ export default function VisitBlock({
           <Reveal delay={120}>
             <div className="grid gap-6">
               <VisitInfo label="Address">
-                <address className="font-serif text-[23px] font-bold not-italic leading-8 text-ink">{churchInfo.address}</address>
+                <address className="text-[23px] font-bold not-italic leading-8 text-ink">{churchInfo.address}</address>
               </VisitInfo>
-              <div className="h-52 overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle">
-                <ImagePlaceholder label="교회 사진" />
+              <div className="relative h-52 overflow-hidden rounded-2xl border border-line shadow-subtle">
+                <Image
+                  src="/images/church-spire.webp"
+                  alt="영천중앙교회 전경"
+                  fill
+                  unoptimized
+                  sizes="(min-width: 960px) 45vw, 100vw"
+                  className="object-cover object-[center_28%]"
+                />
               </div>
               {details}
               <VisitInfo label="Contact" last={!showPastorKakao}>
