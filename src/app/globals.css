@@ -62,9 +62,13 @@
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/*
+ * html 에 scroll-behavior: smooth 를 걸지 않는다.
+ * 라우트 전환 시 Next 가 이걸 끄려 하지만(=data-scroll-behavior) 완전히 억제하지 못해,
+ * scrollTop=0 애니메이션이 도중에 얼어붙어 서브내비 이동이 맨 위가 아닌 중간에 멈춘다.
+ * 부드러운 스크롤이 필요한 곳은 scrollIntoView({ behavior: 'smooth' }) 로 직접 지정한다
+ * (예: SermonsGrid 페이지네이션). 같은 페이지 내 앵커 링크는 현재 없다.
+ */
 
 body {
   min-height: 100vh;
