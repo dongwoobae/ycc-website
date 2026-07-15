@@ -67,7 +67,7 @@ function cleanSections(sections: unknown) {
             .filter((row) => row.label && row.value)
           : [],
         tables: Array.isArray(section.tables)
-          ? section.tables.map(cleanTable).filter((table) => table.title && table.headers.length && table.rows.length)
+          ? section.tables.map(cleanTable).filter((table) => table.title && table.rows.length)
           : [],
         offerings: Array.isArray(section.offerings)
           ? section.offerings.map(cleanOffering).filter((item) => item.category && item.names.length)
@@ -129,6 +129,7 @@ export async function parseHwpAction(formData: FormData) {
   const buffer = Buffer.from(await file.arrayBuffer())
   if (!sniffHwpMime(buffer)) throw new Error('invalid hwp file')
   const parsed = parseHwp(buffer)
+  if (parsed.sections.length) return { sections: parsed.sections }
   return {
     sections: [{ id: 'draft', title: '추출 내용', body: parsed.paragraphs }] satisfies BulletinSection[],
   }
