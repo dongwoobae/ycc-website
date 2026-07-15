@@ -61,6 +61,39 @@ export function inflateHwpSection(raw: Buffer, maxOutputLength = maxHwpDecompres
   return inflateRawSync(raw, { maxOutputLength })
 }
 
+const headingMarker = /^[＊*◼■●]/
+const offeringKeyword = /헌금|십일조/
+
+function isHeading(line: string) {
+  return headingMarker.test(line)
+}
+
+function isOfferingHeading(line: string) {
+  return isHeading(line) && offeringKeyword.test(line.replace(/\s+/g, ''))
+}
+
+/**
+ * Drops the donor lists and offering account from extracted paragraphs.
+ *
+ * Bulletins open with 헌금 blocks (십일조·감사헌금·맥추감사헌금 …), each headed by a
+ * marker and running until the next non-offering heading. Names sometimes sit on the
+ * heading line itself, and the 헌금계좌번호 lines carry no marker, so the block is cut
+ * by its boundaries rather than by matching category names or name-shaped text — the
+ * category set varies week to week.
+ */
+export function stripOfferingParagraphs(paragraphs: string[]) {
+  const kept: string[] = []
+  let inOffering = false
+
+  for (const line of paragraphs) {
+    if (isOfferingHeading(line)) inOffering = true
+    else if (inOffering && isHeading(line)) inOffering = false
+    if (!inOffering) kept.push(line)
+  }
+
+  return kept
+}
+
 export function parseHwp(buffer: Buffer): HwpParseResult {
   const cfb = CFB.read(buffer, { type: 'buffer' })
   const header = CFB.find(cfb, 'FileHeader')?.content
@@ -86,5 +119,5 @@ export function parseHwp(buffer: Buffer): HwpParseResult {
   }
 
   if (paragraphs.length === 0) throw new Error('hwp 본문을 추출할 수 없습니다')
-  return { paragraphs }
+  return { paragraphs: stripOfferingParagraphs(paragraphs) }
 }
