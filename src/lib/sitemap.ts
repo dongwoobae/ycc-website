@@ -19,6 +19,8 @@ const staticRoutes = [
   '/happiness',
   '/faq',
   '/sermons',
+  '/praise',
+  '/events',
   '/news',
   '/bulletins',
   '/gallery',
