@@ -9,21 +9,25 @@
 }
 
 :root {
-  --royal: 51 78 172;
-  --midnight: 11 31 92;
-  --china: 112 150 209;
-  --sky: 186 214 235;
-  --dawn: 208 227 255;
-  --porcelain: 229 241 246;
-  --moon: 247 242 235;
-  /* 본문 배경 — 히어로(연하늘 계열)와 구분되는 중립 웜 오프화이트 */
-  --bg: 250 249 246;
-  --surface: var(--dawn);
+  /* 딥 네이비 & 골드 팔레트 — 시안 hifi 값 */
+  --royal: 33 83 180; /* #2153B4 보조 블루 */
+  --midnight: 11 31 92; /* #0B1F5C 딥 네이비 */
+  --navy-deep: 7 21 64; /* #071540 푸터 */
+  --gold: 232 181 77; /* #E8B54D 주 포인트 */
+  --gold-deep: 184 134 11; /* #B8860B 밝은 배경 위 골드 */
+  --gold-soft: 242 212 138; /* #F2D48A 파란 히어로 위 eyebrow */
+  --beige: 240 238 227; /* #F0EEE3 홈·예배시간 히어로 */
+  --bg: 255 255 255;
+  --surface: 247 248 251; /* #F7F8FB 보조 섹션 배경 */
   --paper: 255 255 255;
   --ink: var(--midnight);
-  --ink-muted: 74 91 124;
-  --faint: 112 128 154;
-  --line: 199 216 232;
+  --ink-muted: 58 70 100; /* #3A4664 본문 */
+  --faint: 107 119 148; /* #6B7794 캡션 */
+  --faint-soft: 138 148 172; /* #8A94AC 장소 표기 */
+  --line: 227 232 242; /* #E3E8F2 */
+  --line-soft: 237 241 248; /* #EDF1F8 */
+  --line-strong: 216 224 239; /* #D8E0EF */
+  --card-blue: 243 247 253; /* #F3F7FD 행복선언 고백 카드 */
   --accent: var(--royal);
   --accent-deep: var(--midnight);
 }
@@ -34,15 +38,24 @@
   --color-ink: rgb(var(--ink));
   --color-ink-muted: rgb(var(--ink-muted));
   --color-faint: rgb(var(--faint));
+  --color-faint-soft: rgb(var(--faint-soft));
   --color-accent: rgb(var(--accent));
   --color-accent-deep: rgb(var(--accent-deep));
+  --color-navy-deep: rgb(var(--navy-deep));
+  --color-gold: rgb(var(--gold));
+  --color-gold-deep: rgb(var(--gold-deep));
+  --color-gold-soft: rgb(var(--gold-soft));
+  --color-beige: rgb(var(--beige));
   --color-line: rgb(var(--line));
+  --color-line-soft: rgb(var(--line-soft));
+  --color-line-strong: rgb(var(--line-strong));
+  --color-card-blue: rgb(var(--card-blue));
   --color-paper: rgb(var(--paper));
   --font-sans: var(--font-pretendard), system-ui, sans-serif;
   --font-serif: var(--font-sans);
-  --shadow-soft: 0 18px 50px rgb(var(--ink) / 0.08);
-  --shadow-subtle: 0 8px 26px rgb(var(--ink) / 0.06);
-  --shadow-lifted: 0 22px 55px rgb(var(--ink) / 0.16);
+  --shadow-soft: 0 12px 32px rgb(var(--midnight) / 0.1);
+  --shadow-subtle: 0 8px 24px rgb(var(--midnight) / 0.06);
+  --shadow-lifted: 0 18px 44px rgb(var(--midnight) / 0.16);
 }
 
 * {
@@ -67,102 +80,6 @@ a {
 
 ::selection {
   background: rgb(var(--accent) / 0.18);
-}
-
-/* Ken Burns — hero 이미지 느린 줌·팬 (자동, CSS only) */
-.ken-burns {
-  animation: kenburns 18s ease-in-out infinite alternate;
-  transform-origin: center;
-  will-change: transform;
-}
-@keyframes kenburns {
-  0% {
-    transform: scale(1) translate(0, 0);
-  }
-  100% {
-    transform: scale(1.12) translate(-2%, -1.5%);
-  }
-}
-
-@keyframes scroll-cue {
-  0%,
-  100% {
-    opacity: 0.32;
-    transform: scaleY(0.55);
-  }
-  50% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-}
-
-/* 오로라 배경 — 홈 #2 환영·#4 진입 섹션. 이미지 없이 블러 블롭이 느리게 흐름. */
-.aurora-blob {
-  position: absolute;
-  aspect-ratio: 1;
-  border-radius: 9999px;
-  filter: blur(72px);
-  will-change: transform;
-}
-.aurora-blob--a {
-  width: clamp(300px, 44vw, 660px);
-  top: -16%;
-  left: -6%;
-  background: radial-gradient(circle at 50% 50%, rgb(126 232 196 / 0.62), transparent 68%);
-  animation: aurora-a 19s ease-in-out infinite alternate;
-}
-.aurora-blob--b {
-  width: clamp(280px, 42vw, 620px);
-  top: -22%;
-  right: -8%;
-  background: radial-gradient(circle at 50% 50%, rgb(127 176 255 / 0.58), transparent 68%);
-  animation: aurora-b 23s ease-in-out infinite alternate;
-}
-.aurora-blob--c {
-  width: clamp(300px, 46vw, 680px);
-  bottom: -28%;
-  left: 10%;
-  background: radial-gradient(circle at 50% 50%, rgb(182 156 255 / 0.55), transparent 68%);
-  animation: aurora-c 21s ease-in-out infinite alternate;
-}
-.aurora-blob--d {
-  width: clamp(240px, 36vw, 540px);
-  bottom: -18%;
-  right: 4%;
-  background: radial-gradient(circle at 50% 50%, rgb(240 166 216 / 0.5), transparent 68%);
-  animation: aurora-d 26s ease-in-out infinite alternate;
-}
-@keyframes aurora-a {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(8%, 12%, 0) scale(1.15);
-  }
-}
-@keyframes aurora-b {
-  from {
-    transform: translate3d(0, 0, 0) scale(1.05);
-  }
-  to {
-    transform: translate3d(-10%, 8%, 0) scale(0.95);
-  }
-}
-@keyframes aurora-c {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(10%, -10%, 0) scale(1.12);
-  }
-}
-@keyframes aurora-d {
-  from {
-    transform: translate3d(0, 0, 0) scale(1.08);
-  }
-  to {
-    transform: translate3d(-8%, -12%, 0) scale(1);
-  }
 }
 
 /* 스크롤 진입 모션 (Reveal) — variant별 */
@@ -209,15 +126,6 @@ a {
     transform: none !important;
     clip-path: none !important;
     transition: none !important;
-  }
-  .ken-burns {
-    animation: none !important;
-  }
-  .scroll-cue-line {
-    animation: none !important;
-  }
-  .aurora-blob {
-    animation: none !important;
   }
   .motion-hover {
     transform: none !important;
