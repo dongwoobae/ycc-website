@@ -88,7 +88,7 @@ const groups: FaqGroup[] = [
 function FaqAccordion({ item, open }: { item: FaqItem; open: boolean }) {
   return (
     <details open={open} className="group overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 font-serif text-lg font-bold text-ink marker:hidden sm:px-6 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-lg font-bold text-ink marker:hidden sm:px-6 [&::-webkit-details-marker]:hidden">
         <span>{item.question}</span>
         <span
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-xl leading-none text-accent transition group-open:rotate-45"
@@ -106,7 +106,6 @@ export default function FaqPage() {
   return (
     <>
       <PageHero
-        tone="newfamily"
         eyebrow="FAQ"
         title="자주 묻는 질문"
         subtitle="영천중앙교회에 처음 오시는 분들이 자주 묻는 질문을 모았습니다."
@@ -117,7 +116,7 @@ export default function FaqPage() {
             {groups.map((group, gi) => (
               <div key={group.title}>
                 <Reveal>
-                  <h2 className="mb-5 font-serif text-2xl font-extrabold tracking-tight text-ink">{group.title}</h2>
+                  <h2 className="mb-5 text-2xl font-extrabold tracking-tight text-ink">{group.title}</h2>
                 </Reveal>
                 <div className="grid gap-3.5">
                   {group.items.map((item, i) => (

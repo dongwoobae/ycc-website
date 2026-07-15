@@ -21,21 +21,25 @@ export default function SermonCard({ sermon }: { sermon: Sermon }) {
               className="object-cover transition duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="h-full w-full bg-[linear-gradient(135deg,rgb(var(--surface)),rgb(var(--paper)))]" />
+            <div className="flex h-full w-full items-center justify-center bg-accent-deep p-6 text-center">
+              <p className="line-clamp-3 text-[clamp(17px,1.8vw,22px)] font-extrabold leading-[1.5] text-white">
+                {title}
+              </p>
+            </div>
           )}
         </div>
-        <span className="absolute -bottom-[22px] right-3.5 z-[3] flex h-[46px] w-[46px] items-center justify-center rounded-full bg-accent text-white shadow-[0_8px_22px_-8px_var(--color-accent)]">
+        <span className="absolute -bottom-[22px] right-3.5 z-[3] flex h-[46px] w-[46px] items-center justify-center rounded-full bg-accent text-white shadow-[0_8px_22px_rgb(33_83_180/0.45)]">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
             <path d="M8 5v14l11-7z" />
           </svg>
         </span>
       </div>
       <div className="px-6 pb-6 pt-7">
-        <div className="flex items-center justify-between gap-3 text-[13px] font-semibold text-accent-deep">
+        <div className="flex items-center justify-between gap-3 text-[13px] font-semibold text-accent">
           <span>{sermon.worshipType === '미분류' ? '' : sermon.worshipType}</span>
           <time dateTime={sermon.sermonDate}>{sermon.sermonDate}</time>
         </div>
-        <h3 className="mt-3 line-clamp-2 font-serif text-xl font-extrabold leading-snug tracking-tight text-ink">
+        <h3 className="mt-3 line-clamp-2 text-xl font-extrabold leading-snug tracking-tight text-ink">
           {title}
         </h3>
         {sermon.summary ? (

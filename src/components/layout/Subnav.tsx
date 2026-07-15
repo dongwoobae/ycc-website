@@ -20,10 +20,10 @@ export default function Subnav({ items, label }: { items: SubnavItem[]; label: s
 
   return (
     <nav
-      className="sticky top-20 z-30 border-b border-line bg-paper/85 shadow-subtle backdrop-blur-md"
+      className="sticky top-20 z-30 border-b border-line bg-paper"
       aria-label={label}
     >
-      <Container size="wide" className="flex items-center gap-2 overflow-x-auto py-3">
+      <Container size="wide" className="flex items-center gap-8 overflow-x-auto">
         {items.map((item) => {
           const active = item.href === activeHref
           return (
@@ -31,10 +31,10 @@ export default function Subnav({ items, label }: { items: SubnavItem[]; label: s
               key={item.href}
               href={item.href}
               aria-current={active ? 'page' : undefined}
-              className={`flex-none whitespace-nowrap rounded-full px-5 py-2.5 text-[15px] font-bold transition ${
+              className={`flex-none whitespace-nowrap py-[18px] text-[16px] font-bold transition ${
                 active
-                  ? 'bg-accent text-white shadow-subtle'
-                  : 'text-ink-muted hover:bg-surface hover:text-accent-deep'
+                  ? 'text-accent-deep shadow-[inset_0_-3px_0_var(--color-accent-deep)]'
+                  : 'text-faint hover:text-accent-deep'
               }`}
             >
               {item.label}

@@ -21,10 +21,10 @@ const socialLinks = [
 
 export default function Footer() {
   return (
-    <footer className="mt-auto bg-[rgb(var(--midnight))] text-white/70">
+    <footer className="mt-auto bg-navy-deep text-white/70">
       <Container size="wide" className="grid gap-10 py-16 text-sm md:grid-cols-[1.5fr_1fr_1fr]">
         <div>
-          <h2 className="font-serif text-2xl font-extrabold tracking-tight text-white">영천중앙교회</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight text-white">영천중앙교회</h2>
           <address className="mt-5 not-italic leading-7">
             {churchInfo.address}
             <br />
@@ -56,7 +56,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--china))]">Worship</h3>
+          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.2em] text-gold">Worship</h3>
           <ul className="mt-4 space-y-2">
             {adultWorshipSchedule.slice(0, 4).map((item) => (
               <li key={item.name}>
@@ -67,7 +67,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--china))]">Menu</h3>
+          <h3 className="text-[12.5px] font-bold uppercase tracking-[0.2em] text-gold">Menu</h3>
           <ul className="mt-4 space-y-2">
             {menuLinks.map((link) => (
               <li key={link.href}>

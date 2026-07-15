@@ -29,7 +29,7 @@ export default function SignInPage() {
   return (
     <div className="py-20">
       <Container className="max-w-md">
-        <h1 className="font-serif text-3xl font-extrabold tracking-tight text-ink">관리자 로그인</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink">관리자 로그인</h1>
         <p className="mt-3 text-sm text-ink-muted">영천중앙교회 관리자 전용 페이지입니다.</p>
         <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-lg border border-line bg-paper p-6 shadow-subtle">
           <div>

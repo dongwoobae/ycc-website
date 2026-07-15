@@ -4,25 +4,23 @@ import type { ReactNode } from 'react'
 export function HomeButton({
   href,
   children,
-  variant = 'accent',
+  variant = 'primary',
 }: {
   href: string
   children: ReactNode
-  variant?: 'accent' | 'ghost' | 'light'
+  variant?: 'primary' | 'outline' | 'white' | 'ghost'
 }) {
   const classes = {
-    accent:
-      'bg-accent text-white hover:-translate-y-0.5 hover:bg-accent-deep',
-    ghost:
-      'border-white/50 text-white hover:bg-white/10',
-    light:
-      'border-line bg-paper text-ink hover:-translate-y-0.5 hover:border-accent',
+    primary: 'border-transparent bg-accent-deep text-white hover:bg-accent',
+    outline: 'border-[1.5px] border-accent-deep text-accent-deep hover:bg-accent-deep/[0.06]',
+    white: 'border-transparent bg-white text-accent-deep hover:bg-gold hover:text-[#1D1503]',
+    ghost: 'border-[1.5px] border-white/50 text-white hover:bg-white/10',
   }
 
   return (
     <Link
       href={href}
-      className={`motion-hover inline-flex items-center justify-center rounded-full border px-7 py-4 text-sm font-bold transition sm:text-base ${classes[variant]}`}
+      className={`motion-hover inline-flex items-center justify-center rounded-full border px-7 py-4 text-base font-extrabold transition ${classes[variant]}`}
     >
       {children}
     </Link>
@@ -30,7 +28,7 @@ export function HomeButton({
 }
 
 export function Eyebrow({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <p className={`text-[12.5px] font-bold uppercase tracking-[0.28em] text-accent ${className}`}>{children}</p>
+  return <p className={`text-[13.5px] font-extrabold uppercase tracking-[0.28em] text-gold-deep ${className}`}>{children}</p>
 }
 
 export function ImagePlaceholder({ label, className = '' }: { label: string; className?: string }) {

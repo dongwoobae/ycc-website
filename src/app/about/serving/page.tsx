@@ -61,8 +61,8 @@ export default function ServingPage() {
         <Container size="wide">
           <section>
             <Reveal>
-              <h2 className="flex items-center gap-3 font-serif text-2xl font-extrabold tracking-tight text-ink">
-                <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
+              <h2 className="flex items-center gap-3 text-2xl font-extrabold tracking-tight text-ink">
+                <span className="h-2.5 w-2.5 rounded-full bg-gold" aria-hidden />
                 교역자
               </h2>
             </Reveal>
@@ -82,7 +82,7 @@ export default function ServingPage() {
                     </div>
                     <figcaption className="px-4 py-4 text-center">
                       <p className="text-[13px] font-semibold text-ink-muted">{person.role}</p>
-                      <p className="mt-1 font-serif text-lg font-extrabold tracking-tight text-ink">{person.name}</p>
+                      <p className="mt-1 text-lg font-extrabold tracking-tight text-ink">{person.name}</p>
                     </figcaption>
                   </figure>
                 </Reveal>
@@ -94,8 +94,8 @@ export default function ServingPage() {
             {groups.map((group, i) => (
               <Reveal key={group.title} variant="zoom" delay={i * 90}>
                 <section className="h-full rounded-2xl border border-line bg-paper p-8 shadow-subtle transition hover:-translate-y-1 hover:shadow-lifted">
-                  <h2 className="flex items-center gap-3 font-serif text-2xl font-extrabold tracking-tight text-ink">
-                    <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
+                  <h2 className="flex items-center gap-3 text-2xl font-extrabold tracking-tight text-ink">
+                    <span className="h-2.5 w-2.5 rounded-full bg-gold" aria-hidden />
                     {group.title}
                   </h2>
                   <ul className="mt-5">
@@ -104,7 +104,7 @@ export default function ServingPage() {
                         key={`${row.role}-${idx}`}
                         className="border-b border-line py-3.5 text-base text-ink-muted last:border-b-0"
                       >
-                        <b className="mr-2 font-serif font-bold text-ink">{row.role}</b>
+                        <b className="mr-2 font-bold text-ink">{row.role}</b>
                         {row.names}
                       </li>
                     ))}

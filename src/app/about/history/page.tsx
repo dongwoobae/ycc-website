@@ -36,10 +36,10 @@ export default function HistoryPage() {
       <section className="py-20 sm:py-24">
         <Container className="max-w-3xl">
           <Reveal variant="fade">
-            <p className="text-[13px] font-bold text-accent-deep">OUR STORY</p>
+            <p className="text-[13px] font-extrabold uppercase tracking-[0.24em] text-gold-deep">Our Story</p>
           </Reveal>
           <Reveal variant="fade" delay={120}>
-            <h2 className="mt-3 font-serif text-3xl font-extrabold leading-snug tracking-tight text-ink sm:text-4xl">
+            <h2 className="mt-3 text-3xl font-extrabold leading-snug tracking-tight text-ink sm:text-4xl">
               영천중앙교회의 시작 이야기
             </h2>
           </Reveal>
@@ -65,21 +65,21 @@ export default function HistoryPage() {
           </Reveal>
         </Container>
       </section>
-      <div className="border-t border-line pb-20 pt-20 sm:pb-24 sm:pt-24">
+      <div className="border-t border-line bg-surface pb-24 pt-20 sm:pt-24">
         <Container className="max-w-4xl">
           <ol className="relative">
-            <div className="absolute left-1/2 top-2 hidden h-[calc(100%-1rem)] w-px -translate-x-1/2 bg-line sm:block" />
+            <div className="absolute left-1/2 top-2 hidden h-[calc(100%-1rem)] w-px -translate-x-1/2 bg-line-strong sm:block" />
             {history.map(([year, content], i) => {
               const left = i % 2 === 0
               return (
                 <li key={year} className="relative mb-8 last:mb-0 sm:grid sm:grid-cols-2 sm:gap-10">
-                  <span className="absolute left-1/2 top-6 hidden h-3 w-3 -translate-x-1/2 rounded-full border-2 border-bg bg-accent sm:block" />
+                  <span className="absolute left-1/2 top-6 hidden h-3.5 w-3.5 -translate-x-1/2 rounded-full border-[3px] border-surface bg-gold sm:block" />
                   <Reveal
                     variant={left ? 'left' : 'right'}
                     className={left ? 'sm:col-start-1' : 'sm:col-start-2'}
                   >
                     <div className={`rounded-2xl border border-line bg-paper p-7 shadow-subtle ${left ? 'sm:text-right' : ''}`}>
-                      <time className="font-serif text-3xl font-extrabold tracking-tight text-accent-deep">{year}</time>
+                      <time className="text-3xl font-extrabold tracking-tight text-accent-deep">{year}</time>
                       <p className="mt-3 leading-7 text-ink-muted">{content}</p>
                     </div>
                   </Reveal>

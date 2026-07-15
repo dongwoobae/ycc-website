@@ -4,9 +4,8 @@ import Container from '@/components/layout/Container'
 import Reveal from '@/components/ui/Reveal'
 import { Eyebrow } from './HomePrimitives'
 
-// 홈 #4 — 핵심 진입 3종(말씀/주일학교/찬양). 카드 배경 사진 + 통일된 다크 오버레이.
-// 사진은 public/images/entry/{word,school,praise}.webp 를 덮어쓰면 교체됩니다(현재 임시).
-// 카드 전체가 하나의 링크(href). 내부 items는 클릭 버튼이 아니라 안내용 나열 텍스트.
+// 홈 #4 — 핵심 진입 3종(말씀/주일학교/찬양). 사진 위 텍스트 오버레이 없음(PDF):
+// 상단 사진 + 하단 흰 캡션 영역. 사진은 public/images/entry/*.webp 덮어쓰면 교체(교회 제공 대기).
 
 interface EntryCard {
   key: string
@@ -46,40 +45,44 @@ const cards: EntryCard[] = [
 
 export default function EntryCards({ sermonSummary }: { sermonSummary?: string | null }) {
   return (
-    <section className="bg-bg py-20 min-[960px]:py-28">
+    <section className="bg-paper py-24 min-[960px]:py-28">
       <Container size="wide">
         <Reveal className="text-center">
           <Eyebrow>Worship · Community</Eyebrow>
-          <h2 className="mt-4 text-[clamp(26px,3.4vw,40px)] font-extrabold tracking-tight text-ink">
+          <h2 className="mt-4 text-[clamp(26px,3.4vw,40px)] font-extrabold tracking-tight text-accent-deep">
             함께 예배하고, 함께 자랍니다
           </h2>
         </Reveal>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
           {cards.map((card, i) => {
             const description = card.key === 'word' && sermonSummary ? `“${sermonSummary}”` : card.desc
             return (
               <Reveal key={card.key} delay={80 + i * 80} className="h-full">
                 <Link
                   href={card.href}
-                  className="group relative isolate flex h-full min-h-[400px] flex-col justify-end overflow-hidden rounded-xl p-7 text-white min-[960px]:min-h-[460px]"
+                  className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition duration-300 hover:-translate-y-1 hover:shadow-lifted"
                 >
-                  <Image
-                    src={card.photo}
-                    alt=""
-                    fill
-                    unoptimized
-                    sizes="(min-width: 768px) 33vw, 100vw"
-                    className="-z-20 object-cover"
-                  />
-                  <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(15_23_42/0.12)_0%,rgb(15_23_42/0.38)_46%,rgb(15_23_42/0.88)_100%)]" />
-
-                  <h3 className="font-serif text-[26px] font-extrabold tracking-tight underline-offset-4 decoration-2 [text-shadow:0_1px_6px_rgb(15_23_42/0.55)] group-hover:underline">
-                    {card.title}
-                  </h3>
-                  <p className="mt-3 line-clamp-3 text-[15px] leading-7 text-white/90">{description}</p>
-
-                  <p className="mt-5 text-[14.5px] leading-7 text-white/80">{card.items.join(' · ')}</p>
+                  <div className="relative h-[250px] overflow-hidden">
+                    <Image
+                      src={card.photo}
+                      alt=""
+                      fill
+                      unoptimized
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-2.5 px-7 pb-8 pt-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[26px] font-extrabold text-accent-deep">{card.title}</h3>
+                      <span className="text-xl font-extrabold text-gold-deep" aria-hidden>
+                        →
+                      </span>
+                    </div>
+                    <p className="line-clamp-3 text-base leading-[1.7] text-ink-muted">{description}</p>
+                    <p className="mt-auto text-[14.5px] font-semibold text-faint">{card.items.join(' · ')}</p>
+                  </div>
                 </Link>
               </Reveal>
             )

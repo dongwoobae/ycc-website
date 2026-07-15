@@ -18,7 +18,7 @@ export default function Error({
   return (
     <div className="py-28 sm:py-36">
       <Container className="max-w-2xl text-center">
-        <h1 className="font-serif text-3xl font-extrabold text-ink sm:text-4xl">
+        <h1 className="text-3xl font-extrabold text-ink sm:text-4xl">
           문제가 발생했습니다
         </h1>
         <p className="mt-4 text-ink-muted">

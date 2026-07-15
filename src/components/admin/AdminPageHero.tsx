@@ -23,7 +23,7 @@ export default function AdminPageHero({ title, image, eyebrow, subtitle, action 
           {eyebrow && (
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a8c6ef]">{eyebrow}</p>
           )}
-          <h1 className="truncate font-serif text-2xl font-extrabold text-bg sm:text-3xl">{title}</h1>
+          <h1 className="truncate text-2xl font-extrabold text-bg sm:text-3xl">{title}</h1>
           {subtitle && <p className="mt-1 line-clamp-1 text-sm text-bg/80">{subtitle}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}

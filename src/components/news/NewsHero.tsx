@@ -4,7 +4,6 @@ import PageHero from '@/components/layout/PageHero'
 export default function NewsHero() {
   return (
     <PageHero
-      tone="news"
       eyebrow="News"
       title="교회소식"
       subtitle="공지와 행사, 공동체 소식을 전합니다."

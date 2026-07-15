@@ -25,7 +25,7 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
       {sermon.worshipType !== '미분류' ? (
         <p className="text-sm font-semibold text-accent-deep">{sermon.worshipType}</p>
       ) : null}
-      <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
+      <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
         {sermonListTitle(sermon)}
       </h1>
       <p className="mt-4 text-ink-muted">{sermon.sermonDate}</p>
@@ -73,7 +73,7 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
       <div className="mt-8 space-y-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-14">
         {ready && sermon.quickSummary?.length ? (
           <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
-            <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">빠른 요약</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-ink">빠른 요약</h2>
             <ul className="mt-4 list-disc space-y-2 pl-5 leading-7 text-ink-muted">
               {sermon.quickSummary.map((line, i) => (
                 <li key={i}>{line}</li>
@@ -84,7 +84,7 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
 
         {ready && sermon.chapters?.length ? (
           <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
-            <h2 className="font-serif text-2xl font-extrabold tracking-tight text-ink">타임라인 요약</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-ink">타임라인 요약</h2>
             <div className="mt-4">
               {sermon.chapters.map((chapter, i) => (
                 <div key={i}>
