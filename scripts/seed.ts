@@ -6,16 +6,15 @@ async function main() {
   const { db } = await import('../src/lib/db')
   const schema = await import('../src/lib/db/schema')
   const { getSermons } = await import('../src/lib/seed/sermons')
-  const { getBulletins } = await import('../src/lib/seed/bulletins')
   const { getGalleryAlbums } = await import('../src/lib/seed/gallery')
   const { getPosts } = await import('../src/lib/seed/posts')
 
   // 기존 데이터 정리 (자식 → 부모 순서)
+  // 주보는 시드하지 않으므로 지우지도 않는다 — 관리자가 올린 실제 주보가 날아간다.
   await db.delete(schema.galleryImages)
   await db.delete(schema.galleryAlbums)
   await db.delete(schema.sermons)
   await db.delete(schema.posts)
-  await db.delete(schema.bulletins)
 
   const sermons = await getSermons()
   for (const s of sermons) {
@@ -34,19 +33,6 @@ async function main() {
     await db.insert(schema.sermonSummaries).values({ sermonId: row.id, summary: s.summary ?? null }).onConflictDoNothing()
     await db.insert(schema.sermonTranscripts).values({ sermonId: row.id }).onConflictDoNothing()
     await db.insert(schema.sermonThumbnails).values({ sermonId: row.id }).onConflictDoNothing()
-  }
-
-  const bulletins = await getBulletins()
-  for (const b of bulletins) {
-    await db.insert(schema.bulletins).values({
-      bulletinDate: b.bulletinDate,
-      volume: b.volume,
-      issue: b.issue,
-      theme: b.theme,
-      scripture: b.scripture,
-      sections: b.sections,
-      isPublished: b.isPublished,
-    })
   }
 
   const posts = await getPosts()
@@ -87,7 +73,6 @@ async function main() {
 
   console.log('Seed 완료:', {
     sermons: sermons.length,
-    bulletins: bulletins.length,
     posts: posts.length,
     albums: albums.length,
   })
