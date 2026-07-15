@@ -1,12 +1,53 @@
 import { describe, expect, it } from 'vitest'
 import { deflateRawSync } from 'node:zlib'
-import { inflateHwpSection, stripOfferingParagraphs } from './parse'
+import { inflateHwpSection, stripControls, stripOfferingParagraphs } from './parse'
 
 describe('inflateHwpSection', () => {
   it('rejects decompressed output above the configured cap', () => {
     const compressed = deflateRawSync(Buffer.alloc(128, 'a'))
 
     expect(() => inflateHwpSection(compressed, 64)).toThrow()
+  })
+})
+
+const lineBreak = String.fromCharCode(10)
+const paragraphBreak = String.fromCharCode(13)
+const hyphen = String.fromCharCode(24)
+const fixedWidthSpace = String.fromCharCode(30)
+
+// Builds a control the way hwp stores it: the code, 12 bytes of info carrying the
+// control id as a little-endian DWORD, then the code again — 8 WCHARs in total.
+function control(code: number, id: string) {
+  const info = Buffer.alloc(12)
+  info.write([...id].reverse().join(''), 0, 'latin1')
+  return String.fromCharCode(code) + info.toString('utf-16le') + String.fromCharCode(code)
+}
+
+describe('stripControls', () => {
+  it('drops the id of a table control instead of leaking it as text', () => {
+    expect(stripControls(`앞${control(11, 'tbl ')}뒤`)).toBe('앞뒤')
+  })
+
+  it('drops every control id found in a section opener', () => {
+    const opener = control(2, 'secd') + control(2, 'cold') + control(11, 'tbl ')
+
+    expect(stripControls(opener)).toBe('')
+  })
+
+  it('keeps text around a drawing object control', () => {
+    expect(stripControls(`＊ 지난주 출석현황${control(11, 'gso ')}`)).toBe('＊ 지난주 출석현황')
+  })
+
+  it('maps line and paragraph breaks to newlines', () => {
+    const text = `가${paragraphBreak}나${lineBreak}다`
+
+    expect(stripControls(text).split(lineBreak)).toEqual(['가', '나', '다'])
+  })
+
+  it('drops single-wchar controls without consuming neighbouring text', () => {
+    // Unlike table and drawing controls these span one WCHAR, so the characters
+    // right after them must survive.
+    expect(stripControls(`가${hyphen}나${fixedWidthSpace}다`)).toBe('가나다')
   })
 })
 

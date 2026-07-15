@@ -18,12 +18,23 @@ function sectionNumber(path: string) {
   return Number(path.match(/Section(\d+)$/i)?.[1] ?? 0)
 }
 
-function stripControls(value: string) {
+// Inline and extended controls span 8 WCHARs: the code, 12 bytes of info, then the
+// code again. The info holds the control id ("tbl ", "gso " …) as a little-endian
+// DWORD, which decodes to text-range characters, so the whole run has to be skipped
+// rather than just the leading code. Everything else below 0x20 is one WCHAR wide.
+const wideControlCodes = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
+const wideControlLength = 8
+
+export function stripControls(value: string) {
   let output = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index)
+    if (wideControlCodes.has(code)) {
+      index += wideControlLength - 1
+      continue
+    }
     if (code === 10 || code === 13) output += '\n'
-    else if (code >= 32) output += char
+    else if (code >= 32) output += value[index]
   }
   return output
 }
