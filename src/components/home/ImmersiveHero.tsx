@@ -1,7 +1,7 @@
 import Container from '@/components/layout/Container'
 import Reveal from '@/components/ui/Reveal'
-import { HomeButton } from './HomePrimitives'
 
+// 홈 #1 — PDF 수정요청: Welcome to 영천중앙교회만 남김(태그라인·버튼 제거).
 export default function ImmersiveHero() {
   return (
     <section className="relative isolate flex min-h-[620px] h-[100svh] items-center overflow-hidden bg-beige text-ink">
@@ -18,21 +18,6 @@ export default function ImmersiveHero() {
         </Reveal>
         <Reveal delay={220}>
           <div className="mx-auto mt-9 h-1 w-16 bg-gold" aria-hidden />
-        </Reveal>
-        <Reveal delay={300}>
-          <p className="mx-auto mt-7 max-w-[640px] break-keep text-[clamp(16px,2vw,21px)] font-medium leading-[1.7] text-ink-muted">
-            오래된 믿음 위에, 새로운 은혜가 머무는 곳.
-            <br />
-            주일 오전 11시, 본당에서 함께 예배합니다.
-          </p>
-        </Reveal>
-        <Reveal delay={380}>
-          <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <HomeButton href="/worship">예배 시간 안내</HomeButton>
-            <HomeButton href="/newfamily#visit" variant="outline">
-              오시는 길
-            </HomeButton>
-          </div>
         </Reveal>
       </Container>
     </section>

@@ -4,6 +4,7 @@ const tabs = [
   { label: '소식', href: '/news' },
   { label: '주보', href: '/bulletins' },
   { label: '갤러리', href: '/gallery' },
+  { label: '특별행사', href: '/events' },
 ]
 
 export default function NewsSubnav() {
