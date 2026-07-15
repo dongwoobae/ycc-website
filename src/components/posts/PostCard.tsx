@@ -23,7 +23,7 @@ export default function PostCard({ post }: { post: Post }) {
           {post.publishedAt}
         </time>
       </div>
-      <h2 className="mt-3.5 font-serif text-2xl font-extrabold leading-snug tracking-tight text-ink">{post.title}</h2>
+      <h2 className="mt-3.5 text-2xl font-extrabold leading-snug tracking-tight text-ink">{post.title}</h2>
       <p className="mt-2.5 line-clamp-2 leading-7 text-ink-muted">{post.content}</p>
       <span className="mt-3 inline-flex items-center gap-1.5 text-[13.5px] font-bold text-accent-deep">
         자세히 보기 →

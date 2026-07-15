@@ -6,7 +6,7 @@ export default function NotFound() {
     <div className="py-28 sm:py-36">
       <Container className="max-w-2xl text-center">
         <p className="text-sm font-bold tracking-widest text-accent">404</p>
-        <h1 className="mt-4 font-serif text-3xl font-extrabold text-ink sm:text-4xl">
+        <h1 className="mt-4 text-3xl font-extrabold text-ink sm:text-4xl">
           페이지를 찾을 수 없습니다
         </h1>
         <p className="mt-4 text-ink-muted">

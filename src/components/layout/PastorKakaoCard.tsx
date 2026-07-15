@@ -15,7 +15,7 @@ export default function PastorKakaoCard() {
       />
       <div className="min-w-0">
         <p className="text-[12.5px] font-bold uppercase tracking-[0.2em] text-accent">KakaoTalk</p>
-        <p className="mt-1.5 font-serif text-lg font-extrabold tracking-tight text-ink">담임목사 김선찬</p>
+        <p className="mt-1.5 text-lg font-extrabold tracking-tight text-ink">담임목사 김선찬</p>
         <p className="mt-0.5 text-sm text-ink-muted">
           카카오톡 ID <span className="font-semibold text-ink">{KAKAO_ID}</span>
         </p>

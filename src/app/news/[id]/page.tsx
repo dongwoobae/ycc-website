@@ -79,7 +79,7 @@ export default async function NewsDetailPage({ params }: NewsDetailProps) {
       <div className="py-16">
         <Container className="max-w-3xl">
           <p className="text-sm font-semibold text-accent-deep">{post.category}</p>
-          <h1 className="mt-3 font-serif text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
+          <h1 className="mt-3 text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
             {post.title}
           </h1>
           <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-1.5 border-y border-line py-4 text-sm text-ink-muted">

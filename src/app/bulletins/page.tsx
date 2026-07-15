@@ -42,7 +42,7 @@ export default async function BulletinsPage() {
                   <p className="relative z-[1] text-[13.5px] font-bold text-accent-deep">
                     {bulletin.volume} {bulletin.issue}
                   </p>
-                  <h2 className="relative z-[1] mt-2.5 font-serif text-3xl font-extrabold tracking-tight text-ink">
+                  <h2 className="relative z-[1] mt-2.5 text-3xl font-extrabold tracking-tight text-ink">
                     {bulletin.bulletinDate} 주보
                   </h2>
                   <p className="relative z-[1] mt-4 font-semibold text-ink">{bulletin.theme}</p>
