@@ -67,7 +67,7 @@ export const eventFilterPills = [
   { label: '기타', value: '기타' },
 ] as const satisfies readonly { label: string; value: WorshipFilterValue }[]
 
-// 그리드/툴바/필터가 두 섹션에서 공유되도록 스코프를 하나의 설정으로 묶는다.
+// 그리드/툴바/필터가 여러 섹션에서 공유되도록 스코프를 하나의 설정으로 묶는다.
 export interface SermonScope {
   basePath: string
   pills: readonly { label: string; value: WorshipFilterValue }[]

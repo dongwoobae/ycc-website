@@ -7,7 +7,7 @@ import SermonCard from '@/components/sermons/SermonCard'
 import SermonsPagination from '@/components/sermons/SermonsPagination'
 import SermonsToolbar, { type SortOrder } from '@/components/sermons/SermonsToolbar'
 import { sermonListTitle } from '@/lib/sermons/list-title'
-import { isPublicWorshipType, praiseSectionScope, sermonSectionScope, type WorshipFilterValue } from '@/lib/worship'
+import { eventSectionScope, isPublicWorshipType, praiseSectionScope, sermonSectionScope, type WorshipFilterValue } from '@/lib/worship'
 import type { Sermon } from '@/lib/types'
 
 const PAGE_SIZE = 12
@@ -19,9 +19,10 @@ export default function SermonsGrid({
   variant = 'sermon',
 }: {
   sermons: Sermon[]
-  variant?: 'sermon' | 'praise'
+  variant?: 'sermon' | 'praise' | 'event'
 }) {
-  const scope = variant === 'praise' ? praiseSectionScope : sermonSectionScope
+  const scope =
+    variant === 'praise' ? praiseSectionScope : variant === 'event' ? eventSectionScope : sermonSectionScope
   const searchParams = useSearchParams()
   const worship = searchParams.get('worship')
   // 스코프(예배·설교 / 찬양)에 속하는 유형만 선택으로 인정한다.
