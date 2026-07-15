@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   adultWorshipSchedule,
+  eventFilterPills,
+  eventSectionScope,
   expectsAutoSummary,
   getWorshipScheduleItem,
+  isEventWorshipType,
   isPraiseWorshipType,
   isPublicWorshipType,
   nextGenerationWorshipSchedule,
@@ -76,6 +79,9 @@ describe('예배·설교 / 찬양 섹션 분리', () => {
     expect(praiseSectionScope.includes('시온찬양대')).toBe(true)
     expect(praiseSectionScope.includes('특송')).toBe(true)
     expect(praiseSectionScope.includes('주일예배')).toBe(false)
+    // 예배·설교 '전체'는 행사 유형도 제외 (소식 /events 로 이동)
+    expect(sermonSectionScope.includes('특별행사')).toBe(false)
+    expect(sermonSectionScope.includes('기타')).toBe(false)
   })
 })
 
@@ -94,5 +100,31 @@ describe('미분류 worship type', () => {
     for (const t of ['시온찬양대', '특송', '특별행사', '기타', '미분류']) {
       expect(expectsAutoSummary(t)).toBe(false)
     }
+  })
+})
+
+describe('특별행사/기타 → 소식(/events) 섹션 분리', () => {
+  it('classifies 특별행사·기타만 event 로', () => {
+    expect(isEventWorshipType('특별행사')).toBe(true)
+    expect(isEventWorshipType('기타')).toBe(true)
+    for (const t of ['주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송']) {
+      expect(isEventWorshipType(t)).toBe(false)
+    }
+  })
+
+  it('event 스코프는 /events 기반, 알약은 전체·특별행사·기타', () => {
+    expect(eventSectionScope.basePath).toBe('/events')
+    expect(eventFilterPills.map((p) => p.value)).toEqual(['전체', '특별행사', '기타'])
+  })
+
+  it("'전체' 스코프: 예배·설교는 행사 제외, event 는 행사만", () => {
+    expect(sermonSectionScope.includes('특별행사')).toBe(false)
+    expect(sermonSectionScope.includes('기타')).toBe(false)
+    expect(sermonSectionScope.includes('주일예배')).toBe(true)
+    expect(sermonSectionScope.includes('금요기도회')).toBe(true)
+    expect(eventSectionScope.includes('특별행사')).toBe(true)
+    expect(eventSectionScope.includes('기타')).toBe(true)
+    expect(eventSectionScope.includes('주일예배')).toBe(false)
+    expect(eventSectionScope.includes('시온찬양대')).toBe(false)
   })
 })

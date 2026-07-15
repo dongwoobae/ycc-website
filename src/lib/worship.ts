@@ -29,6 +29,14 @@ export function isPraiseWorshipType(value: string): boolean {
   return (praiseWorshipTypes as readonly string[]).includes(value)
 }
 
+// '소식' 섹션(/events)에 속하는 행사 유형. 예배·설교(/sermons) '전체'에서는 제외된다.
+export const eventWorshipTypes = ['특별행사', '기타'] as const satisfies readonly WorshipType[]
+
+/** '소식' 특별행사(/events) 섹션에 노출되는 유형인지. */
+export function isEventWorshipType(value: string): boolean {
+  return (eventWorshipTypes as readonly string[]).includes(value)
+}
+
 export const worshipFilterItems = [
   { label: '전체', value: '전체' },
   ...worshipTypes.map((type) => ({ label: worshipLabels[type], value: type })),
@@ -36,8 +44,8 @@ export const worshipFilterItems = [
 
 export type WorshipFilterValue = (typeof worshipFilterItems)[number]['value']
 
-// '예배·설교'(/sermons) 페이지 필터 알약. '전체'는 찬양(시온찬양대·특송)을 제외한 유형을 보여준다.
-// 특별행사·기타는 '소식' 메뉴의 링크(?worship=)로 진입하며 필터 로직은 계속 지원된다.
+// '예배·설교'(/sermons) 페이지 필터 알약. '전체'는 찬양(시온찬양대·특송)과
+// 행사(특별행사·기타)를 제외한 예배 유형만 보여준다.
 export const sermonFilterPills = [
   { label: '전체', value: '전체' },
   { label: '주일예배', value: '주일예배' },
@@ -52,6 +60,13 @@ export const praiseFilterPills = [
   { label: '특송', value: '특송' },
 ] as const satisfies readonly { label: string; value: WorshipFilterValue }[]
 
+// '특별행사'(/events) 페이지 필터 알약. 소식 섹션에서 행사 영상을 모아 보여준다.
+export const eventFilterPills = [
+  { label: '전체', value: '전체' },
+  { label: '특별행사', value: '특별행사' },
+  { label: '기타', value: '기타' },
+] as const satisfies readonly { label: string; value: WorshipFilterValue }[]
+
 // 그리드/툴바/필터가 두 섹션에서 공유되도록 스코프를 하나의 설정으로 묶는다.
 export interface SermonScope {
   basePath: string
@@ -63,13 +78,19 @@ export interface SermonScope {
 export const sermonSectionScope: SermonScope = {
   basePath: '/sermons',
   pills: sermonFilterPills,
-  includes: (type) => !isPraiseWorshipType(type),
+  includes: (type) => !isPraiseWorshipType(type) && !isEventWorshipType(type),
 }
 
 export const praiseSectionScope: SermonScope = {
   basePath: '/praise',
   pills: praiseFilterPills,
   includes: (type) => isPraiseWorshipType(type),
+}
+
+export const eventSectionScope: SermonScope = {
+  basePath: '/events',
+  pills: eventFilterPills,
+  includes: (type) => isEventWorshipType(type),
 }
 
 export function isWorshipType(value: string): value is WorshipType {
