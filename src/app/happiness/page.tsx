@@ -3,10 +3,11 @@ import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import WorshipSubnav from '@/components/worship/WorshipSubnav'
 import Reveal from '@/components/ui/Reveal'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '행복선언',
-  description: '영천중앙교회가 예배 때마다 축도 전에 함께 고백하는 행복선언입니다.',
+  description: `${churchInfo.name}가 예배 때마다 축도 전에 함께 고백하는 행복선언입니다.`,
   alternates: {
     canonical: '/happiness',
   },
@@ -25,7 +26,7 @@ export default function HappinessPage() {
         tone="royal"
         eyebrow="Declaration"
         title="행복선언"
-        subtitle="영천중앙교회는 예배 때마다 축도 전에 행복선언을 함께 고백합니다."
+        subtitle={`${churchInfo.name}는 예배 때마다 축도 전에 행복선언을 함께 고백합니다.`}
       />
       <WorshipSubnav />
       <section className="py-20 sm:py-24">

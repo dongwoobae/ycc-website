@@ -1,7 +1,7 @@
 import { churchInfo } from '@/lib/church'
 import { absoluteUrl, getCanonicalSiteOrigin } from '@/lib/site-origin'
 
-export const CHURCH_NAME = '영천중앙교회'
+export const CHURCH_NAME = churchInfo.name
 
 type JsonLdObject = Record<string, unknown>
 

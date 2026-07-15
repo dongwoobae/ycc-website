@@ -7,6 +7,7 @@ import NewsSubnav from '@/components/news/NewsSubnav'
 import { getPostById, getPostNeighbors, getPosts, type PostNeighbor } from '@/lib/data/posts'
 import JsonLd from '@/components/seo/JsonLd'
 import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld'
+import { churchInfo } from '@/lib/church'
 
 export const revalidate = 3600
 
@@ -89,7 +90,7 @@ export default async function NewsDetailPage({ params }: NewsDetailProps) {
             </div>
             <div className="flex gap-2">
               <dt className="font-semibold text-ink">작성자</dt>
-              <dd>{post.author ?? '영천중앙교회'}</dd>
+              <dd>{post.author ?? churchInfo.name}</dd>
             </div>
           </dl>
           <article className="mt-8 min-h-[40vh] whitespace-pre-line rounded-lg border border-line bg-paper p-8 text-lg leading-9 text-ink-muted shadow-subtle">

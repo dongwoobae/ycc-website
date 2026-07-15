@@ -5,10 +5,11 @@ import NewsSubnav from '@/components/news/NewsSubnav'
 import Reveal from '@/components/ui/Reveal'
 import AlbumCard from '@/components/gallery/AlbumCard'
 import { getGalleryAlbums } from '@/lib/data/gallery'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '갤러리',
-  description: '영천중앙교회의 예배와 행사, 공동체 활동 사진을 모았습니다.',
+  description: `${churchInfo.name}의 예배와 행사, 공동체 활동 사진을 모았습니다.`,
   alternates: {
     canonical: '/gallery',
   },

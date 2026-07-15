@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import BrandLogo from './BrandLogo'
 import Container from './Container'
 import { navLinks } from '@/lib/nav'
+import { churchInfo } from '@/lib/church'
 
 export default function Header() {
   const pathname = usePathname()
@@ -120,7 +121,7 @@ export default function Header() {
         }}
       >
       <Container size="wide" className="flex h-20 items-center justify-between px-6 min-[960px]:px-10">
-        <Link href="/" className="group inline-flex leading-none" aria-label="영천중앙교회 홈">
+        <Link href="/" className="group inline-flex leading-none" aria-label={`${churchInfo.name} 홈`}>
           <BrandLogo />
         </Link>
 

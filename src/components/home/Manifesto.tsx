@@ -1,5 +1,6 @@
 import Container from '@/components/layout/Container'
 import Reveal from '@/components/ui/Reveal'
+import { churchInfo } from '@/lib/church'
 
 // 홈 #2 — 환영 메시지. 흰 단색 배경 + 골드 라인 (페리윙클 제거, PDF 지정 줄바꿈).
 export default function Manifesto() {
@@ -13,7 +14,7 @@ export default function Manifesto() {
           <p className="mx-auto mt-9 max-w-[56rem] break-keep text-[clamp(22px,3.2vw,38px)] font-bold leading-[1.6] text-accent-deep">
             오래된 믿음 위에, 새로운 은혜가 머무는
             <br />
-            영천중앙교회에 오신
+            {churchInfo.name}에 오신
             <br />
             여러분 환영합니다
           </p>

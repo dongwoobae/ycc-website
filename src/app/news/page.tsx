@@ -7,10 +7,11 @@ import Reveal from '@/components/ui/Reveal'
 import PostCard from '@/components/posts/PostCard'
 import { getPosts } from '@/lib/data/posts'
 import type { Post } from '@/lib/types'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '교회소식',
-  description: '영천중앙교회의 새로운 소식과 공지사항을 전합니다.',
+  description: `${churchInfo.name}의 새로운 소식과 공지사항을 전합니다.`,
   alternates: {
     canonical: '/news',
   },

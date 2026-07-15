@@ -5,10 +5,11 @@ import PraiseHero from '@/components/praise/PraiseHero'
 import WordSubnav from '@/components/sermons/WordSubnav'
 import SermonsGrid from '@/components/sermons/SermonsGrid'
 import { getSermons } from '@/lib/data/sermons'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '찬양',
-  description: '영천중앙교회 찬양대·특송 찬양 영상을 모아 제공합니다.',
+  description: `${churchInfo.name} 찬양대·특송 찬양 영상을 모아 제공합니다.`,
   alternates: {
     canonical: '/praise',
   },

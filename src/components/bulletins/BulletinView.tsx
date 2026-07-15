@@ -1,4 +1,5 @@
 import type { Bulletin, BulletinSection } from '@/lib/types'
+import { churchInfo } from '@/lib/church'
 
 function SectionBlock({ section }: { section: BulletinSection }) {
   return (
@@ -70,7 +71,7 @@ export default function BulletinView({ bulletin }: { bulletin: Bulletin }) {
           {bulletin.volume} {bulletin.issue} · {bulletin.bulletinDate}
         </p>
         <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-ink">
-          영천중앙교회 주보
+          {churchInfo.name} 주보
         </h1>
         <p className="mt-5 text-xl text-ink">{bulletin.theme}</p>
         <p className="mt-2 text-ink-muted">({bulletin.scripture})</p>

@@ -12,7 +12,7 @@ import { adultWorshipSchedule } from '@/lib/worship'
 
 export const metadata: Metadata = {
   title: '처음 오세요',
-  description: '영천중앙교회에 처음 방문하는 분들을 위한 예배 안내, FAQ, 다음세대, 오시는 길 안내입니다.',
+  description: `${churchInfo.name}에 처음 방문하는 분들을 위한 예배 안내, FAQ, 다음세대, 오시는 길 안내입니다.`,
   alternates: {
     canonical: '/newfamily',
   },
@@ -106,7 +106,7 @@ function Hero() {
           <p className="mx-auto mt-6 max-w-[640px] text-[clamp(17px,2vw,20px)] leading-[1.75] text-white/85">
             낯설고 조심스러운 마음 그대로 오셔도 괜찮습니다.
             <br className="hidden sm:block" />
-            영천중앙교회가 처음 방문의 길을 차분히 안내해드립니다.
+            {churchInfo.name}가 처음 방문의 길을 차분히 안내해드립니다.
           </p>
         </Reveal>
       </Container>
@@ -128,7 +128,7 @@ function Welcome() {
               <br />
               한 분 한 분을 귀한 가족으로 맞이하겠습니다.
             </blockquote>
-            <p className="mt-7 text-sm font-bold text-faint">영천중앙교회 담임목사 드림</p>
+            <p className="mt-7 text-sm font-bold text-faint">{churchInfo.name} {churchInfo.seniorPastor.title} 드림</p>
           </div>
         </Reveal>
       </Container>

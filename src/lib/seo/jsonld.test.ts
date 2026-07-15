@@ -7,6 +7,7 @@ import {
   secondsToIsoDuration,
   serializeJsonLd,
 } from './jsonld'
+import { churchInfo } from '@/lib/church'
 
 describe('secondsToIsoDuration', () => {
   it('1초 미만/undefined는 undefined', () => {
@@ -24,7 +25,7 @@ describe('buildChurchJsonLd', () => {
   it('Church 스키마와 sameAs를 만든다', () => {
     const ld = buildChurchJsonLd()
     expect(ld['@type']).toBe('Church')
-    expect(ld.name).toBe('영천중앙교회')
+    expect(ld.name).toBe(churchInfo.name)
     expect(Array.isArray(ld.sameAs)).toBe(true)
     expect((ld.sameAs as string[]).some((u) => u.includes('youtube'))).toBe(true)
   })

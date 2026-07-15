@@ -8,10 +8,11 @@ import {
   nextGenerationWorshipSchedule,
   type WorshipScheduleItem,
 } from '@/lib/worship'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '예배 시간',
-  description: '영천중앙교회 주일예배·주일학교·청년부·수요예배·새벽예배·금요기도회의 요일과 시간, 장소를 안내합니다.',
+  description: `${churchInfo.name} 주일예배·주일학교·청년부·수요예배·새벽예배·금요기도회의 요일과 시간, 장소를 안내합니다.`,
   alternates: {
     canonical: '/worship',
   },
@@ -98,7 +99,7 @@ export default function WorshipPage() {
         tone="beige"
         eyebrow="Guide"
         title="예배 시간"
-        subtitle="영천중앙교회의 예배와 모임을 요일·시간·장소와 함께 안내합니다."
+        subtitle={`${churchInfo.name}의 예배와 모임을 요일·시간·장소와 함께 안내합니다.`}
       />
       <WorshipSubnav />
       <div className="py-20 sm:py-24">

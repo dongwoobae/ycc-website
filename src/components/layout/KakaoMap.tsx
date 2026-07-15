@@ -28,7 +28,7 @@ export default function KakaoMap() {
   return (
     <iframe
       src={failed ? GOOGLE_SRC : '/map.html'}
-      title="영천중앙교회 위치 지도"
+      title={`${churchInfo.name} 위치 지도`}
       loading="lazy"
       className="block h-[340px] w-full sm:h-[400px]"
       style={{ border: 0 }}

@@ -4,10 +4,11 @@ import Container from "@/components/layout/Container";
 import PageHero from "@/components/layout/PageHero";
 import AboutSubnav from "@/components/about/AboutSubnav";
 import Reveal from "@/components/ui/Reveal";
+import { churchInfo } from "@/lib/church";
 
 export const metadata: Metadata = {
   title: "교회소개",
-  description: "영천중앙교회의 비전과 사명, 걸어온 발자취를 소개합니다.",
+  description: `${churchInfo.name}의 비전과 사명, 걸어온 발자취를 소개합니다.`,
   alternates: {
     canonical: "/about",
   },
@@ -61,7 +62,7 @@ export default function AboutPage() {
       <PageHero
         eyebrow="Welcome"
         title="교회소개"
-        subtitle="영천중앙교회는 1956년 창립 이후 말씀과 예배, 선교와 섬김으로 지역 사회와 함께 걸어왔습니다."
+        subtitle={`${churchInfo.name}는 1956년 창립 이후 말씀과 예배, 선교와 섬김으로 지역 사회와 함께 걸어왔습니다.`}
       />
       <AboutSubnav />
 
@@ -81,8 +82,8 @@ export default function AboutPage() {
             <Reveal variant="fade" delay={200}>
               <div className="mt-7 space-y-5 text-[17.5px] leading-9 text-ink-muted">
                 <p>
-                  영천중앙교회의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다. 대구·경북에 닿은
-                  복음의 흐름은 영천제일교회를 거쳐 주남기도처로 이어졌고, 마침내 오늘의 영천중앙교회로 자라났습니다.
+                  {churchInfo.name}의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다. 대구·경북에 닿은
+                  복음의 흐름은 영천제일교회를 거쳐 주남기도처로 이어졌고, 마침내 오늘의 {churchInfo.name}로 자라났습니다.
                 </p>
                 <p>
                   작은 기도의 자리에서 시작된 교회는 오랜 세월 예배와 말씀, 섬김의 발걸음을 이어 오며 이 지역 가운데

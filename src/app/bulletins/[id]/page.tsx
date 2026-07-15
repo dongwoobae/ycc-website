@@ -5,6 +5,7 @@ import BulletinView from '@/components/bulletins/BulletinView'
 import { getBulletinById, getBulletins } from '@/lib/data/bulletins'
 import JsonLd from '@/components/seo/JsonLd'
 import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld'
+import { churchInfo } from '@/lib/church'
 
 export const revalidate = 3600
 
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: BulletinDetailProps): Promise
   if (!bulletin) return { title: '주보' }
   return {
     title: `${bulletin.bulletinDate} 주보`,
-    description: `영천중앙교회 ${bulletin.bulletinDate} 주보입니다.`,
+    description: `${churchInfo.name} ${bulletin.bulletinDate} 주보입니다.`,
     alternates: {
       canonical: `/bulletins/${bulletin.id}`,
     },

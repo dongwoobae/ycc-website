@@ -1,4 +1,5 @@
 import type { Sermon, WorshipType } from '@/lib/types'
+import { DEFAULT_PREACHER } from '@/lib/constants'
 
 function youtubeIdFromUrl(videoUrl: string) {
   const url = new URL(videoUrl)
@@ -25,7 +26,7 @@ const sermons: Sermon[] = [
   sermon({
     id: '2026-06-07-sunday',
     title: '[재정] 마음의 무게 중심',
-    preacher: '김선찬 목사',
+    preacher: DEFAULT_PREACHER,
     worshipType: '주일예배',
     sermonDate: '2026-06-07',
     videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
@@ -34,7 +35,7 @@ const sermons: Sermon[] = [
   sermon({
     id: '2026-06-10-wednesday',
     title: '[공공성] 믿음은 나만의 것이 아닙니다',
-    preacher: '김선찬 목사',
+    preacher: DEFAULT_PREACHER,
     worshipType: '수요예배',
     sermonDate: '2026-06-10',
     videoUrl: 'https://www.youtube.com/watch?v=ysz5S6PUM-U',
@@ -43,7 +44,7 @@ const sermons: Sermon[] = [
   sermon({
     id: '2026-05-31-sunday',
     title: '[대화] 불통, 소통, 유통',
-    preacher: '김선찬 목사',
+    preacher: DEFAULT_PREACHER,
     worshipType: '주일예배',
     sermonDate: '2026-05-31',
     videoUrl: 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
@@ -52,7 +53,7 @@ const sermons: Sermon[] = [
   sermon({
     id: '2026-06-05-friday',
     title: '막힌 발걸음, 흐르는 말씀',
-    preacher: '김선찬 목사',
+    preacher: DEFAULT_PREACHER,
     worshipType: '금요기도회',
     sermonDate: '2026-06-05',
     videoUrl: 'https://www.youtube.com/watch?v=oHg5SJYRHA0',
@@ -61,7 +62,7 @@ const sermons: Sermon[] = [
   sermon({
     id: '2026-06-14-praise',
     title: '헌신은 은혜의 응답입니다',
-    preacher: '김선찬 목사',
+    preacher: DEFAULT_PREACHER,
     worshipType: '주일찬양예배',
     sermonDate: '2026-06-14',
     videoUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
@@ -70,7 +71,7 @@ const sermons: Sermon[] = [
   sermon({
     id: '2026-06-17-wednesday',
     title: '작은 순종이 길을 만듭니다',
-    preacher: '김선찬 목사',
+    preacher: DEFAULT_PREACHER,
     worshipType: '수요예배',
     sermonDate: '2026-06-17',
     videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
@@ -79,7 +80,7 @@ const sermons: Sermon[] = [
   sermon({
     id: '2026-06-21-sunday',
     title: '교회를 세우는 한 마음',
-    preacher: '김선찬 목사',
+    preacher: DEFAULT_PREACHER,
     worshipType: '주일예배',
     sermonDate: '2026-06-21',
     videoUrl: 'https://www.youtube.com/watch?v=9bZkp7q19f0',

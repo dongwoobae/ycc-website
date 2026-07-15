@@ -24,7 +24,7 @@ export default function Footer() {
     <footer className="mt-auto bg-navy-deep text-white/70">
       <Container size="wide" className="grid gap-10 py-16 text-sm md:grid-cols-[1.5fr_1fr_1fr]">
         <div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-white">영천중앙교회</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight text-white">{churchInfo.name}</h2>
           <address className="mt-5 not-italic leading-7">
             {churchInfo.address}
             <br />
@@ -82,8 +82,8 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <Container size="wide" className="flex flex-wrap items-center justify-between gap-3 py-6 text-xs text-white/45">
-          <span>© {new Date().getFullYear()} 영천중앙교회. All rights reserved.</span>
-          <span>대한예수교장로회</span>
+          <span>© {new Date().getFullYear()} {churchInfo.name}. All rights reserved.</span>
+          <span>{churchInfo.denomination}</span>
         </Container>
       </div>
     </footer>

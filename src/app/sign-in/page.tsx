@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 import Container from '@/components/layout/Container'
+import { churchInfo } from '@/lib/church'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -30,7 +31,7 @@ export default function SignInPage() {
     <div className="py-20">
       <Container className="max-w-md">
         <h1 className="text-3xl font-extrabold tracking-tight text-ink">관리자 로그인</h1>
-        <p className="mt-3 text-sm text-ink-muted">영천중앙교회 관리자 전용 페이지입니다.</p>
+        <p className="mt-3 text-sm text-ink-muted">{churchInfo.name} 관리자 전용 페이지입니다.</p>
         <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-lg border border-line bg-paper p-6 shadow-subtle">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-ink">

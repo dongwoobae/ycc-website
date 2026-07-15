@@ -1,12 +1,13 @@
 import type { Bulletin } from '@/lib/types'
-import { churchInfo } from '../church'
+import { churchInfo, churchOfferingAccountDisplay } from '../church'
+import { DEFAULT_PREACHER } from '../constants'
 
 const commonSections = [
   {
     id: 'serving',
     title: '교회를 섬기시는 분들',
     rows: [
-      { label: '담임 목사', value: '김선찬' },
+      { label: '담임 목사', value: churchInfo.seniorPastor.name },
       { label: '전임전도사', value: '김지희' },
       { label: '교육전도사', value: '이지형, 정다슬' },
       { label: '원로장로', value: '배윤호, 김대식' },
@@ -87,7 +88,7 @@ const bulletins: Bulletin[] = [
       {
         id: 'sunday-worship',
         title: '주일예배',
-        body: ['6월 7일 오전 11시', '인도: 김선찬 목사', '성령강림절 후 둘째 주일'],
+        body: ['6월 7일 오전 11시', `인도: ${DEFAULT_PREACHER}`, '성령강림절 후 둘째 주일'],
         rows: [
           { label: '경배찬양', value: '할렐루야 찬양단 / 다 함께' },
           { label: '묵도', value: '시온 찬양대' },
@@ -111,7 +112,7 @@ const bulletins: Bulletin[] = [
       {
         id: 'wednesday-worship',
         title: '수요예배',
-        body: ['6월 10일 오후 7시 30분', '인도: 김선찬 목사'],
+        body: ['6월 10일 오후 7시 30분', `인도: ${DEFAULT_PREACHER}`],
         rows: [
           { label: '경배찬양', value: '호산나 찬양단 / 다함께' },
           { label: '찬송', value: '546장 (주님 약속하신 말씀 위에 서)' },
@@ -125,7 +126,7 @@ const bulletins: Bulletin[] = [
       {
         id: 'dawn',
         title: '새벽기도회 본문 및 찬송',
-        body: ['화~주일 오전 5시', '인도: 김선찬 목사'],
+        body: ['화~주일 오전 5시', `인도: ${DEFAULT_PREACHER}`],
         tables: [
           {
             title: '새벽기도회',
@@ -153,7 +154,7 @@ const bulletins: Bulletin[] = [
           { category: '건축헌금', names: ['김수환', '김태하', '문한열'] },
           { category: '전도헌금', names: ['김수환', '김필순', '김혜숙', '박미화'] },
         ],
-        rows: [{ label: '헌금계좌번호', value: '농협 723040-51-047200 영천중앙교회' }],
+        rows: [{ label: '헌금계좌번호', value: churchOfferingAccountDisplay }],
       },
       {
         id: 'news',
@@ -179,7 +180,7 @@ const bulletins: Bulletin[] = [
       {
         id: 'sunday-worship',
         title: '주일예배',
-        body: ['5월 31일 오전 11시', '인도: 김선찬 목사', '삼위 일체 주일'],
+        body: ['5월 31일 오전 11시', `인도: ${DEFAULT_PREACHER}`, '삼위 일체 주일'],
         rows: [
           { label: '경배찬양', value: '할렐루야 찬양단 / 다 함께' },
           { label: '영광송', value: '29장 (성도여 다 함께)' },
@@ -200,7 +201,7 @@ const bulletins: Bulletin[] = [
       {
         id: 'wednesday-worship',
         title: '수요예배',
-        body: ['6월 3일 오후 7시 30분', '인도: 김선찬 목사'],
+        body: ['6월 3일 오후 7시 30분', `인도: ${DEFAULT_PREACHER}`],
         rows: [
           { label: '찬송', value: '213장 (나의 생명 드리니)' },
           { label: '기도', value: '양인옥 권사' },
@@ -213,7 +214,7 @@ const bulletins: Bulletin[] = [
       {
         id: 'friday-prayer',
         title: '전교인 금요기도회',
-        body: ['6월 5일 오후 7시 30분', '인도: 김선찬 목사'],
+        body: ['6월 5일 오후 7시 30분', `인도: ${DEFAULT_PREACHER}`],
         rows: [
           { label: '성경봉독', value: '데살로니가전서 2장 18절 (신약 p.331)' },
           { label: '말씀선포', value: '막힌 발걸음, 흐르는 말씀' },
@@ -230,7 +231,7 @@ const bulletins: Bulletin[] = [
           { category: '건축헌금', names: ['김수환', '문한열', '박순자', '배성일', '윤경애'] },
           { category: '전도헌금', names: ['김수환', '김영수', '김혜숙', '박미화', '배성일', '양인옥', '이숙향', '이옥화', '이정례', '이향숙', '정정자', '최봉순'] },
         ],
-        rows: [{ label: '헌금계좌번호', value: '농협 723040-51-047200 영천중앙교회' }],
+        rows: [{ label: '헌금계좌번호', value: churchOfferingAccountDisplay }],
       },
       {
         id: 'news',

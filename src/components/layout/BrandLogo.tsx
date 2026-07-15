@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { churchInfo } from '@/lib/church'
 
 /** PCK 공식 휘장을 흰 라운드 배지에 담아 렌더 (다크 블루 바에서도 또렷하게 분리) */
 function EmblemBadge({ size = 44 }: { size?: number }) {
@@ -9,7 +10,7 @@ function EmblemBadge({ size = 44 }: { size?: number }) {
     >
       <Image
         src="/brand/pck-emblem.png"
-        alt="대한예수교장로회 총회 휘장"
+        alt={`${churchInfo.denomination} 총회 휘장`}
         width={size}
         height={size}
         className="h-[78%] w-[78%] object-contain"
@@ -23,7 +24,7 @@ export default function BrandLogo() {
   return (
     <span className="inline-flex items-center gap-3 leading-none">
       <EmblemBadge size={44} />
-      <span className="text-[23px] font-extrabold tracking-tight">영천중앙교회</span>
+      <span className="text-[23px] font-extrabold tracking-tight">{churchInfo.name}</span>
     </span>
   )
 }

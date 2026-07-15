@@ -48,7 +48,7 @@ export default function VisitBlock({
               <div className="relative h-52 overflow-hidden rounded-2xl border border-line shadow-subtle">
                 <Image
                   src="/images/church-spire.webp"
-                  alt="영천중앙교회 전경"
+                  alt={`${churchInfo.name} 전경`}
                   fill
                   unoptimized
                   sizes="(min-width: 960px) 45vw, 100vw"

@@ -3,10 +3,11 @@ import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import AboutSubnav from '@/components/about/AboutSubnav'
 import Reveal from '@/components/ui/Reveal'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '교회연혁',
-  description: '영천중앙교회가 걸어온 역사와 발자취를 소개합니다.',
+  description: `${churchInfo.name}가 걸어온 역사와 발자취를 소개합니다.`,
   alternates: {
     canonical: '/about/history',
   },
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 
 const history = [
   ['1956', '09.02. 영천제일교회에서 분립, 예배당 설립 후 영천남부교회로 명명'],
-  ['1958', '05.03. 현 위치에 예배당 신축, 영천중앙교회로 개명'],
+  ['1958', `05.03. 현 위치에 예배당 신축, ${churchInfo.name}로 개명`],
   ['1976', '03.30. 성전 기공 · 09.01. 고경 오류리 부활동산 매입'],
   ['1978', '08.31. 성전 헌당'],
   ['1987', '12.30. 선교관 준공'],
@@ -30,7 +31,7 @@ export default function HistoryPage() {
       <PageHero
         eyebrow="History"
         title="교회연혁"
-        subtitle="1956년 창립 이후, 영천중앙교회가 걸어온 발자취입니다."
+        subtitle={`1956년 창립 이후, ${churchInfo.name}가 걸어온 발자취입니다.`}
       />
       <AboutSubnav />
       <section className="py-20 sm:py-24">
@@ -40,25 +41,25 @@ export default function HistoryPage() {
           </Reveal>
           <Reveal variant="fade" delay={120}>
             <h2 className="mt-3 text-3xl font-extrabold leading-snug tracking-tight text-ink sm:text-4xl">
-              영천중앙교회의 시작 이야기
+              {churchInfo.name}의 시작 이야기
             </h2>
           </Reveal>
           <Reveal variant="fade" delay={200}>
             <div className="mt-7 space-y-5 text-[17.5px] leading-9 text-ink-muted">
               <p>
-                영천중앙교회의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다.
+                {churchInfo.name}의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다.
               </p>
               <p>
                 19세기 미국의 부흥과 선교의 불씨는 조선 땅으로 이어졌고, 대구·경북 지역에 복음의
                 씨앗이 심겨졌습니다. 그 복음의 흐름은 영천 땅에도 닿아 영천제일교회를 거쳐
-                주남기도처로 이어졌고, 마침내 오늘의 영천중앙교회로 자라났습니다.
+                주남기도처로 이어졌고, 마침내 오늘의 {churchInfo.name}로 자라났습니다.
               </p>
               <p>
                 작은 기도의 자리에서 시작된 교회는 오랜 세월 예배와 말씀, 섬김의 발걸음을 이어 오며
                 이 지역 가운데 복음의 빛을 비추어 왔습니다.
               </p>
               <p>
-                영천중앙교회는 지금도 그 은혜의 뿌리 위에 서서, 다음 세대와 이웃을 향해 복음의
+                {churchInfo.name}는 지금도 그 은혜의 뿌리 위에 서서, 다음 세대와 이웃을 향해 복음의
                 이야기를 이어가고 있습니다.
               </p>
             </div>

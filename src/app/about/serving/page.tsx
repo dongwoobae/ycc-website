@@ -4,17 +4,18 @@ import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import AboutSubnav from '@/components/about/AboutSubnav'
 import Reveal from '@/components/ui/Reveal'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
   title: '섬기는 분들',
-  description: '영천중앙교회를 섬기는 교역자와 사역자를 소개합니다.',
+  description: `${churchInfo.name}를 섬기는 교역자와 사역자를 소개합니다.`,
   alternates: {
     canonical: '/about/serving',
   },
 }
 
 const staff: { role: string; name: string; photo: string }[] = [
-  { role: '담임목사', name: '김선찬', photo: '/images/staff/pastor-kim-seonchan.webp' },
+  { role: churchInfo.seniorPastor.title, name: churchInfo.seniorPastor.name, photo: '/images/staff/pastor-kim-seonchan.webp' },
   { role: '전임전도사', name: '김지희', photo: '/images/staff/evangelist-kim-jihee.webp' },
   { role: '교육전도사', name: '이지형', photo: '/images/staff/evangelist-lee-jihyung.webp' },
   { role: '교육전도사', name: '정다슬', photo: '/images/staff/evangelist-jung-daseul.webp' },

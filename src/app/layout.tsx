@@ -8,6 +8,7 @@ import { getCanonicalSiteOrigin } from '@/lib/site-origin'
 import JsonLd from '@/components/seo/JsonLd'
 import { buildChurchJsonLd } from '@/lib/seo/jsonld'
 import Tracker from '@/components/analytics/Tracker'
+import { churchInfo } from '@/lib/church'
 
 const pretendard = localFont({
   src: [
@@ -44,10 +45,10 @@ const pretendard = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(getCanonicalSiteOrigin()),
   title: {
-    default: '영천중앙교회',
-    template: '%s | 영천중앙교회',
+    default: churchInfo.name,
+    template: `%s | ${churchInfo.name}`,
   },
-  description: '영천중앙교회 공식 홈페이지입니다.',
+  description: churchInfo.description,
   verification: {
     google: 'i76ulv_84QEDrKNinruYNDKmrFlGOQ7c4XbdKbCoieI',
     other: {
@@ -62,24 +63,24 @@ export const metadata: Metadata = {
     apple: [{ url: '/brand/pck-icon-180.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
-    title: '영천중앙교회',
-    description: '영천중앙교회 공식 홈페이지입니다.',
+    title: churchInfo.name,
+    description: churchInfo.description,
     locale: 'ko_KR',
-    siteName: 'Yeongcheonjoongangchurch',
+    siteName: churchInfo.englishName,
     type: 'website',
     images: [
       {
         url: '/brand/pck-og.png',
         width: 1200,
         height: 630,
-        alt: 'Yeongcheonjoongangchurch 영천중앙교회',
+        alt: `${churchInfo.englishName} ${churchInfo.name}`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '영천중앙교회',
-    description: '영천중앙교회 공식 홈페이지입니다.',
+    title: churchInfo.name,
+    description: churchInfo.description,
     images: ['/brand/pck-og.png'],
   },
 }
