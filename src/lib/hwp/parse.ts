@@ -18,12 +18,23 @@ function sectionNumber(path: string) {
   return Number(path.match(/Section(\d+)$/i)?.[1] ?? 0)
 }
 
-function stripControls(value: string) {
+// Inline and extended controls span 8 WCHARs: the code, 12 bytes of info, then the
+// code again. The info holds the control id ("tbl ", "gso " …) as a little-endian
+// DWORD, which decodes to text-range characters, so the whole run has to be skipped
+// rather than just the leading code. Everything else below 0x20 is one WCHAR wide.
+const wideControlCodes = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
+const wideControlLength = 8
+
+export function stripControls(value: string) {
   let output = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index)
+    if (wideControlCodes.has(code)) {
+      index += wideControlLength - 1
+      continue
+    }
     if (code === 10 || code === 13) output += '\n'
-    else if (code >= 32) output += char
+    else if (code >= 32) output += value[index]
   }
   return output
 }
@@ -61,6 +72,39 @@ export function inflateHwpSection(raw: Buffer, maxOutputLength = maxHwpDecompres
   return inflateRawSync(raw, { maxOutputLength })
 }
 
+const headingMarker = /^[＊*◼■●]/
+const offeringKeyword = /헌금|십일조/
+
+function isHeading(line: string) {
+  return headingMarker.test(line)
+}
+
+function isOfferingHeading(line: string) {
+  return isHeading(line) && offeringKeyword.test(line.replace(/\s+/g, ''))
+}
+
+/**
+ * Drops the donor lists and offering account from extracted paragraphs.
+ *
+ * Bulletins open with 헌금 blocks (십일조·감사헌금·맥추감사헌금 …), each headed by a
+ * marker and running until the next non-offering heading. Names sometimes sit on the
+ * heading line itself, and the 헌금계좌번호 lines carry no marker, so the block is cut
+ * by its boundaries rather than by matching category names or name-shaped text — the
+ * category set varies week to week.
+ */
+export function stripOfferingParagraphs(paragraphs: string[]) {
+  const kept: string[] = []
+  let inOffering = false
+
+  for (const line of paragraphs) {
+    if (isOfferingHeading(line)) inOffering = true
+    else if (inOffering && isHeading(line)) inOffering = false
+    if (!inOffering) kept.push(line)
+  }
+
+  return kept
+}
+
 export function parseHwp(buffer: Buffer): HwpParseResult {
   const cfb = CFB.read(buffer, { type: 'buffer' })
   const header = CFB.find(cfb, 'FileHeader')?.content
@@ -86,5 +130,5 @@ export function parseHwp(buffer: Buffer): HwpParseResult {
   }
 
   if (paragraphs.length === 0) throw new Error('hwp 본문을 추출할 수 없습니다')
-  return { paragraphs }
+  return { paragraphs: stripOfferingParagraphs(paragraphs) }
 }
