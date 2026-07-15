@@ -67,7 +67,6 @@ const newsLinks: NavChild[] = [
   { label: '주보', href: '/bulletins', desc: '주간 주보 열람' },
   { label: '행사 사진', href: '/gallery', desc: '사진으로 보는 일상' },
   { label: '특별행사', href: '/events?worship=특별행사', desc: '특별행사 영상' },
-  { label: '기타', href: '/events?worship=기타', desc: '기타 영상' },
 ]
 
 export const navLinks: NavSection[] = [
