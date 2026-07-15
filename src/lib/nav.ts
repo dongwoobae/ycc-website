@@ -74,6 +74,6 @@ export const navLinks: NavSection[] = [
   { label: '소개', href: '/about', section: '/about', eyebrow: 'About', children: aboutLinks },
   { label: '안내', href: '/happiness', section: '/happiness', eyebrow: 'Guide', children: guideLinks },
   { label: '말씀과 찬양', href: '/sermons', section: '/sermons', eyebrow: 'Worship', children: wordLinks, groups: worshipGroups },
-  { label: '소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
   { label: '처음 오셨나요?', href: '/newfamily', section: '/newfamily', eyebrow: 'Welcome', children: newcomerLinks },
+  { label: '소식', href: '/news', section: '/news', eyebrow: 'News', children: newsLinks },
 ]

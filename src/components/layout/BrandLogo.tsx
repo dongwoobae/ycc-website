@@ -23,7 +23,7 @@ export default function BrandLogo() {
   return (
     <span className="inline-flex items-center gap-3 leading-none">
       <EmblemBadge size={44} />
-      <span className="font-serif text-[24px] font-extrabold tracking-tight">영천중앙교회</span>
+      <span className="text-[23px] font-extrabold tracking-tight">영천중앙교회</span>
     </span>
   )
 }

@@ -88,15 +88,15 @@ export default function Header() {
   )
 
   const navLinkClassName = isSolid
-    ? 'text-ink-muted hover:bg-surface hover:text-ink'
+    ? 'text-ink-muted hover:bg-accent-deep/[0.06] hover:text-accent-deep'
     : heroIsLight
-      ? 'text-ink-muted hover:bg-ink/5 hover:text-ink'
+      ? 'text-ink-muted hover:bg-accent-deep/[0.06] hover:text-accent-deep'
       : 'text-white/90 hover:bg-white/10 hover:text-white'
 
   const activeNavClassName = isSolid
-    ? 'bg-surface text-accent-deep'
+    ? 'bg-accent-deep/[0.07] text-accent-deep'
     : heroIsLight
-      ? 'bg-ink/5 text-accent-deep'
+      ? 'bg-accent-deep/[0.07] text-accent-deep'
       : 'bg-white/15 text-white'
 
   const matchesSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
@@ -125,15 +125,24 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-1 min-[960px]:flex" aria-label="주요 메뉴">
-          {navLinks.map((link) => {
-            const active = isActiveItem(link)
-            const itemClass = `rounded-full px-4 py-2 text-[16px] font-bold transition ${active ? activeNavClassName : navLinkClassName}`
-            return (
-              <Link key={link.href} href={link.href} className={itemClass} aria-current={active ? 'page' : undefined}>
-                {link.label}
-              </Link>
-            )
-          })}
+          {navLinks
+            .filter((link) => link.section !== '/newfamily')
+            .map((link) => {
+              const active = isActiveItem(link)
+              const itemClass = `rounded-full px-4 py-2 text-[16px] font-bold transition ${active ? activeNavClassName : navLinkClassName}`
+              return (
+                <Link key={link.href} href={link.href} className={itemClass} aria-current={active ? 'page' : undefined}>
+                  {link.label}
+                </Link>
+              )
+            })}
+          <Link
+            href="/newfamily"
+            className="ml-2 rounded-full bg-accent-deep px-5 py-2.5 text-[15px] font-extrabold text-white transition hover:bg-gold hover:text-[#1D1503]"
+            aria-current={matchesSection('/newfamily') ? 'page' : undefined}
+          >
+            처음 오셨나요?
+          </Link>
         </nav>
 
         <button
