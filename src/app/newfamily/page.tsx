@@ -6,7 +6,7 @@ import KakaoMap from '@/components/layout/KakaoMap'
 import VisitBlock from '@/components/layout/VisitBlock'
 import Reveal from '@/components/ui/Reveal'
 import SectionTitle from '@/components/ui/SectionTitle'
-import { HomeButton, ImagePlaceholder } from '@/components/home/HomePrimitives'
+import { HomeButton } from '@/components/home/HomePrimitives'
 import { churchInfo } from '@/lib/church'
 import { adultWorshipSchedule } from '@/lib/worship'
 
@@ -69,9 +69,9 @@ const faqs = [
 ]
 
 const nextGen = [
-  { title: '유치부', label: '유치부 사진 자리', info: '본당 1층 유치부실 · 주일 오전 9:00' },
-  { title: '아동부', label: '아동부 사진 자리', info: '교육관 1층 · 주일 오전 9:00' },
-  { title: '중·고등부', label: '중·고등부 사진 자리', info: '교육관 지하 · 주일 오전 9:00' },
+  { title: '유치부', photo: '/images/nextgen/kinder.webp', info: '본당 1층 유치부실 · 주일 오전 9:00' },
+  { title: '아동부', photo: '/images/nextgen/children.webp', info: '교육관 1층 · 주일 오전 9:00' },
+  { title: '중·고등부', photo: '/images/nextgen/youth.webp', info: '교육관 지하 · 주일 오전 9:00' },
 ]
 
 export default function NewFamilyPage() {
@@ -231,8 +231,15 @@ function NextGeneration() {
           {nextGen.map((group, index) => (
             <Reveal key={group.title} delay={index * 110}>
               <article className="motion-hover h-full overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle transition hover:-translate-y-1 hover:shadow-lifted">
-                <div className="h-56 overflow-hidden">
-                  <ImagePlaceholder label={group.label} />
+                <div className="relative h-56 overflow-hidden">
+                  <Image
+                    src={group.photo}
+                    alt={`${group.title} 활동 사진`}
+                    fill
+                    unoptimized
+                    sizes="(min-width: 960px) 33vw, 100vw"
+                    className="object-cover"
+                  />
                 </div>
                 <div className="p-6">
                   <h3 className="text-2xl font-extrabold text-accent-deep">{group.title}</h3>
