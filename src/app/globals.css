@@ -75,6 +75,13 @@ body {
   background: rgb(var(--bg));
   color: rgb(var(--ink));
   font-family: var(--font-sans);
+  /*
+   * Reveal 모션(variant left/right)은 뷰포트 진입 전 요소를 translateX(±32px) 시킨다.
+   * 모바일에서 컨테이너 좌우 패딩(px-5=20px)보다 이 이동폭이 커서 아직 안 드러난
+   * 하단 요소가 화면 밖으로 12px 삐져나와 가로 스크롤이 생겼다.
+   * clip 은 스크롤 컨테이너를 만들지 않아 sticky 서브내비를 깨지 않는다.
+   */
+  overflow-x: clip;
 }
 
 a {
@@ -122,6 +129,19 @@ a {
   opacity: 1;
   transform: none;
   clip-path: inset(0 0 0 0);
+}
+
+/*
+ * 모바일에서는 좌우 슬라이드(translateX ±32px)를 세로 페이드로 바꾼다.
+ * 컨테이너 좌우 패딩(px-5=20px)보다 이동폭이 커서, 아직 안 드러난 하단 요소가
+ * 화면 밖으로 삐져나와 가로 스크롤을 만들던 문제를 근본에서 제거한다.
+ * 데스크톱(≥640px)은 좌우 여백이 넉넉하므로 원래 슬라이드를 유지한다.
+ */
+@media (max-width: 639.98px) {
+  [data-reveal][data-variant='left'],
+  [data-reveal][data-variant='right'] {
+    transform: translateY(18px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
