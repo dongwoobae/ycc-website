@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { churchInfo } from '@/lib/church'
+import { staticImg } from '@/lib/static-images'
 
 const KAKAO_URL = 'https://qr.kakao.com/talk/AyhAG5qS936F.2Usitr1y420Va4-'
 const KAKAO_ID = 'apple3035'
@@ -8,7 +9,7 @@ export default function PastorKakaoCard() {
   return (
     <div className="flex flex-wrap items-center gap-5 rounded-2xl border border-line bg-paper p-5">
       <Image
-        src="/images/pastor-kakao-qr.png"
+        src={staticImg('/images/pastor-kakao-qr.png')}
         alt={`${churchInfo.seniorPastor.title} ${churchInfo.seniorPastor.name} 카카오톡 QR 코드`}
         width={104}
         height={104}

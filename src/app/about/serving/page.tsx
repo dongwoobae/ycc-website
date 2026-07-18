@@ -5,6 +5,7 @@ import PageHero from '@/components/layout/PageHero'
 import AboutSubnav from '@/components/about/AboutSubnav'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
+import { staticImg } from '@/lib/static-images'
 
 export const metadata: Metadata = {
   title: '섬기는 분들',
@@ -15,10 +16,10 @@ export const metadata: Metadata = {
 }
 
 const staff: { role: string; name: string; photo: string }[] = [
-  { role: churchInfo.seniorPastor.title, name: churchInfo.seniorPastor.name, photo: '/images/staff/pastor-kim-seonchan.webp' },
-  { role: '전임전도사', name: '김지희', photo: '/images/staff/evangelist-kim-jihee.webp' },
-  { role: '교육전도사', name: '이지형', photo: '/images/staff/evangelist-lee-jihyung.webp' },
-  { role: '교육전도사', name: '정다슬', photo: '/images/staff/evangelist-jung-daseul.webp' },
+  { role: churchInfo.seniorPastor.title, name: churchInfo.seniorPastor.name, photo: staticImg('/images/staff/pastor-kim-seonchan.webp') },
+  { role: '전임전도사', name: '김지희', photo: staticImg('/images/staff/evangelist-kim-jihee.webp') },
+  { role: '교육전도사', name: '이지형', photo: staticImg('/images/staff/evangelist-lee-jihyung.webp') },
+  { role: '교육전도사', name: '정다슬', photo: staticImg('/images/staff/evangelist-jung-daseul.webp') },
 ]
 
 const groups: { title: string; rows: { role: string; names: string }[] }[] = [

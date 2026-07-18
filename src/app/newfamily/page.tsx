@@ -9,6 +9,7 @@ import SectionTitle from '@/components/ui/SectionTitle'
 import { HomeButton } from '@/components/home/HomePrimitives'
 import { churchInfo } from '@/lib/church'
 import { adultWorshipSchedule } from '@/lib/worship'
+import { staticImg } from '@/lib/static-images'
 
 export const metadata: Metadata = {
   title: '처음 오세요',
@@ -69,9 +70,9 @@ const faqs = [
 ]
 
 const nextGen = [
-  { title: '유치부', photo: '/images/nextgen/kinder.webp', info: '본당 1층 유치부실 · 주일 오전 9:00' },
-  { title: '아동부', photo: '/images/nextgen/children.webp', info: '교육관 1층 · 주일 오전 9:00' },
-  { title: '중·고등부', photo: '/images/nextgen/youth.webp', info: '교육관 지하 · 주일 오전 9:00' },
+  { title: '유치부', photo: staticImg('/images/nextgen/kinder.webp'), info: '본당 1층 유치부실 · 주일 오전 9:00' },
+  { title: '아동부', photo: staticImg('/images/nextgen/children.webp'), info: '교육관 1층 · 주일 오전 9:00' },
+  { title: '중·고등부', photo: staticImg('/images/nextgen/youth.webp'), info: '교육관 지하 · 주일 오전 9:00' },
 ]
 
 export default function NewFamilyPage() {
@@ -273,7 +274,7 @@ function Visit() {
 function Cta() {
   return (
     <section className="relative isolate overflow-hidden bg-accent-deep py-24 text-center text-white min-[960px]:py-[150px]">
-      <Image src="/images/church-cta.webp" alt="" fill unoptimized sizes="100vw" className="-z-20 object-cover" />
+      <Image src={staticImg('/images/church-cta.webp')} alt="" fill unoptimized sizes="100vw" className="-z-20 object-cover" />
       <div className="absolute inset-0 -z-10 bg-accent-deep/[0.82]" />
       <Container>
         <Reveal>

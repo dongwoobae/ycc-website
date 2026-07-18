@@ -5,6 +5,7 @@ import PageHero from '@/components/layout/PageHero'
 import AboutSubnav from '@/components/about/AboutSubnav'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
+import { staticImg } from '@/lib/static-images'
 
 export const metadata: Metadata = {
   title: '담임목사 인사말',
@@ -30,7 +31,7 @@ export default function GreetingPage() {
               <figure className="lg:sticky lg:top-28">
                 <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border-[1.5px] border-line bg-surface shadow-subtle">
                   <Image
-                    src="/images/staff/pastor-kim-seonchan.webp"
+                    src={staticImg('/images/staff/pastor-kim-seonchan.webp')}
                     alt={`${churchInfo.seniorPastor.name} ${churchInfo.seniorPastor.title}`}
                     fill
                     unoptimized

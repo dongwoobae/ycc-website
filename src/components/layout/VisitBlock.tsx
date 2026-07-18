@@ -4,6 +4,7 @@ import Container from '@/components/layout/Container'
 import PastorKakaoCard from '@/components/layout/PastorKakaoCard'
 import Reveal from '@/components/ui/Reveal'
 import { churchInfo } from '@/lib/church'
+import { staticImg } from '@/lib/static-images'
 
 const kakaoMapUrl = `https://map.kakao.com/?q=${encodeURIComponent(churchInfo.address)}`
 
@@ -47,7 +48,7 @@ export default function VisitBlock({
               </VisitInfo>
               <div className="relative h-52 overflow-hidden rounded-2xl border border-line shadow-subtle">
                 <Image
-                  src="/images/church-spire.webp"
+                  src={staticImg('/images/church-spire.webp')}
                   alt={`${churchInfo.name} 전경`}
                   fill
                   unoptimized

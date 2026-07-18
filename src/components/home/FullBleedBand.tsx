@@ -3,6 +3,7 @@ import Container from '@/components/layout/Container'
 import Reveal from '@/components/ui/Reveal'
 import { HomeButton } from './HomePrimitives'
 import { churchInfo } from '@/lib/church'
+import { staticImg } from '@/lib/static-images'
 
 // 홈 #3 — 소개 밴드. 배경 사진·블러 제거 → 단색 딥 네이비 + 골드 포인트 (PDF).
 export default function FullBleedBand() {
@@ -32,7 +33,7 @@ export default function FullBleedBand() {
         <Reveal delay={140}>
           <div className="relative h-[320px] overflow-hidden rounded-2xl shadow-[0_28px_60px_rgb(0_0_0/0.35)] min-[960px]:h-[420px]">
             <Image
-              src="/images/church-spire.webp"
+              src={staticImg('/images/church-spire.webp')}
               alt={`${churchInfo.name} 전경`}
               fill
               unoptimized

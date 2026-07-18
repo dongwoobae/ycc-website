@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Container from './Container'
 import { churchInfo } from '@/lib/church'
 import { adultWorshipSchedule } from '@/lib/worship'
+import { staticImg } from '@/lib/static-images'
 
 const menuLinks = [
   { label: '소개', href: '/about' },
@@ -14,9 +15,9 @@ const menuLinks = [
 ]
 
 const socialLinks = [
-  { label: '유튜브', href: churchInfo.youtube, src: '/images/social/youtube.webp', w: 136, h: 96 },
-  { label: '네이버 블로그', href: churchInfo.blog, src: '/images/social/naver-blog.webp', w: 100, h: 96 },
-  { label: '디모데앱', href: churchInfo.dimode, src: '/images/social/dimode.webp', w: 96, h: 96 },
+  { label: '유튜브', href: churchInfo.youtube, src: staticImg('/images/social/youtube.webp'), w: 136, h: 96 },
+  { label: '네이버 블로그', href: churchInfo.blog, src: staticImg('/images/social/naver-blog.webp'), w: 100, h: 96 },
+  { label: '디모데앱', href: churchInfo.dimode, src: staticImg('/images/social/dimode.webp'), w: 96, h: 96 },
 ]
 
 export default function Footer() {

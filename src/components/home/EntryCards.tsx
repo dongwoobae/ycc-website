@@ -3,9 +3,10 @@ import Image from 'next/image'
 import Container from '@/components/layout/Container'
 import Reveal from '@/components/ui/Reveal'
 import { Eyebrow } from './HomePrimitives'
+import { staticImg } from '@/lib/static-images'
 
 // 홈 #4 — 핵심 진입 3종(말씀/주일학교/찬양). 사진 위 텍스트 오버레이 없음(PDF):
-// 상단 사진 + 하단 흰 캡션 영역. 사진은 public/images/entry/*.webp 덮어쓰면 교체(교회 제공 대기).
+// 상단 사진 + 하단 흰 캡션 영역. 사진은 R2 static/images/entry/*.webp 재업로드로 교체(교회 제공 대기).
 
 interface EntryCard {
   key: string
@@ -20,7 +21,7 @@ const cards: EntryCard[] = [
   {
     key: 'word',
     title: '말씀',
-    photo: '/images/entry/word.webp',
+    photo: staticImg('/images/entry/word.webp'),
     desc: '매 예배의 말씀을 다시 듣고 묵상합니다.',
     href: '/sermons',
     items: ['주일예배', '주일찬양예배', '수요예배'],
@@ -28,7 +29,7 @@ const cards: EntryCard[] = [
   {
     key: 'school',
     title: '주일학교',
-    photo: '/images/entry/school.webp',
+    photo: staticImg('/images/entry/school.webp'),
     desc: '다음 세대가 말씀 위에 자랍니다.',
     href: '/worship',
     items: ['유치부', '아동부', '중고등부'],
@@ -36,7 +37,7 @@ const cards: EntryCard[] = [
   {
     key: 'praise',
     title: '찬양',
-    photo: '/images/entry/praise.webp',
+    photo: staticImg('/images/entry/praise.webp'),
     desc: '찬양으로 하나님께 영광을 올려 드립니다.',
     href: '/praise',
     items: ['찬양대', '특송'],
