@@ -65,7 +65,7 @@ const newcomerLinks: NavChild[] = [
 const newsLinks: NavChild[] = [
   { label: '교회소식', href: '/news', desc: '교회 소식과 공지' },
   { label: '주보', href: '/bulletins', desc: '주간 주보 열람' },
-  { label: '행사 사진', href: '/gallery', desc: '사진으로 보는 일상' },
+  { label: '갤러리', href: '/gallery', desc: '사진으로 보는 일상' },
   { label: '특별행사', href: '/events?worship=특별행사', desc: '특별행사 영상' },
 ]
 
