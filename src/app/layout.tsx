@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
+import Script from 'next/script'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -9,6 +10,8 @@ import JsonLd from '@/components/seo/JsonLd'
 import { buildChurchJsonLd } from '@/lib/seo/jsonld'
 import Tracker from '@/components/analytics/Tracker'
 import { churchInfo } from '@/lib/church'
+
+const GOOGLE_ANALYTICS_ID = 'G-Y1121E1MQ9'
 
 const pretendard = localFont({
   src: [
@@ -104,6 +107,18 @@ export default function RootLayout({
         <Footer />
         <Tracker />
         <Analytics />
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GOOGLE_ANALYTICS_ID}');
+          `}
+        </Script>
       </body>
     </html>
   )
