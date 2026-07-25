@@ -12,7 +12,7 @@ export function buildChurchJsonLd(): JsonLdObject {
     name: CHURCH_NAME,
     url: getCanonicalSiteOrigin(),
     logo: absoluteUrl('/brand/pck-icon-512.png'),
-    image: absoluteUrl('/brand/pck-og.png'),
+    image: absoluteUrl('/brand/pck-og-v2.png'),
     telephone: churchInfo.phone,
     address: {
       '@type': 'PostalAddress',

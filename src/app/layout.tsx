@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/brand/pck-og.png',
+        url: '/brand/pck-og-v2.png',
         width: 1200,
         height: 630,
         alt: `${churchInfo.englishName} ${churchInfo.name}`,
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: churchInfo.name,
     description: churchInfo.description,
-    images: ['/brand/pck-og.png'],
+    images: ['/brand/pck-og-v2.png'],
   },
 }
 
