@@ -45,6 +45,7 @@
 - ❓ **FAQ** — 처음 방문하는 분들이 자주 묻는 질문과 답변
 - 📍 **오시는 길** — 주소, 대표 전화, 카카오맵 기반 위치 안내
 - 🎧 **예배·설교** — 주일·찬양·수요설교 목록/상세, 검색·정렬·페이지네이션, YouTube 임베드, AI 요약(한 줄 소개·요점·타임스탬프 챕터), 자동 생성 썸네일
+- 🔠 **요약 글자 크기 조절** — 설교 요약을 3단계 글자 크기로 조절해 고령 성도의 가독성 확보 (선택값 유지)
 - 🎵 **찬양** — 찬양대·특송 영상을 설교 콘텐츠와 분리해 제공
 - 🎉 **특별행사** — 특별행사·사역 보고 영상을 일반 설교/찬양과 분리해 제공
 - 📰 **교회 소식** — 공지, 소식, 행사 게시글 목록/상세
@@ -81,7 +82,7 @@ Better Auth 이메일/비밀번호 로그인으로 보호되며, 공개 회원�
 - 🧪 **업로드 MIME 검증** — 허용된 파일 타입만 업로드 처리
 - 🧹 **파일명 정규화** — 업로드 filename을 안전한 R2 key로 변환
 - 📊 **자체 방문 분석** — 쿠키리스 수집(`/api/track`), 봇·데이터센터·관리자 제외, IP 마스킹·솔트 해시, 한국어 지역명, 레이트리밋, 일일 통계 롤업 cron
-- 📈 **Vercel Analytics** — 공개 사이트 방문 분석 병행 적용
+- 📈 **Vercel Analytics · Google Analytics** — 자체 방문 분석과 함께 외부 분석 도구 병행 적용
 - 🧭 **동적 sitemap** — 정적 라우트와 DB 콘텐츠를 함께 sitemap에 반영
 
 ---
@@ -165,7 +166,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
 | 실시간 구독 | YouTube WebSub (PubSubHubbub) |
 | Validation | Zod |
 | HWP Parsing | cfb 기반 HWP 5.0 바이너리 직접 파싱 |
-| Analytics | Vercel Analytics + 자체 방문 분석(`page_views` 수집·일일 롤업) |
+| Analytics | Vercel Analytics + Google Analytics + 자체 방문 분석(`page_views` 수집·일일 롤업) |
 | Test | Vitest (+ PGlite 기반 DB 통합 테스트), Playwright E2E |
 | Lint | ESLint 9, eslint-config-next |
 | Deploy | Vercel |
@@ -290,7 +291,7 @@ scripts/
   create-admin.ts                    # 관리자 계정 생성
   delete-user.ts                     # 사용자 계정 삭제
 drizzle/                             # Drizzle 마이그레이션과 메타데이터
-public/                              # 정적 이미지, map.html, 교회 이미지 자산
+public/                              # map.html, 아이콘 등 경량 정적 자산 (이미지·영상 원본은 R2)
 e2e/                                 # 갤러리 업로드·서브내비 Playwright 회귀 테스트
 ```
 
@@ -705,7 +706,8 @@ interface BulletinSection {
 - `metadataBase`: 표준 사이트 origin(`getCanonicalSiteOrigin`) 기반으로 설정
 - JSON-LD(Church) 구조화 데이터를 전역 레이아웃에 삽입
 - Open Graph locale: `ko_KR`
-- Vercel Analytics + 자체 방문 분석 적용
+- OG 이미지는 파일명에 버전을 붙여 교체합니다. 카카오톡·SNS는 URL 단위로 미리보기를 캐시하므로, 같은 파일명으로 덮어쓰면 갱신되지 않습니다.
+- Vercel Analytics + Google Analytics + 자체 방문 분석 적용
 
 배포는 Vercel에 연결된 GitHub 저장소에 push하면 자동으로 진행됩니다. Vercel 환경변수에는 `.env.local`과 동일한 값을 설정해야 합니다.
 
@@ -775,7 +777,8 @@ https://공식-도메인/sitemap.xml
 - 자체 방문 분석(수집·봇 필터·일일 롤업·대시보드)
 - 핵심 유틸 Vitest 테스트 + PGlite 통합 테스트
 - Playwright 관리자 업로드·내비게이션 회귀 E2E + GitHub Actions typecheck/test
-- Vercel Analytics
+- Vercel Analytics + Google Analytics
+- 이미지·영상 원본을 저장소에서 제거하고 Cloudflare R2로 이관
 
 ### 🚧 개선 예정
 
