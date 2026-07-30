@@ -3,6 +3,8 @@ import ImmersiveHero from '@/components/home/ImmersiveHero'
 import Manifesto from '@/components/home/Manifesto'
 import FullBleedBand from '@/components/home/FullBleedBand'
 import EntryCards from '@/components/home/EntryCards'
+import HomeBulletinCard from '@/components/home/HomeBulletinCard'
+import { getLatestBulletin } from '@/lib/data/bulletins'
 import { getLatestSermons } from '@/lib/data/sermons'
 
 export const metadata: Metadata = {
@@ -24,7 +26,7 @@ function firstSentence(summary?: string): string | null {
 }
 
 export default async function HomePage() {
-  const sermons = await getLatestSermons(3)
+  const [sermons, latestBulletin] = await Promise.all([getLatestSermons(3), getLatestBulletin()])
   const sermonSummary = firstSentence(sermons.find((s) => s.summary)?.summary)
 
   return (
@@ -33,6 +35,7 @@ export default async function HomePage() {
       <Manifesto />
       <FullBleedBand />
       <EntryCards sermonSummary={sermonSummary} />
+      {latestBulletin ? <HomeBulletinCard bulletin={latestBulletin} /> : null}
     </div>
   )
 }
