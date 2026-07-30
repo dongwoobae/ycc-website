@@ -1,7 +1,8 @@
 export type ImageMime = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
-export type UploadMime = ImageMime | 'application/x-hwp'
+export type UploadMime = ImageMime | 'application/pdf'
 
-const cfbOleMagic = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1] as const
+// "%PDF-" — 버전 숫자 앞의 하이픈까지 봐야 "%PDF"로 시작하는 다른 텍스트를 배제할 수 있다.
+const pdfMagic = [0x25, 0x50, 0x44, 0x46, 0x2d] as const
 
 function hasBytes(buffer: Buffer, offset: number, bytes: readonly number[]) {
   if (buffer.length < offset + bytes.length) return false
@@ -19,8 +20,8 @@ export function sniffImageMime(buffer: Buffer): ImageMime | null {
   return null
 }
 
-export function sniffHwpMime(buffer: Buffer): 'application/x-hwp' | null {
-  return hasBytes(buffer, 0, cfbOleMagic) ? 'application/x-hwp' : null
+export function sniffPdfMime(buffer: Buffer): 'application/pdf' | null {
+  return hasBytes(buffer, 0, pdfMagic) ? 'application/pdf' : null
 }
 
 export function isAllowedUploadMime(contentType: string): contentType is UploadMime {
@@ -29,6 +30,6 @@ export function isAllowedUploadMime(contentType: string): contentType is UploadM
     contentType === 'image/jpeg' ||
     contentType === 'image/webp' ||
     contentType === 'image/gif' ||
-    contentType === 'application/x-hwp'
+    contentType === 'application/pdf'
   )
 }
