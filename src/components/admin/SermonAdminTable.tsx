@@ -184,13 +184,22 @@ export default function SermonAdminTable({ rows }: { rows: Row[] }) {
                   <tr key={row.id} className="border-t border-line">
                     <td className="px-4 py-3 whitespace-nowrap">{row.sermonDate}</td>
                     <td className="max-w-[14rem] px-4 py-3">
-                      <Link
-                        href={`/admin/sermons/${row.id}/edit`}
-                        title={listTitle}
-                        className="block truncate text-accent-deep hover:underline"
-                      >
-                        {listTitle}
-                      </Link>
+                      {/* 공개 설교만 새 창으로 공개 페이지 미리보기 — 비공개는 공개 라우트가 404. 편집은 Actions 열. */}
+                      {row.isPublished ? (
+                        <a
+                          href={`/sermons/${row.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={`${listTitle} — 공개 페이지 새 창으로 열기`}
+                          className="block truncate hover:underline"
+                        >
+                          {listTitle}
+                        </a>
+                      ) : (
+                        <span title={listTitle} className="block truncate">
+                          {listTitle}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">{row.preacher ?? '—'}</td>
                     <td className="px-4 py-3">{row.worshipType}</td>

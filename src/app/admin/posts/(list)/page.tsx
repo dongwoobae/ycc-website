@@ -5,6 +5,7 @@ import { posts } from '@/lib/db/schema'
 import { deletePost, togglePin } from '@/lib/actions/posts'
 import { verifySession } from '@/lib/dal'
 import { formatKstDate } from '@/lib/date'
+import SubmitButton from '@/components/admin/SubmitButton'
 
 export default async function AdminPostsPage() {
   await verifySession()
@@ -38,7 +39,22 @@ export default async function AdminPostsPage() {
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
                     {formatKstDate(post.publishedAt ?? post.createdAt)}
                   </td>
-                  <td className="px-4 py-3 font-medium text-ink">{post.title}</td>
+                  <td className="px-4 py-3 font-medium text-ink">
+                    {/* 공개 글만 새 창으로 공개 페이지 미리보기 — 비공개 글은 공개 라우트가 404 */}
+                    {post.isPublished ? (
+                      <a
+                        href={`/news/${post.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="공개 페이지 새 창으로 열기"
+                        className="hover:underline"
+                      >
+                        {post.title}
+                      </a>
+                    ) : (
+                      post.title
+                    )}
+                  </td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{post.category}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{post.isPinned ? '고정' : '-'}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
@@ -61,12 +77,13 @@ export default async function AdminPostsPage() {
                         </button>
                       </form>
                       <form action={deletePost.bind(null, post.id)}>
-                        <button
-                          type="submit"
+                        <SubmitButton
+                          confirmMessage="게시글을 삭제합니다. 계속할까요?"
+                          pendingLabel="삭제 중..."
                           className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-surface"
                         >
                           삭제
-                        </button>
+                        </SubmitButton>
                       </form>
                     </div>
                   </td>

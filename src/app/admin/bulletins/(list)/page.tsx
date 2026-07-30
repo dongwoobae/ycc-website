@@ -37,11 +37,28 @@ function EmptyRow() {
 }
 
 function BulletinRow({ bulletin }: { bulletin: Awaited<ReturnType<typeof getBulletinsForAdmin>>[number] }) {
+  // 공개 주보만 새 창으로 공개 페이지 미리보기 — 비공개는 공개 라우트가 404.
+  // 설교 제목이 없으면 날짜 칸이 링크를 대신한다.
+  const publicLink = (label: string) => (
+    <a
+      href={`/bulletins/${bulletin.id}`}
+      target="_blank"
+      rel="noreferrer"
+      title="공개 페이지 새 창으로 열기"
+      className="hover:underline"
+    >
+      {label}
+    </a>
+  )
   return (
     <tr className="border-t border-line">
-      <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{bulletin.bulletinDate}</td>
+      <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
+        {bulletin.isPublished && !bulletin.sermonTitle ? publicLink(bulletin.bulletinDate) : bulletin.bulletinDate}
+      </td>
       <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{[bulletin.volume, bulletin.issue].filter(Boolean).join(' ') || '-'}</td>
-      <td className="px-4 py-3 font-medium text-ink">{bulletin.sermonTitle || '-'}</td>
+      <td className="px-4 py-3 font-medium text-ink">
+        {bulletin.isPublished && bulletin.sermonTitle ? publicLink(bulletin.sermonTitle) : bulletin.sermonTitle || '-'}
+      </td>
       <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{(bulletin.pages ?? []).length}면</td>
       <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{bulletin.isPublished ? '공개' : '비공개'}</td>
       <td className="px-4 py-3">

@@ -49,7 +49,22 @@ export default async function AdminGalleryPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-ink">{album.title}</p>
+                    <p className="font-medium text-ink">
+                      {/* 공개 앨범만 새 창으로 공개 페이지 미리보기 — 비공개는 공개 라우트가 404 */}
+                      {album.isPublished ? (
+                        <a
+                          href={`/gallery/${album.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="공개 페이지 새 창으로 열기"
+                          className="hover:underline"
+                        >
+                          {album.title}
+                        </a>
+                      ) : (
+                        album.title
+                      )}
+                    </p>
                     {album.description ? <p className="mt-1 line-clamp-1 text-xs text-ink-muted">{album.description}</p> : null}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">

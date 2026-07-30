@@ -18,15 +18,16 @@ export default function AdminGalleryListLayout({ children }: { children: React.R
       <AdminPageHero
         title="갤러리 관리"
         image="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80"
-        action={
-          <Link
-            href="/admin/gallery/new"
-            className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-ink shadow-lg ring-1 ring-black/10 transition hover:bg-surface"
-          >
-            새 앨범
-          </Link>
-        }
       />
+      {/* 등록 버튼은 히어로 아래 좌측 — 설교 관리의 "지금 동기화"와 같은 위치 */}
+      <div className="mb-4">
+        <Link
+          href="/admin/gallery/new"
+          className="inline-block rounded-md bg-accent-deep px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          새 앨범
+        </Link>
+      </div>
       {children}
     </>
   )
