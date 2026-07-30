@@ -1,94 +1,57 @@
-import type { Bulletin, BulletinSection } from '@/lib/types'
-import { churchInfo } from '@/lib/church'
+import Link from 'next/link'
+import BulletinGlance from './BulletinGlance'
+import BulletinNotices from './BulletinNotices'
+import BulletinPageViewer from './BulletinPageViewer'
+import BulletinWorshipTimes from './BulletinWorshipTimes'
+import { formatBulletinDate } from '@/lib/bulletin-format'
+import type { BulletinNeighbor } from '@/lib/data/bulletins'
+import type { Bulletin } from '@/lib/types'
 
-function SectionBlock({ section }: { section: BulletinSection }) {
-  return (
-    <section className="min-w-0 rounded-lg border border-line bg-paper p-5 shadow-subtle">
-      <h2 className="text-2xl font-extrabold tracking-tight text-ink">{section.title}</h2>
-      {section.body && (
-        <div className="mt-4 space-y-1 text-sm leading-6 text-ink-muted">
-          {section.body.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
-      )}
-      {section.rows && (
-        <dl className="mt-5 divide-y divide-line">
-          {section.rows.map((row) => (
-            <div key={`${row.label}-${row.value}`} className="grid gap-2 py-3 text-sm sm:grid-cols-[8rem_1fr]">
-              <dt className="font-semibold text-ink">{row.label}</dt>
-              <dd className="leading-6 text-ink-muted">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-      {section.tables?.map((table) => (
-        <div key={table.title} className="mt-5 overflow-x-auto">
-          <h3 className="mb-3 font-semibold text-ink">{table.title}</h3>
-          <table className="w-full min-w-[42rem] border-collapse text-sm">
-            <thead>
-              <tr className="bg-surface text-ink">
-                {table.headers.map((header) => (
-                  <th key={header} className="border border-line px-3 py-2 text-left font-semibold">
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {table.rows.map((row) => (
-                <tr key={row.join('-')}>
-                  {row.map((cell, index) => (
-                    <td key={`${cell}-${index}`} className="border border-line px-3 py-2 leading-6 text-ink-muted">
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
-      {section.offerings && (
-        <div className="mt-5 grid gap-4">
-          {section.offerings.map((offering) => (
-            <div key={offering.category} className="rounded-lg bg-surface p-4">
-              <h3 className="font-semibold text-ink">{offering.category}</h3>
-              <p className="mt-2 leading-7 text-ink-muted">{offering.names.join(' ')}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  )
+interface BulletinViewProps {
+  bulletin: Bulletin
+  previous?: BulletinNeighbor
+  next?: BulletinNeighbor
 }
 
-export default function BulletinView({ bulletin }: { bulletin: Bulletin }) {
+export default function BulletinView({ bulletin, previous, next }: BulletinViewProps) {
   return (
-    <article className="space-y-6">
-      <header className="rounded-lg border border-line bg-paper p-8 text-center shadow-subtle">
-        <p className="text-sm font-semibold text-accent-deep">
-          {bulletin.volume} {bulletin.issue} · {bulletin.bulletinDate}
-        </p>
-        <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-ink">
-          {churchInfo.name} 주보
-        </h1>
-        <p className="mt-5 text-xl text-ink">{bulletin.theme}</p>
-        <p className="mt-2 text-ink-muted">({bulletin.scripture})</p>
-        <div className="mt-6 text-sm leading-6 text-ink-muted">
-          <p>{bulletin.churchInfo.address}</p>
-          <p>
-            전화 {bulletin.churchInfo.phone}
-            {bulletin.churchInfo.phone2 && `, ${bulletin.churchInfo.phone2}`}
-          </p>
-          <p>{bulletin.churchInfo.blog}</p>
+    <article>
+      {/* 데스크탑은 좌(한눈에 정보) / 우(원본) 2단, 모바일은 단일 열 */}
+      <div className="grid gap-5 lg:grid-cols-[1fr_1.15fr]">
+        <div className="space-y-5">
+          <BulletinGlance bulletin={bulletin} />
+          <BulletinWorshipTimes />
+          <BulletinNotices notices={bulletin.notices} />
+          {bulletin.nextWeek ? (
+            <section className="rounded-2xl border border-dashed border-line bg-surface p-5">
+              <h2 className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold-deep">다음 주 예고</h2>
+              <p className="mt-2 text-sm text-ink-muted">{bulletin.nextWeek}</p>
+            </section>
+          ) : null}
         </div>
-      </header>
-      <div className="grid gap-6">
-        {bulletin.sections.map((section) => (
-          <SectionBlock key={section.id} section={section} />
-        ))}
+        <BulletinPageViewer
+          pages={bulletin.pages}
+          bulletinDate={bulletin.bulletinDate}
+          pdfUrl={bulletin.pdfUrl}
+        />
       </div>
+
+      <nav className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-5 text-sm">
+        {previous ? (
+          <Link href={`/bulletins/${previous.id}`} className="font-bold text-accent-deep transition hover:opacity-70">
+            ← {formatBulletinDate(previous.bulletinDate)} 주보
+          </Link>
+        ) : (
+          <span />
+        )}
+        {next ? (
+          <Link href={`/bulletins/${next.id}`} className="font-bold text-accent-deep transition hover:opacity-70">
+            {formatBulletinDate(next.bulletinDate)} 주보 →
+          </Link>
+        ) : (
+          <span />
+        )}
+      </nav>
     </article>
   )
 }
