@@ -1,6 +1,12 @@
 import 'server-only'
 
-import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import {
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { isAllowedUploadMime, type UploadMime } from '@/lib/upload-sniff'
 
@@ -101,8 +107,82 @@ export async function headR2Object(key: string): Promise<{ size: number; content
   }
 }
 
-export function bulletinHwpKey(filename: string) {
-  return `bulletins/${crypto.randomUUID()}-${sanitizeR2Filename(filename)}`
+export type BulletinPageSize = 'full' | 'preview' | 'thumb'
+export type BulletinImageExt = 'webp' | 'jpg'
+
+const bulletinDatePattern = /^\d{4}-\d{2}-\d{2}$/
+const uploadIdPattern = /^[0-9a-fA-F-]{1,64}$/
+
+// 키에 날짜와 업로드 id가 그대로 들어가므로 경로 조작(../)을 막기 위해 형식을 강제한다.
+function bulletinUploadPrefix(date: string, uploadId: string) {
+  if (!bulletinDatePattern.test(date)) throw new Error('invalid bulletin date')
+  if (!uploadIdPattern.test(uploadId)) throw new Error('invalid upload id')
+  return `bulletins/${date}/${uploadId}`
+}
+
+/**
+ * 면 이미지 키. 업로드 id 아래로 스테이징하는 이유는, 날짜만으로 키를 만들면
+ * 수정 중 공개 이미지를 부분적으로 덮어써 1·2면은 새 것 4·5면은 옛 것인 상태가 보이기 때문이다.
+ */
+export function bulletinPageKey(
+  date: string,
+  uploadId: string,
+  pageNumber: number,
+  size: BulletinPageSize,
+  ext: BulletinImageExt
+) {
+  if (!Number.isInteger(pageNumber) || pageNumber < 1) throw new Error('invalid page number')
+  return `${bulletinUploadPrefix(date, uploadId)}/${pageNumber}-${size}.${ext}`
+}
+
+export function bulletinPdfKey(date: string, uploadId: string) {
+  return `${bulletinUploadPrefix(date, uploadId)}/original.pdf`
+}
+
+/**
+ * 브라우저가 R2로 직접 PUT 할 서명 URL. Content-Type이 서명에 포함되므로
+ * 클라이언트가 다른 타입으로 올리면 R2가 403으로 거부한다.
+ *
+ * contentDisposition을 넘기면 그 헤더도 서명에 포함된다. 교차 출처 리소스에는
+ * <a download>가 먹지 않으므로 원본 PDF는 attachment로 올려야 저장 버튼이 동작한다.
+ */
+export async function presignBulletinPut(
+  key: string,
+  contentType: string,
+  contentDisposition?: string,
+  expiresIn = 900
+) {
+  if (!key.startsWith('bulletins/')) throw new Error('invalid key prefix')
+  const signableHeaders = new Set(['content-type'])
+  if (contentDisposition) signableHeaders.add('content-disposition')
+  return getSignedUrl(
+    getR2Client(),
+    new PutObjectCommand({
+      Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
+      Key: key,
+      ContentType: contentType,
+      ...(contentDisposition ? { ContentDisposition: contentDisposition } : {}),
+    }),
+    { expiresIn, signableHeaders }
+  )
+}
+
+/** 프리픽스 아래 객체 키를 모두 모은다. 고아 객체 정리 스크립트가 쓴다. */
+export async function listR2Keys(prefix: string): Promise<string[]> {
+  const keys: string[] = []
+  let continuationToken: string | undefined
+  do {
+    const res = await getR2Client().send(
+      new ListObjectsV2Command({
+        Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    )
+    for (const item of res.Contents ?? []) if (item.Key) keys.push(item.Key)
+    continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined
+  } while (continuationToken)
+  return keys
 }
 
 // sharp가 WASM(@img/sharp-wasm32) 폴백으로 동작하면 출력 버퍼가 SharedArrayBuffer 기반이 되는데,

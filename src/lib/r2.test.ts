@@ -31,7 +31,7 @@ describe('keyFromUrl', () => {
 
   it('returns a bulletins key for the configured public origin', async () => {
     const { keyFromUrl } = await import('./r2')
-    expect(keyFromUrl('https://cdn.example.com/assets/bulletins/file.hwp')).toBe('bulletins/file.hwp')
+    expect(keyFromUrl('https://cdn.example.com/assets/bulletins/2026-07-26/x/1-full.webp')).toBe('bulletins/2026-07-26/x/1-full.webp')
   })
 
   it('returns a gallery key for the configured public origin', async () => {
@@ -103,5 +103,72 @@ describe('presignGalleryVideoPut', () => {
   it('gallery/ 밖 키는 거부한다', async () => {
     const { presignGalleryVideoPut } = await import('./r2')
     await expect(presignGalleryVideoPut('bulletins/evil.mp4', 'video/mp4')).rejects.toThrow('invalid key prefix')
+  })
+})
+
+describe('bulletin keys', () => {
+  const uploadId = '0189d3f0-1111-4222-8333-444455556666'
+
+  beforeEach(() => {
+    process.env.R2_PUBLIC_URL = 'https://cdn.example.com/assets/'
+  })
+
+  it('면 이미지 키에 날짜·업로드id·면번호·크기가 들어간다', async () => {
+    const { bulletinPageKey } = await import('./r2')
+    expect(bulletinPageKey('2026-07-26', uploadId, 1, 'full', 'webp')).toBe(
+      `bulletins/2026-07-26/${uploadId}/1-full.webp`
+    )
+    expect(bulletinPageKey('2026-07-26', uploadId, 12, 'thumb', 'jpg')).toBe(
+      `bulletins/2026-07-26/${uploadId}/12-thumb.jpg`
+    )
+  })
+
+  it('원본 PDF 키는 업로드 폴더 아래 original.pdf 다', async () => {
+    const { bulletinPdfKey } = await import('./r2')
+    expect(bulletinPdfKey('2026-07-26', uploadId)).toBe(`bulletins/2026-07-26/${uploadId}/original.pdf`)
+  })
+
+  it('날짜 형식이 틀리면 던진다 — 경로 조작 차단', async () => {
+    const { bulletinPdfKey } = await import('./r2')
+    expect(() => bulletinPdfKey('2026-7-26', uploadId)).toThrow('invalid bulletin date')
+    expect(() => bulletinPdfKey('../../etc', uploadId)).toThrow('invalid bulletin date')
+  })
+
+  it('업로드 id가 uuid 형식이 아니면 던진다', async () => {
+    const { bulletinPdfKey } = await import('./r2')
+    expect(() => bulletinPdfKey('2026-07-26', '../evil')).toThrow('invalid upload id')
+  })
+
+  it('면 번호가 1 이상 정수가 아니면 던진다', async () => {
+    const { bulletinPageKey } = await import('./r2')
+    expect(() => bulletinPageKey('2026-07-26', uploadId, 0, 'full', 'webp')).toThrow('invalid page number')
+    expect(() => bulletinPageKey('2026-07-26', uploadId, 1.5, 'full', 'webp')).toThrow('invalid page number')
+  })
+
+  it('bulletinHwpKey는 더 이상 존재하지 않는다', async () => {
+    const r2 = await import('./r2')
+    expect('bulletinHwpKey' in r2).toBe(false)
+  })
+})
+
+describe('presignBulletinPut', () => {
+  beforeEach(() => {
+    process.env.R2_ACCOUNT_ID = 'acc'
+    process.env.R2_ACCESS_KEY_ID = 'key'
+    process.env.R2_SECRET_ACCESS_KEY = 'secret'
+    process.env.R2_BUCKET_NAME = 'bucket'
+    process.env.R2_PUBLIC_URL = 'https://cdn.example.com/assets/'
+    vi.resetModules()
+  })
+
+  it('bulletins/ 이외의 프리픽스를 거부한다', async () => {
+    const { presignBulletinPut } = await import('./r2')
+    await expect(presignBulletinPut('gallery/evil.webp', 'image/webp')).rejects.toThrow('invalid key prefix')
+  })
+
+  it('bulletins/ 키에는 서명 URL을 발급한다', async () => {
+    const { presignBulletinPut } = await import('./r2')
+    const url = await presignBulletinPut('bulletins/2026-07-26/x/1-full.webp', 'image/webp')
+    expect(url).toContain('bulletins/2026-07-26/x/1-full.webp')
   })
 })
