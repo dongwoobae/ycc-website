@@ -60,13 +60,20 @@ export interface BulletinNotice {
   when?: string
 }
 
-/** 원본 주보 면 이미지. 배열 순서가 면 순서다. */
+/**
+ * 원본 주보 면 이미지. 배열 순서가 면 순서다.
+ * width·height는 full 기준이며 세 크기의 종횡비가 같으므로 한 번만 저장한다.
+ */
 export interface BulletinPage {
-  url: string
   width: number
   height: number
+  fullUrl: string     // 긴 변 2000px — 라이트박스
+  previewUrl: string  // 긴 변 1000px — 인라인 큰 이미지, 목록 표지, 홈 카드
+  thumbUrl: string    // 긴 변 320px — 인라인 썸네일 스트립
 }
 ```
+
+**유니크 제약**: `bulletin_date`에 unique index를 건다. 주보는 날짜로 식별되며, 같은 날짜의 주보를 다시 만드는 것은 언제나 실수다(수정하려면 편집한다). 중복 레코드가 생기면 목록에 같은 날짜가 두 번 나오고 홈 카드가 어느 것을 집을지 불확정해진다.
 
 ### 판단 근거
 
@@ -81,14 +88,36 @@ export interface BulletinPage {
 ### 관리자 플로우
 
 1. `/admin/bulletins/new`에서 주보일과 원본 파일을 고른다. **PDF 1개** 또는 **이미지 여러 장**을 받는다.
-2. PDF면 브라우저가 pdf.js로 면별 렌더 → canvas → WebP. 긴 변 2000px으로 **축소만** 클램프(원본이 더 작으면 그대로 두고 확대하지 않는다), quality 0.82.
-   - 이미지를 직접 올리는 경로도 같은 규칙으로 WebP로 변환한다. 따라서 면 키의 확장자는 **항상 `.webp`**이며 presign의 `contentType`은 `image/webp` 하나로 고정된다. `application/pdf`는 원본 PDF 키에만 쓴다.
-3. 서버 액션 `prepareBulletinUpload(date, pageCount, hasPdf)`를 1회 호출해 presigned URL 배열을 받는다.
+2. PDF면 브라우저가 pdf.js로 면별 렌더 → canvas → WebP를 **세 크기**로 만든다. 긴 변 2000 / 1000 / 320px으로 **축소만** 클램프(원본이 더 작으면 그대로 두고 확대하지 않는다), quality 0.82.
+   - 이미지를 직접 올리는 경로도 같은 규칙으로 WebP 세 크기로 변환한다. 따라서 면 키의 확장자는 **항상 `.webp`**이며 presign의 `contentType`은 `image/webp` 하나로 고정된다. `application/pdf`는 원본 PDF 키에만 쓴다.
+   - **면은 순차 렌더한다.** 병렬 렌더는 iOS Safari에서 canvas 메모리를 터뜨린다. 한 면을 끝내면 `page.cleanup()`을 호출하고 canvas 크기를 0으로 줄여 즉시 해제한다.
+   - **상한**: PDF 12면, 파일 40MB. 초과하면 업로드 전에 거부하고 사유를 표시한다.
+   - **WebP 인코딩 폴백**: `canvas.toBlob('image/webp')`가 `null`을 주는 구형 브라우저에서는 `image/jpeg`로 폴백하고 키 확장자를 `.jpg`로 바꾼다. 이 경우 `contentType`도 `image/jpeg`로 발급받는다.
+3. 서버 액션 `prepareBulletinUpload({ date, pageCount, hasPdf, imageMime })`를 1회 호출해 presigned URL 배열을 받는다. 액션이 **업로드 고유 id(`crypto.randomUUID()`)를 발급**하고 그 아래로 키를 만든다.
 4. 브라우저가 `Promise.all`로 R2에 직접 PUT한다 (원본 PDF 포함).
 5. 「한눈에」 필드를 입력하고, 공개 화면 컴포넌트를 그대로 재사용한 미리보기로 확인한 뒤 게시한다.
-6. `createBulletin`이 각 키를 `headR2Object`로 검증한 다음 DB에 저장한다.
+6. `createBulletin`이 각 키를 `headR2Object`로 검증한 다음 DB에 저장한다. **DB 저장이 성공한 뒤에** 그 주보가 이전에 쓰던 업로드 id의 객체를 `deleteR2BestEffort`로 지운다.
 
 presign을 **배열로 한 번에** 발급하므로 갤러리처럼 별도 API Route가 필요 없다. 갤러리는 서버 액션 직렬화 때문에 `/api/admin/gallery/upload` Route를 뒀지만, 여기서는 액션 1회 + 브라우저 병렬 PUT으로 끝난다.
+
+### 키 전략 — 업로드 단위 스테이징
+
+R2 키에 업로드 id를 넣는다.
+
+```
+bulletins/{YYYY-MM-DD}/{uploadId}/{n}-full.webp
+bulletins/{YYYY-MM-DD}/{uploadId}/{n}-preview.webp
+bulletins/{YYYY-MM-DD}/{uploadId}/{n}-thumb.webp
+bulletins/{YYYY-MM-DD}/{uploadId}/original.pdf
+```
+
+날짜만으로 키를 만들면 **수정 중 공개 중인 이미지를 부분적으로 덮어쓴다** — 새 PDF의 3면을 올리는 도중 교인이 상세를 열면 1·2면은 새 것, 4·5면은 옛 것인 상태를 본다. 업로드 id로 스테이징하면 새 세트가 완성되고 DB가 그것을 가리킬 때까지 공개 중인 세트가 손상되지 않으며, 교체는 DB 한 줄 갱신으로 원자적이 된다.
+
+**부분 실패**는 DB를 쓰지 않는 것으로 처리한다. 일부 면 PUT이 실패하면 `createBulletin`을 호출하지 않으므로 공개 데이터는 그대로다. 실패한 업로드 id의 객체는 고아로 남지만, 다음 성공 업로드 시점의 정리 대상에 포함시켜 회수한다.
+
+### PDF 다운로드 헤더
+
+교차 출처(R2 공개 도메인) 리소스에는 `<a download>`가 먹지 않아 브라우저가 그냥 열어버린다. 원본 PDF를 PUT할 때 `PutObjectCommand`에 `ContentDisposition: 'attachment; filename="..."'`를 넣고 `signableHeaders`에 `content-disposition`을 추가해, 클라이언트가 같은 헤더를 보내도록 한다. Vercel을 거쳐 프록시하지 않으므로 함수 대역폭을 쓰지 않는다.
 
 ### 왜 브라우저에서 변환하나
 
@@ -97,7 +126,12 @@ presign을 **배열로 한 번에** 발급하므로 갤러리처럼 별도 API R
 - `src/lib/client-image-compress.ts` — canvas → WebP 압축
 - `src/lib/client-video-upload.ts` — XHR presigned PUT + 진행률 (`putWithProgress`)
 
-Next 16은 `new Worker()` 표현식을 번들러가 처리한다 (`node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md:177`). pdf.js 워커는 이 경로로 로드하며, 구현 시 해당 문서를 다시 확인한다.
+Next 16은 `new Worker()` 표현식을 번들러가 처리한다 (`node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md:177`). 다만 **그 문서는 매직 코멘트 처리만 설명하며 pdf.js 워커 번들 성공을 보장하지 않는다.** 구현 첫 단계에서 다음을 실제로 검증한다.
+
+1. 개발 서버(Turbopack)와 `next build` 프로덕션 번들 **양쪽**에서 워커가 초기화되는지
+2. 실패하면 폴백 순서: (a) `pdfjs.GlobalWorkerOptions.workerSrc`를 `public/`에 복사한 워커 파일로 지정 → (b) 워커 없이 메인 스레드 렌더 → (c) 그래도 안 되면 PDF 경로를 포기하고 **이미지 직접 업로드만** 지원
+
+(c)까지 가더라도 「한눈에」 카드와 라이트박스는 온전히 동작한다. PDF 변환은 편의 기능이고 이미지 업로드 경로가 기능적 하한선이다.
 
 ### 모듈 경계
 
@@ -174,15 +208,37 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 
 드래그 이동 범위는 확대된 내용이 화면을 벗어난 만큼으로 클램프한다 (여백이 보이도록 끌리지 않는다). 줌이 `맞춤`이 아닐 때는 스프레드 단위 이동 대신 드래그가 우선한다.
 
-라이트박스 자체는 `requestFullscreen()`으로 진입해 브라우저 크롬까지 치운다.
+줌 상태 전이와 드래그 클램프 계산은 `lib/bulletin-zoom.ts`의 순수 함수로 분리한다 (`nextZoom(step)`, `clampOffset(offset, scale, viewport, content)`). DOM 없이 node 환경에서 테스트할 수 있다.
+
+#### 라이트박스는 고정 오버레이다 — Fullscreen API에 의존하지 않는다
+
+**iOS Safari는 임의 요소의 `requestFullscreen()`을 지원하지 않는다** (`<video>`만 가능). 따라서 라이트박스는 `position: fixed; inset: 0`인 오버레이로 구현하고, Fullscreen API는 **지원되는 환경에서만 부가 적용**한다. 실패해도 라이트박스는 정상 동작해야 한다.
+
+접근성·동작 요건:
+
+- `role="dialog"` + `aria-modal="true"` + 제목 연결(`aria-labelledby`)
+- 열릴 때 포커스를 닫기 버튼으로 이동, 닫힐 때 진입 지점(큰 이미지 또는 버튼)으로 복귀
+- 포커스를 오버레이 안에 가둔다
+- `Escape`로 닫기
+- 열린 동안 배경 스크롤 잠금, 닫을 때 원래 스크롤 위치 복원
 
 #### 이미지 로딩 비용
 
-2000px WebP 한 장이 대략 300~600KB이므로 3면 스프레드는 최대 1.8MB를 동시에 받는다. 다음 규칙으로 통제한다.
+2000px WebP 한 장이 대략 300~600KB이므로 3면 스프레드는 최대 1.8MB를 동시에 받는다.
 
-- 인라인 썸네일 스트립과 큰 이미지는 `next/image`의 반응형 `sizes`로 **표시 크기에 맞는 축소본**만 받는다. 원본 2000px을 그대로 내려받지 않는다
+**`next/image`의 `sizes`에 의존할 수 없다.** `next.config.ts:38`이 `images.unoptimized: true`이므로 Next는 축소본을 생성하지 않고 원본 URL을 그대로 내려준다. `sizes`를 써도 2000px 파일이 그대로 받아진다. 그래서 **업로드 시점에 세 크기를 직접 만들어 저장**한다(위 1장 `BulletinPage`). 어차피 클라이언트에서 canvas로 렌더하므로 배율만 바꿔 세 번 인코딩하면 되고, 서버 이미지 최적화 설정을 건드리지 않는다.
+
+용도별 배정:
+
+| 위치 | 사용 크기 | 대략 용량 |
+|---|---|---|
+| 인라인 썸네일 스트립 | `thumbUrl` (320px) | 장당 ~25KB |
+| 인라인 큰 이미지, 목록 표지, 홈 카드 | `previewUrl` (1000px) | 장당 ~120KB |
+| 라이트박스 | `fullUrl` (2000px) | 장당 ~450KB |
+
 - 첫 화면 밖 이미지는 `loading="lazy"`
-- 원본 해상도는 라이트박스에서만 쓰고, 프리로드는 **다음 스프레드 한 세트로 제한**한다
+- `fullUrl`은 라이트박스에서만 쓰고, 프리로드는 **다음 스프레드 한 세트로 제한**한다
+- 라이트박스를 열 때 `previewUrl`을 먼저 보여주고 `fullUrl` 로드가 끝나면 교체한다 — 이미 인라인에서 받아둔 파일이라 즉시 뜬다
 
 ### 3-3. 목록 `/bulletins`
 
@@ -195,7 +251,16 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 
 ### 3-4. 홈 노출
 
-`getLatestBulletin()`은 현재 아무도 쓰지 않는 죽은 export다. 이번에 되살려 홈에 「이번 주 한눈에」 카드의 축약판(`HomeBulletinCard`)을 얹는다. 설교 제목·본문·설교자 정도만 보여주고, 클릭하면 `/bulletins/{id}` 상세로 이동한다.
+`getLatestBulletin()`은 현재 아무도 쓰지 않는 죽은 export다. 이번에 되살려 홈에 「이번 주 한눈에」 카드의 축약판(`HomeBulletinCard`)을 얹는다. 설교 제목·본문·설교자와 1면 `previewUrl` 썸네일을 보여주고, 카드 전체가 `/bulletins/{id}` 상세로 가는 링크다.
+
+**마운트 위치**: `src/app/page.tsx`. 홈은 현재 주보를 전혀 참조하지 않으므로 여기에 섹션을 추가하는 것이 유일한 변경점이다(기존 컬럼을 쓰지 않아 컬럼 삭제로 깨지지는 않는다). 게시된 주보가 없으면 섹션 자체를 렌더하지 않는다.
+
+### 3-5. 접근성 · 메타데이터
+
+- **alt 텍스트**: 면 이미지는 `"{YYYY년 M월 D일} 주보 {n}면"`. 이미지 방식은 본문을 스크린리더에 전달하지 못하므로 alt로 최소한 위치는 알린다. 「이번 주 한눈에」 카드가 텍스트로 존재하는 것이 실질적 대안이다
+- **OG 이미지**: 상세 `generateMetadata`에서 1면 `previewUrl`을 `openGraph.images`로 쓴다. `pages`가 비면 기존 기본 OG 이미지로 폴백한다
+- **sitemap**: `src/lib/sitemap.ts:44`가 이미 `/bulletins/{id}`를 포함하므로 변경 없다
+- 라이트박스 이동 버튼에 `aria-label`("이전 면", "다음 면")을 붙인다
 
 ## 4. 삭제 범위
 
@@ -206,27 +271,49 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 | `src/lib/hwp/parse.ts` (385줄) + `src/lib/hwp/parse.test.ts` | 소비처가 주보뿐 |
 | `cfb` 의존성 (`package.json`) | `parse.ts`가 유일한 사용처 |
 | `sniffHwpMime` + `UploadMime`의 `'application/x-hwp'` | 주보 업로드 외 사용처 없음 |
-| `r2.ts`의 `bulletinHwpKey` | 호출부가 없는 죽은 함수. **따라서 R2에 주보 파일이 없어 정리 작업 불필요** |
+| `r2.ts`의 `bulletinHwpKey` | 현재 호출부가 없는 죽은 함수 |
 | `types.ts`의 `BulletinSection`·`BulletinTable`·`BulletinOffering` | 소비처 12개 파일 전부 주보 계열 |
 | `BulletinHwpUpload` `BulletinSectionEditor` `BulletinSectionText` `BulletinRowsEditor` `BulletinTablesEditor` `BulletinOfferingsEditor` | 표 편집 UI 전량 |
 
+**R2 고아 객체 정리 — 별도 확인 필요.** `bulletinHwpKey`는 지금 호출부가 없지만 `c9060df feat: 주보 hwp 업로드 + 섹션 관리 CRUD` 시점에는 실제로 쓰였고, 키가 `bulletins/{uuid}-{파일명}.hwp` 형태였다. 따라서 R2 버킷에 과거 업로드분이 남아 있을 수 있다. 배포 전에 `bulletins/` 프리픽스를 인벤토리해 새 키 규칙(`bulletins/{날짜}/{uploadId}/...`)에 속하지 않는 객체를 확인하고 지운다. 이건 코드 변경이 아니라 운영 작업이므로 구현 계획의 별도 단계로 둔다.
+
 **재작성**: `lib/types.ts`(`Bulletin`) · `lib/bulletin-editor.ts` · `lib/actions/bulletins.ts` · `lib/data/bulletins.ts` · `components/admin/BulletinForm.tsx` · `components/bulletins/BulletinView.tsx` · `app/bulletins/page.tsx` · `app/bulletins/[id]/page.tsx`
 
-**신규**: `lib/bulletin-pdf.ts` · `lib/bulletin-spread.ts`(스프레드 인덱스 계산, 순수 함수) · `components/bulletins/BulletinGlance.tsx` · `BulletinWorshipTimes.tsx` · `BulletinNotices.tsx` · `BulletinPageViewer.tsx`(인라인) · `BulletinLightbox.tsx`(전체화면 스프레드) · `components/home/HomeBulletinCard.tsx` · `components/admin/BulletinGlanceFields.tsx` · `BulletinNoticesEditor.tsx` · `BulletinOriginUpload.tsx`
+**컬럼 삭제로 빌드가 깨지므로 반드시 함께 고쳐야 하는 곳** (초기 스펙에서 누락됨)
+
+- `src/app/admin/bulletins/page.tsx:54` — `bulletin.theme`을 목록 열에 렌더한다. `sermon_title`로 교체
+- `src/app/admin/bulletins/[id]/edit/page.tsx:22` — `initialValue`가 `bulletin.theme`과 `bulletin.sections`를 읽는다. 새 필드 집합으로 교체
+- `src/app/page.tsx` — 홈 카드 마운트(3-4). 컬럼 참조가 없어 빌드는 깨지지 않지만 이 변경 없이는 홈 카드가 존재하지 않는다
+
+**신규**: `lib/bulletin-pdf.ts` · `lib/bulletin-spread.ts`(스프레드 인덱스 계산, 순수 함수) · `lib/bulletin-zoom.ts`(줌·드래그 계산, 순수 함수) · `components/bulletins/BulletinGlance.tsx` · `BulletinWorshipTimes.tsx` · `BulletinNotices.tsx` · `BulletinPageViewer.tsx`(인라인) · `BulletinLightbox.tsx`(전체화면 스프레드) · `components/home/HomeBulletinCard.tsx` · `components/admin/BulletinGlanceFields.tsx` · `BulletinNoticesEditor.tsx` · `BulletinOriginUpload.tsx`
 
 스프레드 인덱스 계산(면 수 · 현재 위치 · 폭 변경 시 재계산)은 `lib/bulletin-spread.ts`의 순수 함수로 분리한다. DOM 없이 단위 테스트할 수 있고, 라이트박스 컴포넌트는 상태 보관과 렌더링만 맡는다.
 
 ## 5. 마이그레이션
 
-순서가 중요하다.
+### SQL 순서
 
-1. `DELETE FROM bulletins` — 기존 레코드 삭제 (사용자 확정)
+1. `DELETE FROM bulletins` — 기존 레코드 삭제 (사용자 확정, 되돌릴 수 없음)
 2. `DROP COLUMN sections`, `DROP COLUMN theme`
 3. 신규 컬럼 추가: `sermon_title`, `preacher`, `hymns`, `responsive_reading`, `next_week`, `pdf_url`, `notices`, `pages`
+4. `bulletin_date`에 unique index 생성
 
 레코드 삭제를 먼저 하지 않으면 `sermon_title`과 `pages`가 빈 기존 행이 남아 목록·상세가 깨진다. `notices`·`pages`는 `NOT NULL DEFAULT '[]'::jsonb`로 선언해 이후 행에서도 널 분기를 없앤다.
 
 `drizzle-kit generate`로 생성하고, `DELETE`문은 생성된 SQL 앞에 손으로 넣는다.
+
+### 배포 순서 — 파괴적 마이그레이션의 불일치 창
+
+이 마이그레이션은 되돌릴 수 없고, **구 코드와 신 코드 어느 쪽도 전후 스키마를 함께 지원하지 않는다.** 마이그레이션이 수동(`npm run db:migrate`)이므로 순서를 못박는다.
+
+1. 브랜치를 배포해 신 코드가 Vercel에 올라간 것을 확인한다 (프로덕션 도메인 전환 전, 프리뷰 배포에서 빌드 성공 확인)
+2. `npm run db:migrate` 실행
+3. 즉시 프로덕션 배포 승격
+4. `revalidatePath('/')`, `/bulletins` 캐시 무효화가 걸리도록 첫 주보를 업로드한다
+
+2와 3 사이에 **구 코드가 신 스키마를 조회하는 짧은 창**이 생겨 `/bulletins`와 홈이 500을 낼 수 있다. 이 사이트는 트래픽이 낮고, 어차피 1단계의 `DELETE` 때문에 첫 주보를 올릴 때까지 주보 목록이 비어 있으므로 이 창을 **수용한다.** 무중단을 위해 컬럼을 단계적으로 추가·삭제하는 2단 배포는 이 규모에 과하다.
+
+되돌릴 수 없는 단계이므로, 2단계 실행 전에 Neon 콘솔에서 브랜치 스냅샷을 떠 둔다.
 
 ## 6. 테스트 전략
 
@@ -241,14 +328,18 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 - `lib/upload-sniff.test.ts` — `sniffPdfMime`이 `%PDF-`만 통과
 - `lib/actions/bulletins` — `headR2Object`로 확인되지 않은 키의 저장 거부
 
-**컴포넌트**
+- `lib/bulletin-zoom.test.ts` — 줌 단계 전이(맞춤 → 1× → 2×, 양끝 클램프), `clampOffset`이 여백을 노출하지 않는지, 배율이 `맞춤`일 때 오프셋이 0으로 리셋되는지
+- `lib/bulletin-pdf.test.ts` — WebP 인코딩이 `null`을 줄 때 JPEG로 폴백하고 확장자·contentType이 함께 바뀌는지, 면 수·용량 상한 초과 시 업로드 전에 거부하는지
+- `lib/r2.ts` — 업로드 id가 든 새 키 규칙 생성, `bulletins/` 외 프리픽스 거부
 
-- `BulletinLightbox` — 줌 상태 전이(맞춤 → 1× → 2× 클램프), 드래그 경계, 줌이 `맞춤`이 아닐 때 스프레드 이동보다 드래그가 우선하는지
+**컴포넌트 테스트는 넣지 않는다.** `vitest.config.ts:10`이 `environment: 'node'`이고 jsdom·Testing Library가 설치돼 있지 않다. 이 repo에는 현재 컴포넌트 테스트가 하나도 없으며, 그 둘을 추가하는 것은 이 작업의 범위를 넘는다. 대신 **판정 로직을 `bulletin-spread.ts`·`bulletin-zoom.ts` 순수 함수로 뽑아 node 환경에서 검증하고**, 실제 상호작용은 playwright e2e로 덮는다. 컴포넌트에는 상태 보관과 렌더링만 남긴다.
 
 **e2e** (현재 주보 e2e는 0개)
 
-- 목록 진입 → 상세 이동 → **썸네일 클릭 시 라이트박스가 열리지 않고 큰 이미지만 바뀌는지** → 「원본 크게 보기」로 라이트박스 열기 → 좌우 이동 → 줌 버튼 → 닫기
+- 목록 진입 → 상세 이동 → **썸네일 클릭 시 라이트박스가 열리지 않고 큰 이미지만 바뀌는지** → 「원본 크게 보기」로 라이트박스 열기 → 좌우 이동 → 줌 버튼 → `Escape`로 닫기 → 포커스가 진입 지점으로 복귀하는지
 - 데스크탑·모바일 뷰포트에서 동시 표시 면 수가 3면/1면으로 갈리는지
+- `pages`가 빈 주보의 상세·목록이 깨지지 않는지 (뷰어 영역·「PDF 저장」 버튼 미렌더)
+- 관리자: 동일 주보일 중복 생성이 unique 제약으로 막히고 사용자에게 사유가 표시되는지
 
 ## 7. 범위에서 제외
 
