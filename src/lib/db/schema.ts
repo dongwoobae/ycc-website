@@ -9,9 +9,10 @@ import {
   jsonb,
   check,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
-import type { BulletinSection, SermonChapter } from '../types'
+import type { BulletinNotice, BulletinPage, SermonChapter } from '../types'
 import type { ThumbnailCandidate, ThumbnailStyle, ThumbnailText } from '@/lib/thumbnails/types'
 
 // Better Auth 테이블 (user/session/account/verification) — drizzle push 포함용 재노출
@@ -111,14 +112,25 @@ export const bulletins = pgTable('bulletins', {
   bulletinDate: date('bulletin_date').notNull(),
   volume: text('volume'),
   issue: text('issue'),
-  theme: text('theme'),
+  sermonTitle: text('sermon_title'),
   scripture: text('scripture'),
-  sections: jsonb('sections').$type<BulletinSection[]>().notNull().default(sql`'[]'::jsonb`),
+  preacher: text('preacher'),
+  hymns: text('hymns'),
+  responsiveReading: text('responsive_reading'),
+  nextWeek: text('next_week'),
+  pdfUrl: text('pdf_url'),
+  notices: jsonb('notices').$type<BulletinNotice[]>().notNull().default(sql`'[]'::jsonb`),
+  pages: jsonb('pages').$type<BulletinPage[]>().notNull().default(sql`'[]'::jsonb`),
   isPublished: boolean('is_published').notNull().default(false),
   createdBy: text('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
-}, (t) => [index('bulletins_published_date_idx').on(t.isPublished, t.bulletinDate)])
+}, (t) => [
+  index('bulletins_published_date_idx').on(t.isPublished, t.bulletinDate),
+  // 주보는 날짜로 식별된다. 같은 날짜를 다시 만드는 것은 항상 실수이며(수정하려면 편집한다),
+  // 중복되면 목록에 같은 날짜가 두 번 나오고 홈 카드가 어느 것을 집을지 불확정해진다.
+  uniqueIndex('bulletins_date_key').on(t.bulletinDate),
+])
 
 export const galleryAlbums = pgTable('gallery_albums', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
