@@ -23,13 +23,13 @@
 
 ## 🚀 핵심 성과
 
-- **1인 개발 전 과정 수행** — 요구사항 정리부터 정보 구조, UI, 백엔드, 데이터베이스, 인프라, 배포·운영까지 단독으로 설계하고 구현
-- **설교 콘텐츠 자동화** — YouTube WebSub, QStash, RapidAPI, Gemini를 연결해 영상 등록부터 자막 수집·구조화 요약까지 이벤트 기반으로 자동 처리
-- **서버리스 신뢰성 설계** — 서명 검증, 원자적 작업 선점, 지수 백오프, 정합성 cron으로 중복 실행과 일시 장애에 대응
-- **AI 썸네일 제작 시스템** — 생성형 AI 배경과 코드 기반 한글 텍스트 합성, 인물 누끼, WebP 최적화를 결합한 관리자 워크플로 구현
-- **HWP 구조화·정보 보호** — HWP 5.0 바이너리에서 문단과 표를 직접 복원하고, 헌금자 명단·계좌정보를 파싱 단계에서 제외
-- **운영 품질 확보** — Better Auth, R2 업로드 검증, 쿠키리스 방문 분석, Vitest·PGlite·Playwright 및 GitHub Actions 검증 체계 구성
+- **1인 개발 전 과정 수행** — 요구사항 정리부터 정보 구조, UI, 백엔드, 데이터베이스, 인프라, 배포·운영까지 단독 수행
+- **운영 부담 자동화** — 설교는 YouTube 업로드만으로 등록·자막·AI 요약·썸네일까지 채워지고, 주보는 HWP 업로드 한 번으로 웹 구조화 렌더링까지 이어짐
+- **서버리스 신뢰성 설계** — 서명 검증, 원자적 작업 선점, 지연 발행 기반 백오프, 정합성 cron으로 중복 실행과 일시 장애에 대응
+- **운영 품질 확보** — Better Auth, R2 업로드 검증, 쿠키리스 방문 분석, Vitest·PGlite·Playwright와 GitHub Actions 검증 체계
 - **서비스 주소** — [https://www.ycjc.kr](https://www.ycjc.kr)
+
+> 설계 배경과 의사결정 과정은 [포트폴리오 케이스 스터디](https://dwoobae.com/projects/ycc-website)에, 구현·운영 상세는 이 문서에 정리했습니다.
 
 ---
 
@@ -51,16 +51,16 @@
 - 📰 **교회 소식** — 공지, 소식, 행사 게시글 목록/상세
 - 📖 **주보** — 주보 목록/상세, 날짜별 발행본 조회
 - 🖼️ **갤러리** — 교회 행사와 공동체 사진·영상 앨범, 포스터 그리드와 라이트박스 재생
-- 🔎 **SEO 기본 구성** — sitemap, robots, metadata, OG 정보, JSON-LD(Church) 구조화 데이터
-- ♿ **접근성 보조** — 본문 바로가기 링크, 의미 있는 레이아웃 구조
-- 🧯 **전역 에러/404 페이지** — error, global-error, not-found 커스텀 화면
+- 🔎 **SEO·접근성·에러 화면** — sitemap, robots, metadata, OG, JSON-LD(Church), 본문 바로가기 링크, 커스텀 error/404 화면
 
 ### 관리자 페이지 (`/admin`)
 
 Better Auth 이메일/비밀번호 로그인으로 보호되며, 공개 회원가입은 비활성화되어 있습니다.
 
-- 🔒 **관리자 로그인** — `/sign-in`에서 로그인, 세션 기반 관리자 접근
-- 📝 **게시글 관리** — 공지/소식/행사 작성, 수정, 발행 여부, 고정 여부 관리
+- 🔒 **관리자 로그인** — `/sign-in`에서 로그인, 세션 기반 관리자 접근 (쿠키 캐시로 세션 DB 왕복 절감)
+- 📝 **게시글 관리** — 공지/소식/행사 작성·수정, 바로 공개/예약 게시/비공개 상태와 고정 여부 관리
+- ⏰ **예약 게시** — 지정한 KST 시각에 소식 자동 공개. QStash 지연 콜백이 공개 시각에 캐시를 재검증해 정시 노출, 저장 시점에 예약 시각이 지났으면 즉시 공개로 낙관 처리
+- 🧭 **관리 목록 공통 UX** — 등록 버튼을 히어로 아래 좌측에 통일 배치, 목록 제목 클릭 시 공개 페이지 새 창 열기(공개 항목만), 삭제는 확인 모달로 보호
 - 📖 **주보 관리** — 날짜, 권/호, 주제, 본문, 섹션 JSON 기반 편집
 - 📄 **주보 HWP 업로드** — HWP 파일 파싱 후 주보 편집 UI에 반영
 - 🧩 **주보 섹션 편집** — 텍스트, 행 목록, 표, 헌금자 명단 등 구조화 편집
@@ -71,6 +71,7 @@ Better Auth 이메일/비밀번호 로그인으로 보호되며, 공개 회원�
 - 📡 **SSE 진행 스트림** — 썸네일 생성·채널 동기화 진행 상황을 실시간 스트리밍으로 표시
 - 📊 **방문 분석 대시보드** — 자체 수집한 방문 로그 기반 방문자/페이지뷰/체류시간 통계
 - 🧯 **운영 로그** — 주요 관리자 작업과 서버 로그 확인
+- ⏳ **페이지별 스켈레톤 로딩** — 목록 히어로는 라우트 그룹 layout에 두어 로딩 중 리마운트로 진입 애니메이션이 재생되지 않게 처리
 - 👤 **관리자 계정 스크립트** — CLI로 관리자 생성/삭제
 
 ### 보안·운영 기능
@@ -231,6 +232,7 @@ src/
         ingest-video/route.ts        # 신규 영상 적재
         fetch-transcript/route.ts    # 자막 fetch·캐시
         summarize/route.ts           # Gemini 요약(claim 선점)
+        publish-post/route.ts        # 예약 게시 공개 시각 캐시 재검증 (QStash 지연 콜백)
         retry-summaries/route.ts     # 실패 요약 재시도 (QStash cron)
         websub-renew/route.ts        # WebSub 재구독 (QStash cron)
         reconcile-sermons/route.ts   # 채널↔DB 정합성 백필 (QStash cron)
@@ -259,6 +261,7 @@ src/
     data/                            # 공개 페이지·관리자 대시보드 데이터 조회
     actions/                         # 관리자 Server Actions (썸네일 생성/요약 트리거 포함)
     ai/                              # Gemini 클라이언트, 설교 요약 생성
+    posts/                           # 게시글 경로 재검증 유틸 (액션·예약 공개 잡 공유)
     sermons/                         # 동기화·적재·요약 claim/재시도·정합성 백필·제목 분류·ISR revalidate
     youtube/                         # YouTube 클라이언트, RapidAPI 채널, WebSub 구독/검증
     thumbnails/                      # 배경 생성·누끼·자막밴드·텍스트 합성·구절 추출·WebP 변환
@@ -292,7 +295,7 @@ scripts/
   delete-user.ts                     # 사용자 계정 삭제
 drizzle/                             # Drizzle 마이그레이션과 메타데이터
 public/                              # map.html, 아이콘 등 경량 정적 자산 (이미지·영상 원본은 R2)
-e2e/                                 # 갤러리 업로드·서브내비 Playwright 회귀 테스트
+e2e/                                 # 갤러리 업로드·서브내비·주보·페이지 크롬 Playwright 회귀 테스트
 ```
 
 ---
@@ -377,7 +380,7 @@ posts
   attachment_url text
   is_pinned      boolean not null default false
   is_published   boolean not null default false
-  published_at   timestamptz
+  published_at   timestamptz            -- 게시 시각. 미래면 예약 게시(공개 페이지 비노출)
   created_by     text
   created_at     timestamptz default now()
   updated_at     timestamptz default now()
@@ -651,8 +654,8 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 | 설교 표기 | `sermons/classify-title`, `sermons/format`, `sermons/list-title`, `sermons/sermon-date` | 제목 분류·표시 포맷·날짜 파싱 |
 | 썸네일 | `thumbnails/scripture`, `detect-caption-band`, `compose-text`, `generate-background`, `position`, `remove-background`, `store`(+integration), `webp`, `actions/thumbnails` | 성경구절 추출, 자막 밴드 crop, 텍스트 합성·배치, 배경 생성, 누끼, 후보 저장/트림, WebP 변환 |
 | 방문 분석 | `analytics/bots`, `analytics/datacenter`, `analytics/ip`, `analytics/paths`, `analytics/region-ko`, `analytics/server` | 봇·데이터센터 판별, IP 마스킹·해시, 지역 한글화, 수집 경로 필터, 체류시간 집계 |
-| 기타 유틸 | `worship`, `date`, `sse`, `db/schema`, `data/sermons` | 예배 유형/필터, 날짜 유틸, SSE 파싱, 스키마 정합성, 설교 조회 |
-| 브라우저 E2E | `gallery-upload`, `gallery-video`, `subnav-scroll` | 관리자 갤러리 업로드 흐름, 영상 폼 검증, 서브내비 라우트 스크롤 회귀 |
+| 기타 유틸 | `worship`, `date`, `sse`, `db/schema`, `data/sermons`, `data/posts` | 예배 유형/필터, 날짜 유틸, SSE 파싱, 스키마 정합성, 설교 조회, 예약 게시 판별 |
+| 브라우저 E2E | `gallery-upload`, `gallery-video`, `subnav-scroll`, `bulletins`, `page-chrome` | 관리자 갤러리 업로드 흐름, 영상 폼 검증, 서브내비 라우트 스크롤 회귀, 주보 상세·라이트박스, 페이지 크롬(히어로 리마운트 방지) 회귀 |
 
 ---
 
@@ -738,49 +741,9 @@ https://공식-도메인/sitemap.xml
 
 ---
 
-## 🔄 개발 현황
+## 🚧 개선 예정
 
-### ✅ 완성된 기능
-
-**공개 페이지**
-- 홈, 교회 소개, 담임목사 인사말, 섬기는 사람들, 교회 연혁, 오시는 길
-- 새가족 안내, 예배 안내, 행복선언, FAQ
-- 예배·설교, 찬양, 특별행사 분리 목록/상세, 검색·정렬·페이지네이션, YouTube 임베드
-- 교회 소식 목록/상세
-- 주보 목록/상세
-- 사진·영상 갤러리 앨범 목록/상세, 포스터·라이트박스 재생
-- sitemap/robots/metadata/JSON-LD
-- 전역 에러/404 페이지
-
-**관리자**
-- Better Auth 로그인 및 세션 보호 (쿠키 캐시로 세션 DB 왕복 절감)
-- 게시글 작성/수정/발행 관리
-- 주보 작성/수정/HWP 업로드/섹션 편집
-- 갤러리 앨범 작성/수정, 사진 다중 업로드, 영상 직접 업로드·포스터 생성, 미디어 순서/메타데이터 관리
-- 설교 메타 수정, 채널 수동 동기화·썸네일 생성 SSE 진행 표시
-- 방문 분석 대시보드
-- 페이지별 스켈레톤 로딩
-- 운영 로그 조회
-- 관리자 계정 생성/삭제 스크립트
-
-**설교 자동화**
-- YouTube WebSub 실시간 동기화 + QStash 잡 파이프라인
-- 일일 정합성 백필 cron(reconcile-sermons)
-- Gemini 구조화 AI 요약(한 줄 소개·요점·타임스탬프 챕터) + claim 동시성·지수 백오프 재시도
-- AI 썸네일 생성(gpt-image-2 배경 + Satori 텍스트 합성 + remove.bg 누끼, 3스타일) + WebP 저장 최적화
-- sermons 핵심/위성 테이블 분할 완료
-
-**운영/품질**
-- Neon Postgres + Drizzle 마이그레이션
-- Cloudflare R2 업로드/삭제
-- 업로드 MIME 검증
-- 자체 방문 분석(수집·봇 필터·일일 롤업·대시보드)
-- 핵심 유틸 Vitest 테스트 + PGlite 통합 테스트
-- Playwright 관리자 업로드·내비게이션 회귀 E2E + GitHub Actions typecheck/test
-- Vercel Analytics + Google Analytics
-- 이미지·영상 원본을 저장소에서 제거하고 Cloudflare R2로 이관
-
-### 🚧 개선 예정
+위 "주요 기능"에 적힌 항목은 모두 운영 중인 기능입니다. 앞으로 다룰 과제는 다음과 같습니다.
 
 - [ ] 설교 요약/썸네일 파이프라인 관측성(잡 실패 알림·상태 대시보드)
 - [ ] 주보 HWP 파싱 정확도 개선 및 예외 케이스 확장
