@@ -2,8 +2,6 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import Container from '@/components/layout/Container'
-import BulletinsHero from '@/components/bulletins/BulletinsHero'
-import NewsSubnav from '@/components/news/NewsSubnav'
 import Reveal from '@/components/ui/Reveal'
 import { getBulletins } from '@/lib/data/bulletins'
 import { formatBulletinDate, formatIssueLabel } from '@/lib/bulletin-format'
@@ -24,49 +22,46 @@ export default async function BulletinsPage() {
   const bulletins = await getBulletins()
   const [latest, ...rest] = bulletins
 
+  // 히어로와 하위 메뉴는 (list)/layout.tsx 가 렌더한다
   return (
-    <>
-      <BulletinsHero />
-      <NewsSubnav />
-      <div className="py-16 sm:py-20">
-        <Container size="wide">
-          {latest ? (
-            <Reveal variant="fade-up">
-              <FeaturedBulletin bulletin={latest} />
-            </Reveal>
-          ) : (
-            <p className="rounded-2xl border border-line bg-paper p-10 text-center text-ink-muted">
-              등록된 주보가 아직 없습니다.
-            </p>
-          )}
+    <div className="py-16 sm:py-20">
+      <Container size="wide">
+        {latest ? (
+          <Reveal variant="fade-up">
+            <FeaturedBulletin bulletin={latest} />
+          </Reveal>
+        ) : (
+          <p className="rounded-2xl border border-line bg-paper p-10 text-center text-ink-muted">
+            등록된 주보가 아직 없습니다.
+          </p>
+        )}
 
-          {rest.length > 0 ? (
-            <Reveal variant="fade-up" delay={100}>
-              <section className="mt-10">
-                <h2 className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-gold-deep">지난 주보</h2>
-                <ul className="mt-3 divide-y divide-line-soft border-t border-line">
-                  {rest.map((bulletin) => (
-                    <li key={bulletin.id}>
-                      <Link
-                        href={`/bulletins/${bulletin.id}`}
-                        className="flex items-baseline justify-between gap-4 py-3.5 transition hover:opacity-70"
-                      >
-                        <span className="shrink-0 text-[13px] text-faint">
-                          {formatBulletinDate(bulletin.bulletinDate)}
-                        </span>
-                        <span className="min-w-0 truncate text-right text-sm font-bold text-ink">
-                          {bulletin.sermonTitle || '주보 보기'}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </Reveal>
-          ) : null}
-        </Container>
-      </div>
-    </>
+        {rest.length > 0 ? (
+          <Reveal variant="fade-up" delay={100}>
+            <section className="mt-10">
+              <h2 className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-gold-deep">지난 주보</h2>
+              <ul className="mt-3 divide-y divide-line-soft border-t border-line">
+                {rest.map((bulletin) => (
+                  <li key={bulletin.id}>
+                    <Link
+                      href={`/bulletins/${bulletin.id}`}
+                      className="flex items-baseline justify-between gap-4 py-3.5 transition hover:opacity-70"
+                    >
+                      <span className="shrink-0 text-[13px] text-faint">
+                        {formatBulletinDate(bulletin.bulletinDate)}
+                      </span>
+                      <span className="min-w-0 truncate text-right text-sm font-bold text-ink">
+                        {bulletin.sermonTitle || '주보 보기'}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </Reveal>
+        ) : null}
+      </Container>
+    </div>
   )
 }
 

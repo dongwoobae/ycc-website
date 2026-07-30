@@ -1,15 +1,9 @@
-import AdminPageHero from '@/components/admin/AdminPageHero'
 import AdminTableSkeleton from '@/components/admin/AdminTableSkeleton'
 import { Skeleton } from '@/components/ui/Skeleton'
 
 export default function Loading() {
   return (
     <div role="status" aria-label="접속 분석을 불러오는 중입니다">
-      <AdminPageHero
-        title="접속 분석"
-        subtitle="방문자 수는 일일 순방문자 근사치, 체류시간은 근사값입니다."
-        image="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80"
-      />
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         {['오늘', '최근 7일', '최근 30일'].map((label) => (

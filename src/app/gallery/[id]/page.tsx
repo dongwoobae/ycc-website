@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
-import GalleryHero from '@/components/gallery/GalleryHero'
 import GalleryGrid from '@/components/gallery/GalleryGrid'
-import NewsSubnav from '@/components/news/NewsSubnav'
 import { getGalleryAlbumById, getGalleryAlbums } from '@/lib/data/gallery'
 
 export const revalidate = 3600
@@ -41,8 +39,7 @@ export default async function GalleryDetailPage({ params }: GalleryDetailProps) 
 
   return (
     <>
-      <GalleryHero />
-      <NewsSubnav />
+      {/* 히어로와 하위 메뉴는 src/app/gallery/layout.tsx 가 렌더한다 */}
       <div className="py-16">
         <Container>
           <time className="text-sm font-semibold text-accent-deep" dateTime={album.eventDate}>

@@ -1,8 +1,8 @@
 import Container from '@/components/layout/Container'
 import { Skeleton } from '@/components/ui/Skeleton'
 
-// 히어로와 하위 메뉴는 page.tsx 만 렌더한다 — 여기서 또 렌더하면 fallback → 콘텐츠 교체 때
-// 히어로가 unmount 후 다시 mount 되어 Reveal 진입 애니메이션이 두 번 재생된다.
+// 히어로와 하위 메뉴는 (list)/layout.tsx 가 렌더한다.
+// 여기서 또 렌더하면 fallback → 콘텐츠 교체 때 중복되며 Reveal 진입 애니메이션도 다시 재생된다.
 //
 // 형태는 page.tsx 와 맞춘다: 최신 주보 피처드 카드(표지 + 설교 제목) + 지난 주보 날짜 목록.
 export default function Loading() {

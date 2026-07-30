@@ -5,7 +5,6 @@ import { posts } from '@/lib/db/schema'
 import { deletePost, togglePin } from '@/lib/actions/posts'
 import { verifySession } from '@/lib/dal'
 import { formatKstDate } from '@/lib/date'
-import AdminPageHero from '@/components/admin/AdminPageHero'
 
 export default async function AdminPostsPage() {
   await verifySession()
@@ -14,18 +13,6 @@ export default async function AdminPostsPage() {
 
   return (
     <div>
-      <AdminPageHero
-        title="소식/공지 관리"
-        image="https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1600&q=80"
-        action={
-          <Link
-            href="/admin/posts/new"
-            className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-ink shadow-lg ring-1 ring-black/10 transition hover:bg-surface"
-          >
-            새 게시글
-          </Link>
-        }
-      />
 
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
         <table className="min-w-[52rem] w-full text-sm">

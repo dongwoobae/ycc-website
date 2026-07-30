@@ -5,7 +5,6 @@ import { db } from '@/lib/db'
 import { dailyPageStats, pageViews } from '@/lib/db/schema'
 import { formatKstDateTime, todayKst } from '@/lib/date'
 import { formatRegionKo } from '@/lib/analytics/region-ko'
-import AdminPageHero from '@/components/admin/AdminPageHero'
 import RefreshButton from '@/components/admin/RefreshButton'
 
 const PAGE_SIZE = 20
@@ -196,11 +195,6 @@ export default async function AdminAnalyticsPage({
 
   return (
     <div>
-      <AdminPageHero
-        title="접속 분석"
-        subtitle="방문자 수는 일일 순방문자 근사치, 체류시간은 근사값입니다."
-        image="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80"
-      />
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         {summaryCards.map(([label, row]) => (

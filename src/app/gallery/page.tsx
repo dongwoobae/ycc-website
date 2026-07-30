@@ -1,7 +1,5 @@
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
-import GalleryHero from '@/components/gallery/GalleryHero'
-import NewsSubnav from '@/components/news/NewsSubnav'
 import Reveal from '@/components/ui/Reveal'
 import AlbumCard from '@/components/gallery/AlbumCard'
 import { getGalleryAlbums } from '@/lib/data/gallery'
@@ -20,10 +18,9 @@ export const revalidate = 3600
 export default async function GalleryPage() {
   const albums = await getGalleryAlbums()
 
+  // 히어로와 하위 메뉴는 src/app/gallery/layout.tsx 가 렌더한다
   return (
     <>
-      <GalleryHero />
-      <NewsSubnav />
       <div className="py-20 sm:py-24">
         <Container size="wide">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

@@ -2,8 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Container from '@/components/layout/Container'
-import NewsHero from '@/components/news/NewsHero'
-import NewsSubnav from '@/components/news/NewsSubnav'
 import { getPostById, getPostNeighbors, getPosts, type PostNeighbor } from '@/lib/data/posts'
 import JsonLd from '@/components/seo/JsonLd'
 import { buildBreadcrumbJsonLd } from '@/lib/seo/jsonld'
@@ -75,8 +73,7 @@ export default async function NewsDetailPage({ params }: NewsDetailProps) {
           { name: post.title, path: `/news/${post.id}` },
         ])}
       />
-      <NewsHero />
-      <NewsSubnav />
+      {/* 히어로와 하위 메뉴는 src/app/news/layout.tsx 가 렌더한다 */}
       <div className="py-16">
         <Container className="max-w-3xl">
           <p className="text-sm font-semibold text-accent-deep">{post.category}</p>

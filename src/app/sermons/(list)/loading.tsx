@@ -1,8 +1,8 @@
 import Container from '@/components/layout/Container'
 import { Skeleton } from '@/components/ui/Skeleton'
 
-// 히어로는 page.tsx 만 렌더한다 — 여기서 또 렌더하면 fallback → 콘텐츠 교체 때
-// 히어로가 unmount 후 다시 mount 되어 Reveal 진입 애니메이션이 두 번 재생된다.
+// 히어로와 하위 메뉴는 (list)/layout.tsx 가 렌더한다.
+// 여기서 또 렌더하면 fallback → 콘텐츠 교체 때 중복되며 Reveal 진입 애니메이션도 다시 재생된다.
 export default function Loading() {
   return (
     <div className="py-20 sm:py-24" role="status" aria-label="설교 목록을 불러오는 중입니다">

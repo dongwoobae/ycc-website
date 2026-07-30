@@ -6,7 +6,6 @@ import { verifySession } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { appLogs, user } from '@/lib/db/schema'
 import { formatKstDateTime } from '@/lib/date'
-import AdminPageHero from '@/components/admin/AdminPageHero'
 
 const ACTION_OPTIONS = ['create', 'update', 'delete', 'error', 'login', 'logout'] as const
 const PAGE_SIZE = 50
@@ -92,10 +91,6 @@ export default async function AdminLogPage({
 
   return (
     <div>
-      <AdminPageHero
-        title="서버 로그"
-        image="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=80"
-      />
       <form method="get" className="mb-4 flex flex-wrap items-center gap-3">
         <select
           name="action"

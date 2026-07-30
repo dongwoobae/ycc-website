@@ -1,4 +1,3 @@
-import AdminPageHero from '@/components/admin/AdminPageHero'
 import { Skeleton } from '@/components/ui/Skeleton'
 
 const HEADINGS = ['행사일', '표지', '앨범명', '공개', '관리']
@@ -6,11 +5,6 @@ const HEADINGS = ['행사일', '표지', '앨범명', '공개', '관리']
 export default function Loading() {
   return (
     <div role="status" aria-label="앨범 목록을 불러오는 중입니다">
-      <AdminPageHero
-        title="갤러리 관리"
-        image="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80"
-        action={<Skeleton className="h-10 w-20 rounded-lg bg-white/40" />}
-      />
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
         <table className="min-w-[48rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">

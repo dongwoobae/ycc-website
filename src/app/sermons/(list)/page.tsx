@@ -1,8 +1,6 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
-import SermonsHero from '@/components/sermons/SermonsHero'
-import WordSubnav from '@/components/sermons/WordSubnav'
 import SermonsGrid from '@/components/sermons/SermonsGrid'
 import { getSermons } from '@/lib/data/sermons'
 import { churchInfo } from '@/lib/church'
@@ -20,17 +18,14 @@ export const revalidate = 3600
 export default async function SermonsPage() {
   const sermons = await getSermons()
 
+  // 히어로와 하위 메뉴는 (list)/layout.tsx 가 렌더한다
   return (
-    <>
-      <SermonsHero />
-      <WordSubnav />
-      <div className="py-20 sm:py-24">
-        <Container size="wide">
-          <Suspense fallback={null}>
-            <SermonsGrid sermons={sermons} />
-          </Suspense>
-        </Container>
-      </div>
-    </>
+    <div className="py-20 sm:py-24">
+      <Container size="wide">
+        <Suspense fallback={null}>
+          <SermonsGrid sermons={sermons} />
+        </Suspense>
+      </Container>
+    </div>
   )
 }

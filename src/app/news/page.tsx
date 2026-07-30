@@ -1,8 +1,6 @@
 import { Fragment } from 'react'
 import type { Metadata } from 'next'
 import Container from '@/components/layout/Container'
-import NewsHero from '@/components/news/NewsHero'
-import NewsSubnav from '@/components/news/NewsSubnav'
 import Reveal from '@/components/ui/Reveal'
 import PostCard from '@/components/posts/PostCard'
 import { getPosts } from '@/lib/data/posts'
@@ -39,10 +37,9 @@ export default async function NewsPage() {
   const pinned = posts.filter((post) => post.isPinned)
   const rest = posts.filter((post) => !post.isPinned)
 
+  // 히어로와 하위 메뉴는 src/app/news/layout.tsx 가 렌더한다
   return (
     <>
-      <NewsHero />
-      <NewsSubnav />
       <div className="py-20 sm:py-24">
         <Container className="max-w-3xl space-y-8">
           {pinned.length > 0 && <PostSection posts={pinned} />}

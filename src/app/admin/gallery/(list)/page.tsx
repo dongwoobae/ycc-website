@@ -5,7 +5,6 @@ import { galleryAlbums } from '@/lib/db/schema'
 import { deleteAlbum } from '@/lib/actions/gallery'
 import { verifySession } from '@/lib/dal'
 import SubmitButton from '@/components/admin/SubmitButton'
-import AdminPageHero from '@/components/admin/AdminPageHero'
 
 function formatDate(value: string | null) {
   return value || '-'
@@ -18,18 +17,6 @@ export default async function AdminGalleryPage() {
 
   return (
     <div>
-      <AdminPageHero
-        title="갤러리 관리"
-        image="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80"
-        action={
-          <Link
-            href="/admin/gallery/new"
-            className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-ink shadow-lg ring-1 ring-black/10 transition hover:bg-surface"
-          >
-            새 앨범
-          </Link>
-        }
-      />
 
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
         <table className="min-w-[48rem] w-full text-sm">
