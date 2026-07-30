@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     return new Response('unauthorized', { status: 401 })
   }
 
-  const { postId } = JSON.parse(raw) as { postId?: string }
-  revalidatePostPaths(postId)
+  // body 의 postId 는 QStash 콘솔 추적용 — 상세 경로는 패턴 전체를 무효화하므로 여기선 안 쓴다
+  revalidatePostPaths()
   return Response.json({ ok: true })
 }

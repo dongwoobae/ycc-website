@@ -55,6 +55,9 @@ function resolveScheduledAt(scheduledAt: Date, now: Date): Date {
  * 아직 비노출이라 낡은 캐시가 남는다). 콜백은 멱등 revalidate 뿐이라 예약 변경으로
  * 낡은 메시지가 남아도 취소할 필요가 없다. 발행 실패는 저장을 막지 않는다 —
  * ISR(revalidate 3600)이 백스톱으로 최대 1시간 내에 노출시킨다.
+ *
+ * QStash delay 는 플랜 상한(무료 7일, 종량제 1년)을 넘기면 발행이 실패한다.
+ * 그 경우도 위 백스톱으로 최대 1시간 지연 노출로 강등될 뿐이라 별도 처리하지 않는다.
  */
 async function schedulePublishRevalidate(id: string, publishedAt: Date, now: Date) {
   if (publishedAt.getTime() <= now.getTime()) return
@@ -84,7 +87,7 @@ export async function createPost(input: PostFormInput) {
   if (!created) throw new Error('failed to create post')
   await log('create', 'post', created.id, created.title, s.user.id)
   if (values.isPublished) await schedulePublishRevalidate(created.id, publishedAt, now)
-  revalidatePostPaths(created.id)
+  revalidatePostPaths()
   return created.id
 }
 
@@ -128,7 +131,7 @@ export async function updatePost(id: string, input: PostFormInput) {
   if (!updated) throw new Error('post not found')
   await log('update', 'post', updated.id, updated.title, s.user.id)
   if (values.isPublished) await schedulePublishRevalidate(updated.id, publishedAt, now)
-  revalidatePostPaths(updated.id)
+  revalidatePostPaths()
 }
 
 export async function deletePost(id: string) {
@@ -140,7 +143,7 @@ export async function deletePost(id: string) {
 
   if (!deleted) throw new Error('post not found')
   await log('delete', 'post', deleted.id, deleted.title, s.user.id)
-  revalidatePostPaths(deleted.id)
+  revalidatePostPaths()
 }
 
 export async function togglePin(id: string, isPinned: boolean) {
@@ -156,5 +159,5 @@ export async function togglePin(id: string, isPinned: boolean) {
 
   if (!updated) throw new Error('post not found')
   await log('update', 'post', updated.id, updated.title, s.user.id)
-  revalidatePostPaths(updated.id)
+  revalidatePostPaths()
 }
