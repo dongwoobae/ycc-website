@@ -139,13 +139,13 @@ Next 16은 `new Worker()` 표현식을 번들러가 처리한다 (`node_modules/
 |---|---|---|
 | `lib/bulletin-pdf.ts` (client-only) | `renderPdfToPages(file) → {blob,width,height}[]` | `pdfjs-dist` (동적 import), canvas |
 | `lib/client-image-compress.ts` | 이미지 직접 업로드 경로의 압축 | 변경 없음 |
-| `lib/r2.ts` | `bulletinPageKey(date, n)`·`bulletinPdfKey(date)`·`presignBulletinPut(key, contentType)` 추가, `bulletinHwpKey` 삭제 | — |
+| `lib/r2.ts` | `bulletinPageKey(date, uploadId, n, size, ext)`·`bulletinPdfKey(date, uploadId)`·`presignBulletinPut(key, contentType, disposition?)` 추가, `bulletinHwpKey` 삭제 | — |
 | `lib/upload-sniff.ts` | `sniffPdfMime`(`%PDF-`) 추가, `UploadMime`에 `application/pdf` 추가 | — |
 | `lib/actions/bulletins.ts` | presign 발급 / CRUD / 삭제 시 R2 정리 | r2, db |
 
 새 의존성은 `pdfjs-dist` 하나이며 관리자 화면에서만 동적 import하므로 공개 번들에 포함되지 않는다.
 
-R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`. 주보 삭제·교체 시 `gallery.ts`의 `deleteR2BestEffort` 패턴으로 정리한다.
+R2 키 규칙은 위 「키 전략 — 업로드 단위 스테이징」이 유일한 정의다. 주보 삭제·교체 시 `gallery.ts`의 `deleteR2BestEffort` 패턴으로 정리한다.
 
 ## 3. 공개 화면
 
@@ -285,7 +285,7 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 - `src/app/admin/bulletins/[id]/edit/page.tsx:22` — `initialValue`가 `bulletin.theme`과 `bulletin.sections`를 읽는다. 새 필드 집합으로 교체
 - `src/app/page.tsx` — 홈 카드 마운트(3-4). 컬럼 참조가 없어 빌드는 깨지지 않지만 이 변경 없이는 홈 카드가 존재하지 않는다
 
-**신규**: `lib/bulletin-pdf.ts` · `lib/bulletin-spread.ts`(스프레드 인덱스 계산, 순수 함수) · `lib/bulletin-zoom.ts`(줌·드래그 계산, 순수 함수) · `components/bulletins/BulletinGlance.tsx` · `BulletinWorshipTimes.tsx` · `BulletinNotices.tsx` · `BulletinPageViewer.tsx`(인라인) · `BulletinLightbox.tsx`(전체화면 스프레드) · `components/home/HomeBulletinCard.tsx` · `components/admin/BulletinGlanceFields.tsx` · `BulletinNoticesEditor.tsx` · `BulletinOriginUpload.tsx`
+**신규**: `lib/bulletin-pdf.ts` · `lib/bulletin-scale.ts`(긴 변 축소 클램프, 순수 함수) · `lib/bulletin-spread.ts`(스프레드 인덱스 계산, 순수 함수) · `lib/bulletin-zoom.ts`(줌·드래그 계산, 순수 함수) · `components/bulletins/BulletinGlance.tsx` · `BulletinWorshipTimes.tsx` · `BulletinNotices.tsx` · `BulletinPageViewer.tsx`(인라인) · `BulletinLightbox.tsx`(전체화면 스프레드) · `components/home/HomeBulletinCard.tsx` · `components/admin/BulletinGlanceFields.tsx` · `BulletinNoticesEditor.tsx` · `BulletinOriginUpload.tsx`
 
 스프레드 인덱스 계산(면 수 · 현재 위치 · 폭 변경 시 재계산)은 `lib/bulletin-spread.ts`의 순수 함수로 분리한다. DOM 없이 단위 테스트할 수 있고, 라이트박스 컴포넌트는 상태 보관과 렌더링만 맡는다.
 
@@ -321,16 +321,14 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 
 **단위**
 
-- `lib/bulletin-pdf.test.ts` — pdfjs를 mock해 N면 → N blob 확인, 긴 변 2000px 클램프 계산 검증
+- `lib/bulletin-scale.test.ts` — 긴 변 축소 클램프(2000/1000/320) 계산, 원본이 더 작을 때 확대하지 않음
+- `lib/bulletin-pdf.test.ts` — pdfjs를 mock해 N면 → 면당 3 blob 확인, WebP 인코딩이 `null`을 줄 때 JPEG로 폴백하고 확장자·contentType이 함께 바뀌는지, 면 수·용량 상한 초과 시 업로드 전 거부
 - `lib/bulletin-editor.test.ts` — 빈 공지 제거, `when` 정규화, `pages` 형식 검증
 - `lib/bulletin-spread.test.ts` — 폭별 면 수(3/2/1) 결정, 스프레드 단위 전/후 이동과 양끝 클램프, 면 수가 스프레드로 나누어떨어지지 않을 때 마지막 스프레드 처리(6면·3면뷰 vs 5면·3면뷰), 폭 변경 시 첫 면 기준 재계산
-- `lib/r2.test.ts` — `bulletinPageKey`·`bulletinPdfKey` 형식, `presignBulletinPut`이 `gallery/` 키를 거부 (기존 프리픽스 가드 테스트의 대칭)
+- `lib/bulletin-zoom.test.ts` — 줌 단계 전이(맞춤 → 1× → 2×, 양끝 클램프), `clampOffset`이 여백을 노출하지 않는지, 배율이 `맞춤`일 때 오프셋이 0으로 리셋되는지
+- `lib/r2.test.ts` — 업로드 id가 든 `bulletinPageKey`·`bulletinPdfKey` 형식, `presignBulletinPut`이 `bulletins/` 외 프리픽스를 거부 (기존 프리픽스 가드 테스트의 대칭)
 - `lib/upload-sniff.test.ts` — `sniffPdfMime`이 `%PDF-`만 통과
 - `lib/actions/bulletins` — `headR2Object`로 확인되지 않은 키의 저장 거부
-
-- `lib/bulletin-zoom.test.ts` — 줌 단계 전이(맞춤 → 1× → 2×, 양끝 클램프), `clampOffset`이 여백을 노출하지 않는지, 배율이 `맞춤`일 때 오프셋이 0으로 리셋되는지
-- `lib/bulletin-pdf.test.ts` — WebP 인코딩이 `null`을 줄 때 JPEG로 폴백하고 확장자·contentType이 함께 바뀌는지, 면 수·용량 상한 초과 시 업로드 전에 거부하는지
-- `lib/r2.ts` — 업로드 id가 든 새 키 규칙 생성, `bulletins/` 외 프리픽스 거부
 
 **컴포넌트 테스트는 넣지 않는다.** `vitest.config.ts:10`이 `environment: 'node'`이고 jsdom·Testing Library가 설치돼 있지 않다. 이 repo에는 현재 컴포넌트 테스트가 하나도 없으며, 그 둘을 추가하는 것은 이 작업의 범위를 넘는다. 대신 **판정 로직을 `bulletin-spread.ts`·`bulletin-zoom.ts` 순수 함수로 뽑아 node 환경에서 검증하고**, 실제 상호작용은 playwright e2e로 덮는다. 컴포넌트에는 상태 보관과 렌더링만 남긴다.
 
