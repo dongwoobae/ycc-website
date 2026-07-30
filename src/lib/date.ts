@@ -26,3 +26,15 @@ export function formatKstDateTime(value: Date | string | null | undefined): stri
 export function todayKst(): string {
   return kstFormatter.format(new Date())
 }
+
+/** datetime-local 입력값용 — KST 기준 YYYY-MM-DDTHH:mm. */
+export function formatKstDateTimeInput(value: Date): string {
+  return kstDateTimeFormatter.format(value).replace(' ', 'T')
+}
+
+/** 예약 게시 기본값 — KST 기준 다음 정시. (KST 오프셋은 정시 단위라 setMinutes 올림이 안전) */
+export function nextFullHourKstInput(): string {
+  const d = new Date()
+  d.setMinutes(60, 0, 0)
+  return formatKstDateTimeInput(d)
+}

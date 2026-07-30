@@ -3,14 +3,16 @@ import { desc } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
 import { deletePost, togglePin } from '@/lib/actions/posts'
+import { isScheduled } from '@/lib/data/posts'
 import { verifySession } from '@/lib/dal'
-import { formatKstDate } from '@/lib/date'
+import { formatKstDate, formatKstDateTime } from '@/lib/date'
 import SubmitButton from '@/components/admin/SubmitButton'
 
 export default async function AdminPostsPage() {
   await verifySession()
 
   const rows = await db.select().from(posts).orderBy(desc(posts.isPinned), desc(posts.createdAt))
+  const now = new Date()
 
   return (
     <div>
@@ -40,8 +42,8 @@ export default async function AdminPostsPage() {
                     {formatKstDate(post.publishedAt ?? post.createdAt)}
                   </td>
                   <td className="px-4 py-3 font-medium text-ink">
-                    {/* 공개 글만 새 창으로 공개 페이지 미리보기 — 비공개 글은 공개 라우트가 404 */}
-                    {post.isPublished ? (
+                    {/* 공개 중인 글만 새 창으로 공개 페이지 미리보기 — 비공개·예약 글은 공개 라우트가 404 */}
+                    {post.isPublished && !isScheduled(post, now) ? (
                       <a
                         href={`/news/${post.id}`}
                         target="_blank"
@@ -58,7 +60,15 @@ export default async function AdminPostsPage() {
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{post.category}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{post.isPinned ? '고정' : '-'}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
-                    {post.isPublished ? '공개' : '비공개'}
+                    {isScheduled(post, now) ? (
+                      <span title={`${formatKstDateTime(post.publishedAt)} 공개 예정`} className="text-accent-deep">
+                        예약
+                      </span>
+                    ) : post.isPublished ? (
+                      '공개'
+                    ) : (
+                      '비공개'
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2">

@@ -9,6 +9,7 @@ export type JobName =
   | 'retry-summaries'
   | 'reconcile-sermons'
   | 'analytics-rollup'
+  | 'publish-post'
 
 function baseUrl(): string {
   return getCanonicalSiteOrigin()
