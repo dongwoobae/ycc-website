@@ -1,55 +1,52 @@
 import type { BulletinFormInput } from '@/lib/actions/bulletins'
-import type { BulletinTable } from '@/lib/types'
+import type { BulletinNotice, BulletinPage } from '@/lib/types'
 
-export function parseBodyLines(text: string) {
-  const lines = text.replace(/\r\n?/g, '\n').split('\n')
-  while (lines.at(-1) === '') lines.pop()
-  return lines
+/**
+ * 공지 항목을 정규화한다.
+ * when을 빈 문자열이 아니라 키 부재로 만드는 이유: 화면에서 시간 배지 유무를
+ * `notice.when`의 truthy 판정 하나로 결정하도록 상태를 하나만 남긴다.
+ */
+export function normalizeNotices(value: BulletinNotice[]): BulletinNotice[] {
+  return value
+    .map((notice) => ({
+      title: notice.title.trim(),
+      detail: notice.detail.trim(),
+      when: notice.when?.trim() ?? '',
+    }))
+    .filter((notice) => notice.title || notice.detail)
+    .map(({ title, detail, when }) => ({ title, detail, ...(when ? { when } : {}) }))
 }
 
-export function normalizeBodyLines(value: string[]) {
-  const lines = [...value]
-  while (lines.at(-1) === '') lines.pop()
-  return lines
-}
-
-export function formatTableCells(cells: string[]) {
-  for (const cell of cells) {
-    if (cell.includes('\t')) throw new Error('Table cells cannot contain tabs.')
-    if (cell.includes('\n') || cell.includes('\r')) throw new Error('Table cells cannot contain line breaks.')
-  }
-  return cells.join('\t')
-}
-
-export function parseTableCells(line: string, expectedColumnCount?: number) {
-  const cells = line.split('\t')
-  if (expectedColumnCount !== undefined && expectedColumnCount > 0 && cells.length !== expectedColumnCount) {
-    throw new Error(`Table row must have ${expectedColumnCount} columns.`)
-  }
-  return cells
-}
-
-export function parseTableRows(lines: string[], expectedColumnCount?: number) {
-  const normalizedLines = normalizeBodyLines(lines)
-  const inferredColumnCount = expectedColumnCount || (normalizedLines[0] ? normalizedLines[0].split('\t').length : 0)
-  return normalizedLines.map((line) => parseTableCells(line, inferredColumnCount || undefined))
-}
-
-export function normalizeTable(table: BulletinTable) {
-  const headers = normalizeBodyLines(table.headers)
-  const expectedColumnCount = headers.length || (table.rows[0]?.length ?? 0)
-  const rows = table.rows.map((row) => parseTableCells(formatTableCells(row), expectedColumnCount || undefined))
-  return { ...table, headers, rows }
+/**
+ * 면 이미지를 검증한다. 세 크기 URL과 유효한 치수가 모두 있어야 통과한다.
+ * 업로드가 부분 실패한 면이 DB로 들어가면 라이트박스가 깨진 이미지를 띄운다.
+ */
+export function normalizePages(value: BulletinPage[]): BulletinPage[] {
+  return value.filter(
+    (page) =>
+      page.fullUrl.trim() !== '' &&
+      page.previewUrl.trim() !== '' &&
+      page.thumbUrl.trim() !== '' &&
+      Number.isFinite(page.width) &&
+      Number.isFinite(page.height) &&
+      page.width > 0 &&
+      page.height > 0
+  )
 }
 
 export function normalizeBulletinInput(input: BulletinFormInput): BulletinFormInput {
   return {
-    ...input,
-    sections: input.sections.map((section) => ({
-      ...section,
-      ...(section.body ? { body: normalizeBodyLines(section.body) } : {}),
-      ...(section.tables ? { tables: section.tables.map(normalizeTable) } : {}),
-      ...(section.offerings ? { offerings: section.offerings.map((offering) => ({ ...offering, names: normalizeBodyLines(offering.names) })) } : {}),
-    })),
+    bulletinDate: input.bulletinDate,
+    volume: input.volume.trim(),
+    issue: input.issue.trim(),
+    sermonTitle: input.sermonTitle.trim(),
+    scripture: input.scripture.trim(),
+    preacher: input.preacher.trim(),
+    hymns: input.hymns.trim(),
+    responsiveReading: input.responsiveReading.trim(),
+    nextWeek: input.nextWeek.trim(),
+    pdfUrl: input.pdfUrl?.trim() || undefined,
+    notices: normalizeNotices(input.notices),
+    pages: normalizePages(input.pages),
   }
 }
