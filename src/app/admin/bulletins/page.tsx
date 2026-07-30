@@ -24,7 +24,7 @@ export default async function AdminBulletinsPage() {
         <table className="min-w-[48rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
             <tr>
-              {['날짜', '권/호', '주제', '공개', '관리'].map((heading) => (
+              {['날짜', '권/호', '설교 제목', '면', '공개', '관리'].map((heading) => (
                 <th key={heading} className="px-4 py-3 text-left font-medium">{heading}</th>
               ))}
             </tr>
@@ -41,7 +41,7 @@ export default async function AdminBulletinsPage() {
 function EmptyRow() {
   return (
     <tr className="border-t border-line">
-      <td className="px-4 py-3 text-ink-muted" colSpan={5}>등록된 주보가 없습니다.</td>
+      <td className="px-4 py-3 text-ink-muted" colSpan={6}>등록된 주보가 없습니다.</td>
     </tr>
   )
 }
@@ -51,7 +51,8 @@ function BulletinRow({ bulletin }: { bulletin: Awaited<ReturnType<typeof getBull
     <tr className="border-t border-line">
       <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{bulletin.bulletinDate}</td>
       <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{[bulletin.volume, bulletin.issue].filter(Boolean).join(' ') || '-'}</td>
-      <td className="px-4 py-3 font-medium text-ink">{bulletin.theme || '-'}</td>
+      <td className="px-4 py-3 font-medium text-ink">{bulletin.sermonTitle || '-'}</td>
+      <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{(bulletin.pages ?? []).length}면</td>
       <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{bulletin.isPublished ? '공개' : '비공개'}</td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">

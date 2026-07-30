@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // prebuild/predev 가 node_modules 에서 복사해 오는 pdfjs 워커 — 우리 코드가 아니다
+    "public/pdf.worker.min.mjs",
   ]),
 ]);
 

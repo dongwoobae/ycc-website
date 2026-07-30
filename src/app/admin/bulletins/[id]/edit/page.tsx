@@ -19,9 +19,15 @@ export default async function EditBulletinPage({ params }: EditBulletinPageProps
     bulletinDate: bulletin.bulletinDate,
     volume: bulletin.volume ?? '',
     issue: bulletin.issue ?? '',
-    theme: bulletin.theme ?? '',
+    sermonTitle: bulletin.sermonTitle ?? '',
     scripture: bulletin.scripture ?? '',
-    sections: bulletin.sections ?? [],
+    preacher: bulletin.preacher ?? '',
+    hymns: bulletin.hymns ?? '',
+    responsiveReading: bulletin.responsiveReading ?? '',
+    nextWeek: bulletin.nextWeek ?? '',
+    ...(bulletin.pdfUrl ? { pdfUrl: bulletin.pdfUrl } : {}),
+    notices: bulletin.notices ?? [],
+    pages: bulletin.pages ?? [],
   }
 
   return (

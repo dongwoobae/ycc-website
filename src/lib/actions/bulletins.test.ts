@@ -78,7 +78,8 @@ describe('prepareBulletinUpload', () => {
   })
 
   it('면 수 상한을 넘으면 거부한다', async () => {
-    const { maxBulletinPages, prepareBulletinUpload } = await import('./bulletins')
+    const { maxBulletinPages } = await import('@/lib/bulletin-assets')
+    const { prepareBulletinUpload } = await import('./bulletins')
     await expect(
       prepareBulletinUpload({
         date: '2026-07-26',
@@ -133,7 +134,7 @@ describe('assertBulletinAssets', () => {
 
 describe('bulletinAssetKeys', () => {
   it('면 세 크기와 PDF 키를 모두 모은다 — 교체 시 정리 대상', async () => {
-    const { bulletinAssetKeys } = await import('./bulletins')
+    const { bulletinAssetKeys } = await import('@/lib/bulletin-assets')
     const keys = bulletinAssetKeys([page], 'https://cdn.example.com/bulletins/2026-07-26/u1/original.pdf')
     expect(keys).toEqual([
       'bulletins/2026-07-26/u1/1-full.webp',
@@ -144,7 +145,7 @@ describe('bulletinAssetKeys', () => {
   })
 
   it('우리 키가 아닌 URL은 제외한다', async () => {
-    const { bulletinAssetKeys } = await import('./bulletins')
+    const { bulletinAssetKeys } = await import('@/lib/bulletin-assets')
     expect(bulletinAssetKeys([{ ...page, fullUrl: 'https://evil.example.com/x' }], undefined)).toHaveLength(2)
   })
 })

@@ -48,6 +48,9 @@ export default function BulletinLightbox({
   const [zoom, setZoom] = useState<ZoomStep>('fit')
   const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 })
   const [showStrip, setShowStrip] = useState(false)
+  // 스테이지 크기를 상태로 들고 있는다. 렌더 중에 ref 로 측정하면 첫 렌더에서 0이 나와
+  // 「맞춤」 배율이 0이 되고, 다시 그릴 계기가 없어 스프레드가 화면에 나타나지 않는다.
+  const [stageSize, setStageSize] = useState({ width: 0, height: 0 })
   const stageRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const dragRef = useRef<{ pointerId: number; originX: number; originY: number; from: Offset } | null>(null)
@@ -71,6 +74,18 @@ export default function BulletinLightbox({
     },
     [pages.length, perSpread]
   )
+
+  // 스테이지 실측. 툴바·썸네일 스트립 토글로도 높이가 바뀌므로 창 resize 만으로는 부족하다.
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    const observer = new ResizeObserver(([entry]) => {
+      const box = entry.contentRect
+      setStageSize({ width: box.width, height: box.height })
+    })
+    observer.observe(stage)
+    return () => observer.disconnect()
+  }, [])
 
   // 폭이 바뀌면 현재 스프레드의 첫 면을 유지한 채 재정렬한다
   useEffect(() => {
@@ -153,10 +168,8 @@ export default function BulletinLightbox({
   }, [move, onClose])
 
   function applyZoom(step: ZoomStep) {
-    const viewport = stageRef.current?.getBoundingClientRect()
-    const size = { width: viewport?.width ?? 0, height: viewport?.height ?? 0 }
     setZoom(step)
-    setOffset(offsetForStep(step, offset, size, content))
+    setOffset(offsetForStep(step, offset, stageSize, content))
   }
 
   // 확대 상태에서는 드래그가 화면 이동이고, 맞춤 상태에서는 같은 제스처가 스프레드 넘김이다.
@@ -170,13 +183,11 @@ export default function BulletinLightbox({
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) return
     if (!isDraggable(zoom)) return
-    const viewport = stageRef.current?.getBoundingClientRect()
-    const size = { width: viewport?.width ?? 0, height: viewport?.height ?? 0 }
     const moved = {
       x: drag.from.x + (event.clientX - drag.originX),
       y: drag.from.y + (event.clientY - drag.originY),
     }
-    setOffset(offsetForStep(zoom, moved, size, content))
+    setOffset(offsetForStep(zoom, moved, stageSize, content))
   }
 
   function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
@@ -192,8 +203,9 @@ export default function BulletinLightbox({
     move(dx < 0 ? 1 : -1)
   }
 
-  const viewportRect = stageRef.current?.getBoundingClientRect()
-  const scale = zoomScale(zoom, { width: viewportRect?.width ?? 0, height: viewportRect?.height ?? 0 }, content)
+  // 실측 전(0×0)에는 「맞춤」이 0을 주므로 스프레드를 그리지 않는다 — ResizeObserver 가
+  // 첫 페인트 직후 크기를 채우면 정상 배율로 나타난다.
+  const scale = zoomScale(zoom, stageSize, content)
 
   return (
     <div

@@ -6,6 +6,8 @@ import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { bulletins } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
+// 상수·동기 함수는 여기 둘 수 없다 ('use server' 는 async export 만 허용). bulletin-assets 참고.
+import { bulletinAssetKeys, maxBulletinPages } from '@/lib/bulletin-assets'
 import {
   bulletinPageKey,
   bulletinPdfKey,
@@ -18,9 +20,6 @@ import {
   type BulletinPageSize,
 } from '@/lib/r2'
 import type { BulletinNotice, BulletinPage } from '@/lib/types'
-
-/** PDF 면 수 상한. 주보는 보통 4~6면이며, 12면을 넘으면 잘못된 파일이다. */
-export const maxBulletinPages = 12
 
 export interface BulletinFormInput {
   bulletinDate: string
@@ -131,15 +130,6 @@ export async function prepareBulletinUpload(input: {
       contentDisposition,
     },
   }
-}
-
-/** 면·PDF URL에서 우리 R2의 bulletins/ 키만 뽑는다. 교체 시 정리 대상 목록이 된다. */
-export function bulletinAssetKeys(pages: BulletinPage[], pdfUrl: string | undefined): string[] {
-  const urls = [
-    ...pages.flatMap((page) => [page.fullUrl, page.previewUrl, page.thumbUrl]),
-    ...(pdfUrl ? [pdfUrl] : []),
-  ]
-  return urls.map(keyFromUrl).filter((key) => key.startsWith('bulletins/'))
 }
 
 /**
