@@ -125,22 +125,51 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 2. **예배 시간** — 베이지 배경. `src/lib/worship.ts`의 `adultWorshipSchedule`에서 자동 생성하므로 관리자 입력 없음
 3. **이번 주 일정 · 공지** — `notices` 리스트. `when`이 있으면 네이비 시간 배지, 없으면 회색 "공지" 배지
 4. **다음 주 예고** — 점선 테두리 블록. `next_week`가 비면 렌더하지 않음
-5. **원본 주보 뷰어** — 면 썸네일 스트립 + 큰 이미지 + 줌 컨트롤 + 「전체화면」·「PDF 저장」 버튼
+5. **원본 주보 뷰어** — 면 썸네일 스트립 + 현재 면 큰 이미지 + 「전체화면」·「PDF 저장」 버튼
 6. **이전/다음 주보 이동**
 
 데스크탑은 좌(1~4) / 우(5) 2단, 모바일은 단일 열로 위 순서 그대로.
 
-### 3-2. 뷰어 상호작용 — 라이브러리 없이
+**인라인 뷰어에는 줌을 두지 않는다.** 확대는 라이트박스의 책임이다. 인라인은 면 선택과 「전체화면」 진입만 담당하며, 같은 줌 기능을 두 곳에 두지 않는다.
 
-핀치줌은 기기·브라우저마다 동작이 갈리고 Next의 viewport 설정과 충돌한다. 대신 **3단 줌 버튼(맞춤 / 1× / 2×) + 드래그 이동**으로 간다. CSS `transform`과 포인터 이벤트만 쓰므로 의존성이 0이고 상태 전이가 결정론적이어서 단위 테스트가 가능하다. 「전체화면」은 `requestFullscreen()`으로 브라우저 기본 확대 제스처를 그대로 넘긴다.
+### 3-2. 라이트박스 — 반응형 스프레드
 
-줌 단계 정의:
+레퍼런스(jangji.org)는 전체화면에서 **여러 면을 나란히** 띄운다. 데스크탑에서 이 방식이 확실히 낫다 — A4 면이 나란히 있으면 주보 전체 구성이 실제로 한눈에 들어온다. 이 방식을 채택한다.
 
-- **맞춤** — 면 전체가 컨테이너 폭에 들어오는 배율. 드래그 비활성
+단, **면 수를 고정하지 않는다.** 레퍼런스는 1900px 폭이라 3면이 성립하는 것이고, 그대로 고정하면 모바일에서 한 면이 화면 1/3 폭이 되어 확대해도 읽을 수 없다. 화면 폭으로 결정한다.
+
+| 화면 폭 | 동시 표시 면 수 |
+|---|---|
+| ≥ 1280px | 3면 |
+| 768 – 1279px | 2면 |
+| < 768px | 1면 |
+
+**툴바**: 면 목록 토글 · 줌(맞춤 / 1× / 2×) · PDF 저장 · 닫기. 현재 위치는 `1 – 3 / 6면` 형태로 표기한다.
+**이동**: 좌우 화살표 버튼, 키보드 좌우 방향키, 모바일 좌우 스와이프. 한 번에 스프레드 단위로 넘긴다.
+
+**슬라이드쇼 자동재생은 넣지 않는다.** 레퍼런스 툴바에는 있으나 주보를 자동 넘김으로 볼 상황이 없다.
+
+**스프레드 수가 바뀔 때**(화면 회전, 창 크기 변경) 현재 스프레드의 **첫 면을 기준**으로 인덱스를 재계산한다. 예: 3면 뷰에서 4~6면을 보던 중 1면 뷰로 바뀌면 4면을 보여준다.
+
+#### 줌 — 라이브러리 없이
+
+핀치줌은 기기·브라우저마다 동작이 갈리고 Next의 viewport 설정과 충돌한다. 대신 **3단 줌 버튼 + 드래그 이동**으로 간다. CSS `transform`과 포인터 이벤트만 쓰므로 의존성이 0이고 상태 전이가 결정론적이어서 단위 테스트가 가능하다.
+
+- **맞춤** — 현재 스프레드 전체가 화면에 들어오는 배율. 드래그 비활성
 - **1×** — 이미지 자연 크기(WebP 픽셀 = CSS 픽셀). 드래그 활성
 - **2×** — 자연 크기의 2배. 드래그 활성
 
-드래그 이동 범위는 확대된 이미지가 컨테이너를 벗어난 만큼으로 클램프한다 (여백이 보이도록 끌리지 않는다).
+드래그 이동 범위는 확대된 내용이 화면을 벗어난 만큼으로 클램프한다 (여백이 보이도록 끌리지 않는다). 줌이 `맞춤`이 아닐 때는 스프레드 단위 이동 대신 드래그가 우선한다.
+
+라이트박스 자체는 `requestFullscreen()`으로 진입해 브라우저 크롬까지 치운다.
+
+#### 이미지 로딩 비용
+
+2000px WebP 한 장이 대략 300~600KB이므로 3면 스프레드는 최대 1.8MB를 동시에 받는다. 다음 규칙으로 통제한다.
+
+- 인라인 썸네일 스트립과 큰 이미지는 `next/image`의 반응형 `sizes`로 **표시 크기에 맞는 축소본**만 받는다. 원본 2000px을 그대로 내려받지 않는다
+- 첫 화면 밖 이미지는 `loading="lazy"`
+- 원본 해상도는 라이트박스에서만 쓰고, 프리로드는 **다음 스프레드 한 세트로 제한**한다
 
 ### 3-3. 목록 `/bulletins`
 
@@ -170,7 +199,9 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 
 **재작성**: `lib/types.ts`(`Bulletin`) · `lib/bulletin-editor.ts` · `lib/actions/bulletins.ts` · `lib/data/bulletins.ts` · `components/admin/BulletinForm.tsx` · `components/bulletins/BulletinView.tsx` · `app/bulletins/page.tsx` · `app/bulletins/[id]/page.tsx`
 
-**신규**: `lib/bulletin-pdf.ts` · `components/bulletins/BulletinGlance.tsx` · `BulletinWorshipTimes.tsx` · `BulletinNotices.tsx` · `BulletinPageViewer.tsx` · `components/home/HomeBulletinCard.tsx` · `components/admin/BulletinGlanceFields.tsx` · `BulletinNoticesEditor.tsx` · `BulletinOriginUpload.tsx`
+**신규**: `lib/bulletin-pdf.ts` · `lib/bulletin-spread.ts`(스프레드 인덱스 계산, 순수 함수) · `components/bulletins/BulletinGlance.tsx` · `BulletinWorshipTimes.tsx` · `BulletinNotices.tsx` · `BulletinPageViewer.tsx`(인라인) · `BulletinLightbox.tsx`(전체화면 스프레드) · `components/home/HomeBulletinCard.tsx` · `components/admin/BulletinGlanceFields.tsx` · `BulletinNoticesEditor.tsx` · `BulletinOriginUpload.tsx`
+
+스프레드 인덱스 계산(면 수 · 현재 위치 · 폭 변경 시 재계산)은 `lib/bulletin-spread.ts`의 순수 함수로 분리한다. DOM 없이 단위 테스트할 수 있고, 라이트박스 컴포넌트는 상태 보관과 렌더링만 맡는다.
 
 ## 5. 마이그레이션
 
@@ -192,17 +223,19 @@ R2 키: `bulletins/{YYYY-MM-DD}/{n}.webp`, `bulletins/{YYYY-MM-DD}/original.pdf`
 
 - `lib/bulletin-pdf.test.ts` — pdfjs를 mock해 N면 → N blob 확인, 긴 변 2000px 클램프 계산 검증
 - `lib/bulletin-editor.test.ts` — 빈 공지 제거, `when` 정규화, `pages` 형식 검증
+- `lib/bulletin-spread.test.ts` — 폭별 면 수(3/2/1) 결정, 스프레드 단위 전/후 이동과 양끝 클램프, 면 수가 스프레드로 나누어떨어지지 않을 때 마지막 스프레드 처리(6면·3면뷰 vs 5면·3면뷰), 폭 변경 시 첫 면 기준 재계산
 - `lib/r2.test.ts` — `bulletinPageKey`·`bulletinPdfKey` 형식, `presignBulletinPut`이 `gallery/` 키를 거부 (기존 프리픽스 가드 테스트의 대칭)
 - `lib/upload-sniff.test.ts` — `sniffPdfMime`이 `%PDF-`만 통과
 - `lib/actions/bulletins` — `headR2Object`로 확인되지 않은 키의 저장 거부
 
 **컴포넌트**
 
-- `BulletinPageViewer` — 줌 상태 전이(맞춤 → 1× → 2× 클램프), 드래그 경계
+- `BulletinLightbox` — 줌 상태 전이(맞춤 → 1× → 2× 클램프), 드래그 경계, 줌이 `맞춤`이 아닐 때 스프레드 이동보다 드래그가 우선하는지
 
 **e2e** (현재 주보 e2e는 0개)
 
-- 목록 진입 → 상세 이동 → 줌 버튼 동작 → 전체화면 버튼 존재
+- 목록 진입 → 상세 이동 → 인라인 면 선택 → 라이트박스 열림 → 좌우 이동 → 줌 버튼 → 닫기
+- 데스크탑·모바일 뷰포트에서 동시 표시 면 수가 3면/1면으로 갈리는지
 
 ## 7. 범위에서 제외
 
