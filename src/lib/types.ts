@@ -27,24 +27,26 @@ export interface Sermon {
   isPublished: boolean
 }
 
-export interface BulletinTable {
+/** 「이번 주 일정 · 공지」 통합 리스트 항목. when이 있으면 시간 배지를 앞에 붙인다. */
+export interface BulletinNotice {
   title: string
-  headers: string[]
-  rows: string[][]
+  detail: string
+  when?: string
 }
 
-export interface BulletinOffering {
-  category: string
-  names: string[]
-}
-
-export interface BulletinSection {
-  id: string
-  title: string
-  body?: string[]
-  rows?: { label: string; value: string }[]
-  tables?: BulletinTable[]
-  offerings?: BulletinOffering[]
+/**
+ * 원본 주보 면 이미지. 배열 순서가 면 순서다.
+ * width·height는 full 기준이며 세 크기의 종횡비가 같으므로 한 번만 저장한다.
+ */
+export interface BulletinPage {
+  width: number
+  height: number
+  /** 긴 변 2000px — 라이트박스 */
+  fullUrl: string
+  /** 긴 변 1000px — 인라인 큰 이미지, 목록 표지, 홈 카드 */
+  previewUrl: string
+  /** 긴 변 320px — 인라인 썸네일 스트립 */
+  thumbUrl: string
 }
 
 export interface Bulletin {
@@ -52,15 +54,20 @@ export interface Bulletin {
   bulletinDate: string
   volume: string
   issue: string
-  theme: string
+  sermonTitle: string
+  /** 설교 본문 (예: 마태복음 7:24-27) */
   scripture: string
-  churchInfo: {
-    address: string
-    phone: string
-    phone2?: string
-    blog: string
-  }
-  sections: BulletinSection[]
+  preacher: string
+  /** 찬송가 번호. 자유 텍스트 (예: 새 210장 · 통 40장) */
+  hymns: string
+  /** 교독문 번호 */
+  responsiveReading: string
+  /** 다음 주 예고 한 줄 */
+  nextWeek: string
+  /** R2 원본 PDF. 이미지를 직접 올린 경우 없다 */
+  pdfUrl?: string
+  notices: BulletinNotice[]
+  pages: BulletinPage[]
   isPublished: boolean
 }
 
