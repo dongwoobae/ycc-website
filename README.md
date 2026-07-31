@@ -17,14 +17,14 @@
 
 교회를 처음 방문하는 성도와 지역 주민이 예배 시간, 오시는 길, 새가족 안내, 교회 사역 정보를 쉽게 확인할 수 있도록 공개 페이지를 구성했고, 운영자는 `/admin`에서 소식 게시글, 주보, 갤러리 앨범을 직접 관리할 수 있습니다.
 
-주보는 HWP 업로드와 구조화된 편집 UI를 함께 제공하여, 단순 파일 게시를 넘어 주보 내용을 웹에서 읽기 좋은 형태로 관리할 수 있도록 설계했습니다.
+주보는 **원본 PDF를 면 이미지로 그대로 보여주는 뷰어**와, 운영자가 직접 입력하는 **「이번 주 한눈에」 카드**를 함께 제공합니다. 원본은 정보 손실 없이 보존하고, 확대 없이 읽어야 하는 핵심 정보(설교 제목·본문·찬송·일정·공지)는 사람이 쓴 텍스트로 분리해 정확성과 접근성을 확보했습니다.
 
 ---
 
 ## 🚀 핵심 성과
 
 - **1인 개발 전 과정 수행** — 요구사항 정리부터 정보 구조, UI, 백엔드, 데이터베이스, 인프라, 배포·운영까지 단독 수행
-- **운영 부담 자동화** — 설교는 YouTube 업로드만으로 등록·자막·AI 요약·썸네일까지 채워지고, 주보는 HWP 업로드 한 번으로 웹 구조화 렌더링까지 이어짐
+- **운영 부담 자동화** — 설교는 YouTube 업로드만으로 등록·자막·AI 요약·썸네일까지 채워지고, 주보는 PDF 한 번 업로드로 면 이미지 3종 변환·R2 업로드·뷰어 렌더링까지 이어짐
 - **서버리스 신뢰성 설계** — 서명 검증, 원자적 작업 선점, 지연 발행 기반 백오프, 정합성 cron으로 중복 실행과 일시 장애에 대응
 - **운영 품질 확보** — Better Auth, R2 업로드 검증, 쿠키리스 방문 분석, Vitest·PGlite·Playwright와 GitHub Actions 검증 체계
 - **서비스 주소** — [https://www.ycjc.kr](https://www.ycjc.kr)
@@ -37,7 +37,7 @@
 
 ### 공개 페이지
 
-- 🏠 **홈** — 몰입형 Hero, 교회 비전, 예배 시간, 갤러리, 최신 설교, 방문 안내
+- 🏠 **홈** — 몰입형 Hero, 교회 비전, 예배 시간, 갤러리, 최신 설교, 이번 주 주보 축약 카드, 방문 안내
 - ⛪ **교회 소개** — 교회 소개, 담임목사 인사말, 섬기는 사람들, 교회 연혁
 - 🕊️ **행복선언** — 예배 때마다 축도 전에 함께 고백하는 행복선언 소개
 - 🙋 **새가족 안내** — 처음 방문하는 성도를 위한 등록/정착 안내
@@ -49,7 +49,8 @@
 - 🎵 **찬양** — 찬양대·특송 영상을 설교 콘텐츠와 분리해 제공
 - 🎉 **특별행사** — 특별행사·사역 보고 영상을 일반 설교/찬양과 분리해 제공
 - 📰 **교회 소식** — 공지, 소식, 행사 게시글 목록/상세
-- 📖 **주보** — 주보 목록/상세, 날짜별 발행본 조회
+- 📖 **주보** — 최신 주보를 크게 강조한 목록 + 지난 주보 날짜 행, 상세는 「이번 주 한눈에」 카드·예배 시간·일정/공지·다음 주 예고 + 원본 면 뷰어 2단 구성
+- 🔍 **주보 라이트박스** — 원본 면을 전체화면으로 한 면씩 열람. 핀치·휠 연속 줌과 큰 글자 라벨 버튼(작게/크게/원래대로, 이전 면/다음 면)을 함께 제공
 - 🖼️ **갤러리** — 교회 행사와 공동체 사진·영상 앨범, 포스터 그리드와 라이트박스 재생
 - 🔎 **SEO·접근성·에러 화면** — sitemap, robots, metadata, OG, JSON-LD(Church), 본문 바로가기 링크, 커스텀 error/404 화면
 
@@ -61,12 +62,12 @@ Better Auth 이메일/비밀번호 로그인으로 보호되며, 공개 회원�
 - 📝 **게시글 관리** — 공지/소식/행사 작성·수정, 바로 공개/예약 게시/비공개 상태와 고정 여부 관리
 - ⏰ **예약 게시** — 지정한 KST 시각에 소식 자동 공개. QStash 지연 콜백이 공개 시각에 캐시를 재검증해 정시 노출, 저장 시점에 예약 시각이 지났으면 즉시 공개로 낙관 처리
 - 🧭 **관리 목록 공통 UX** — 등록 버튼을 히어로 아래 좌측에 통일 배치, 목록 제목 클릭 시 공개 페이지 새 창 열기(공개 항목만), 삭제는 확인 모달로 보호
-- 📖 **주보 관리** — 날짜, 권/호, 주제, 본문, 섹션 JSON 기반 편집
-- 📄 **주보 HWP 업로드** — HWP 파일 파싱 후 주보 편집 UI에 반영
-- 🧩 **주보 섹션 편집** — 텍스트, 행 목록, 표, 헌금자 명단 등 구조화 편집
+- 📖 **주보 관리** — 주보일, 권/호와 「한눈에」 필드(설교 제목·본문·설교자·찬송·교독문·다음 주 예고) 입력, 일정·공지 리스트 편집
+- 📄 **주보 원본 업로드** — PDF 1개 또는 이미지 여러 장을 올리면 브라우저가 면별로 렌더해 세 크기 이미지로 변환하고 R2에 직접 업로드
+- 👀 **주보 미리보기** — 공개 화면 컴포넌트를 그대로 재사용한 미리보기로 게시 전 확인
 - 🖼️ **갤러리 관리** — 앨범 생성/수정, 사진 다중 업로드, 캡션·대체텍스트 편집, 순서 변경, 영상 업로드/삭제
 - 🎞️ **갤러리 영상 업로드** — 최대 200MB의 MP4/MOV/WebM을 presigned URL로 R2에 직접 업로드하고 진행률·자동 추출 포스터를 제공
-- ☁️ **R2 파일 업로드** — 갤러리 사진·영상, 주보 파일, 설교 썸네일을 Cloudflare R2에 저장
+- ☁️ **R2 파일 업로드** — 갤러리 사진·영상, 주보 면 이미지·원본 PDF, 설교 썸네일을 Cloudflare R2에 저장
 - 🎬 **설교 자동화 관리** — 설교 메타 수정, 요약 재생성, AI 썸네일 생성·스타일 선택·적용, 채널 수동 동기화
 - 📡 **SSE 진행 스트림** — 썸네일 생성·채널 동기화 진행 상황을 실시간 스트리밍으로 표시
 - 📊 **방문 분석 대시보드** — 자체 수집한 방문 로그 기반 방문자/페이지뷰/체류시간 통계
@@ -132,16 +133,30 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
 - **WebP 저장 최적화**: 합성 결과(1280×720 PNG, 수 MB)를 저장 시점에 **sharp로 WebP 변환**해 용량을 10~20배 줄입니다(이미지 최적화 unoptimized 환경에서 원본이 그대로 서빙되기 때문). 기존 PNG는 `backfill-webp` 관리자 API로 일괄 전환합니다.
 - **운영 안전장치**: 관리자 모달에서 수동 생성(비용 경고 표기), **SSE로 생성 단계별 진행 상황 스트리밍**, 후보 이력 보존, 확정 시 `customThumbnailUrl`을 적용하되 **원본 유튜브 썸네일을 폴백으로 보존**(`customThumbnailUrl ?? thumbnailUrl`)해 되돌리기와 생성 실패에 안전합니다.
 
-### 📄 HWP 5.0 바이너리 직접 파싱·표 복원
+### 📄 주보 PDF 브라우저 변환 파이프라인
 
-주보는 한글(HWP) 파일로 작성되는데, 외부 변환 서비스 없이 **HWP 5.0 포맷을 바이트 레벨에서 직접 파싱**해 웹 구조화 데이터로 변환합니다.
+주보는 원본 PDF를 **브라우저에서 면별 이미지로 변환**해 R2에 직접 올립니다. 서버 네이티브 의존성이 0이고, Vercel 함수 본문 크기 제한도 타지 않습니다.
 
-- **CFB 컨테이너 해석**: HWP 5.0은 MS Compound File Binary 구조라, `cfb`로 컨테이너를 열고 `FileHeader`의 플래그 비트로 **본문 압축 여부**를 판별합니다.
-- **DEFLATE 해제 + zip bomb 방어**: 압축된 `BodyText/Section*` 스트림을 `inflateRawSync`로 해제하되, **`maxOutputLength`(25MB) 상한**을 둬 악성/과대 파일로 인한 메모리 폭주를 막습니다.
-- **레코드 단위 파싱**: 각 섹션을 32비트 레코드 헤더(`tag = header & 0x3ff`, `size = (header >> 20) & 0xfff`, 확장 크기 `0xfff` 처리)로 순회하며, 문단 텍스트를 UTF-16LE로 디코딩합니다. 인라인·확장 컨트롤의 8 WCHAR 구간을 건너뛰어 `tbl`, `gso` 같은 내부 ID가 본문에 섞이지 않게 합니다.
-- **표와 섹션 구조 복원**: 표 컨트롤·표 속성·셀 목록 레코드에서 행/열과 병합 범위를 읽고, 표 경계와 제목 표식을 기준으로 주보 섹션을 자동 분리해 `tables` 구조로 복원합니다.
-- **민감정보 비공개 처리**: 헌금자 명단, 십일조 항목, 계좌번호가 포함된 문단·표는 파싱 단계에서 제외해 공개 주보에 노출되지 않도록 합니다.
-- 복원된 문단과 표는 주보 편집 모델(`bulletins.sections` JSONB)로 이어져, 단순 파일 첨부가 아니라 **웹에서 읽고 다시 편집할 수 있는 구조화 주보**로 렌더링됩니다.
+> 이전에는 `.hwp` 바이너리를 직접 파싱해 표·문단을 복원했지만, 복원이 불완전해 섹션이 뭉치거나 `표 1`처럼 떨어지는 문제가 있었습니다. **잘못된 정보가 생성될 여지를 없애는 쪽**을 택해 파서를 전량 폐기하고, 원본 이미지 + 사람이 입력한 「한눈에」 카드 구조로 재설계했습니다.
+
+- **왜 브라우저인가**: `sharp`는 Vercel에서 PDF를 읽지 못합니다(libvips에 poppler/pdfium 미포함). 관리자 화면에서 `pdfjs-dist`를 동적 import해 렌더하므로 공개 번들에도 포함되지 않습니다. 워커는 번들러 처리에 의존하지 않고 `prebuild`/`predev` 훅이 `public/`으로 복사한 파일(`/pdf.worker.min.mjs`)을 씁니다.
+- **면당 세 크기 사전 생성**: `next.config.ts`가 `images.unoptimized: true`라 `next/image`의 `sizes`로는 축소본이 생기지 않습니다. 그래서 업로드 시점에 긴 변 **2000 / 1000 / 320px**(라이트박스 / 인라인·표지 / 썸네일 스트립)로 직접 인코딩합니다. 원본이 더 작으면 확대하지 않고 **축소만 클램프**합니다.
+- **iOS Safari 메모리 방어**: 면을 **순차 처리**하고, 렌더가 끝난 canvas는 크기를 0으로 줄여 즉시 해제하며 `page.cleanup()`을 호출합니다. 병렬 렌더는 몇 면 만에 canvas 메모리를 터뜨립니다.
+- **WebP 폴백 전파**: `canvas.toBlob('image/webp')`가 `null`을 주는 브라우저에서는 JPEG로 폴백하고, **이후 모든 면이 같은 mime을 쓰도록** 결과에 mime을 실어 보내 키 확장자와 presign `contentType`이 어긋나지 않게 합니다.
+- **업로드 단위 스테이징**: 키를 `bulletins/{YYYY-MM-DD}/{uploadId}/{n}-{size}.webp`로 만듭니다. 날짜만으로 키를 만들면 수정 중 **공개 중인 이미지를 부분적으로 덮어써** 교인이 신·구 면이 섞인 주보를 보게 됩니다. 업로드 id로 스테이징하면 교체가 DB 한 줄 갱신으로 원자적이 되고, 부분 실패는 DB를 쓰지 않는 것으로 처리됩니다.
+- **저장 전 검증·정리**: 서버 액션이 presigned URL 배열을 1회 발급하고, 저장 시 각 키를 `headR2Object`로 실제 존재 확인한 뒤 DB에 씁니다. **DB 저장이 성공한 다음에야** 이전 업로드 id의 객체를 best-effort로 지웁니다.
+- **PDF 다운로드 헤더**: 교차 출처 리소스에는 `<a download>`가 먹지 않으므로, presign 시 `ContentDisposition: attachment`를 `signableHeaders`에 포함해 R2가 직접 다운로드 응답을 내도록 합니다(Vercel 대역폭 미사용).
+
+### 🔍 노인 사용자 기준으로 설계한 주보 라이트박스
+
+주 사용자가 노인 교인이라는 것이 이 화면의 설계 기준입니다. 제스처를 아는 사람에게만 깔끔한 UI는 처음 보는 사람에게 **버튼이 있다는 사실 자체를 숨깁니다.**
+
+- **조작 요소는 전부 면 바깥 툴바에**: 면 위에 뜨는 반투명 컨트롤을 두지 않고, 항상 보이고 크고 글자 라벨이 붙은 버튼을 하단 바에 둡니다(`－ 작게` `원래대로` `＋ 크게` / `◀ 이전 면` `3 / 6면` `다음 면 ▶`). 읽는 면적을 조금 내주는 대가입니다.
+- **연속 줌 + 단계 버튼 병행**: 핀치·휠은 연속값, 버튼·키보드는 한 번에 ×1.4로 **같은 `zoom` 상태**를 건드립니다. 스테이지에 `touch-action: none`을 걸고 휠은 **non-passive 리스너**로 받아 `preventDefault()`합니다 — React의 `onWheel`은 passive로 붙어 막히지 않고, 막지 않으면 맥 트랙패드 핀치가 브라우저 페이지 줌으로 새어 나갑니다.
+- **앵커 고정 확대**: 커서 위치(또는 두 손가락 중점)를 고정한 채 확대합니다. 중심 고정이면 읽으려던 지점이 화면 밖으로 밀려납니다. `zoom`과 `offset`은 한 상태 객체로 묶어, 한쪽만 반영된 중간 프레임이 보이지 않게 합니다.
+- **드래그는 언제나 화면 이동**: 스와이프로 면이 넘어가지 않습니다. 확대해서 읽는 중에 미는 동작이 면 넘김이 되면 보던 위치를 잃습니다. 양끝에서는 해당 이동 버튼을 **비활성이 아니라 렌더하지 않되 자리는 남깁니다** — 폭까지 사라지면 남은 버튼 위치가 바뀌어 같은 자리를 두 번 누를 수 없습니다.
+- **Fullscreen API에 의존하지 않음**: iOS Safari는 임의 요소의 `requestFullscreen()`을 지원하지 않으므로 `position: fixed` 오버레이로 구현하고, Fullscreen API는 지원 환경에서만 부가 적용합니다. `role="dialog"` + 포커스 트랩 + `Escape` 닫기 + 배경 스크롤 잠금·복원을 갖춥니다.
+- **판정 로직 분리**: 면 이동(`bulletin-paging.ts`)과 줌·드래그 계산(`bulletin-zoom.ts`)을 DOM 없는 순수 함수로 뽑았습니다. vitest가 node 환경이라 컴포넌트 테스트를 돌릴 수 없으므로, 여기 있어야 검증됩니다. 실제 상호작용은 Playwright로 덮습니다.
 
 ---
 
@@ -166,7 +181,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
 | 영상·자막 | RapidAPI yt-api |
 | 실시간 구독 | YouTube WebSub (PubSubHubbub) |
 | Validation | Zod |
-| HWP Parsing | cfb 기반 HWP 5.0 바이너리 직접 파싱 |
+| 주보 PDF 변환 | `pdfjs-dist` 브라우저 렌더 → canvas → WebP 3종 |
 | Analytics | Vercel Analytics + Google Analytics + 자체 방문 분석(`page_views` 수집·일일 롤업) |
 | Test | Vitest (+ PGlite 기반 DB 통합 테스트), Playwright E2E |
 | Lint | ESLint 9, eslint-config-next |
@@ -239,15 +254,16 @@ src/
         analytics-rollup/route.ts    # 방문 통계 일일 롤업 (QStash cron)
   components/
     layout/                          # Header, Footer, PageHero, KakaoMap, VisitBlock
-    home/                            # ImmersiveHero, WorshipTimes, RecentSermons 등 홈 섹션
+    home/                            # ImmersiveHero, HomeBulletinCard 등 홈 섹션
     about/                           # 교회 소개 섹션 컴포넌트
     worship/                         # 예배 안내 컴포넌트
     sermons/                         # 설교·찬양·행사 그리드, 필터, YouTubePlayer
-    bulletins/                       # BulletinView
+    bulletins/                       # BulletinView, BulletinGlance, BulletinNotices,
+                                     # BulletinWorshipTimes, BulletinPageViewer, BulletinLightbox
     gallery/                         # 앨범 카드, 사진·영상 그리드/라이트박스
     praise/                          # 찬양 페이지 Hero
     news/ posts/                     # 소식 목록/카드
-    admin/                           # PostForm, BulletinForm, AlbumForm, 이미지/주보 편집 컴포넌트
+    admin/                           # PostForm, AlbumForm, BulletinForm + 주보 업로드·한눈에·공지 편집
     analytics/                       # Tracker (방문 로그 클라이언트 수집)
     seo/                             # JsonLd
     ui/                              # Reveal, SectionTitle
@@ -272,29 +288,37 @@ src/
     sse.ts                           # SSE 이벤트 파싱 유틸
     logger.ts                        # 서버 로깅 유틸
     site-origin.ts                   # 표준 사이트 origin/절대 URL
-    hwp/parse.ts                     # HWP 5.0 바이너리 파싱 유틸
-    r2.ts                            # Cloudflare R2 업로드/삭제/key 처리
+    r2.ts                            # Cloudflare R2 업로드/삭제/presign/key 처리
     upload-sniff.ts                  # 업로드 MIME 검증
     client-image-compress.ts         # 갤러리 이미지 클라이언트 압축
     client-video-upload.ts           # 영상 포스터 추출·진행률 PUT
     gallery-video.ts                 # 영상 MIME·크기 정책
-    bulletin-editor.ts               # 주보 편집 데이터 유틸
+    bulletin-pdf.ts                  # (client) PDF·이미지 → 면당 세 크기 blob 렌더
+    bulletin-scale.ts                # 면 이미지 긴 변 축소 클램프 (순수 함수)
+    bulletin-paging.ts               # 라이트박스 면 이동 계산 (순수 함수)
+    bulletin-zoom.ts                 # 라이트박스 줌·드래그 계산 (순수 함수)
+    bulletin-assets.ts               # 면·PDF URL → R2 키 추출 (교체 시 정리 대상)
+    bulletin-editor.ts               # 공지·면 정규화/검증 유틸
+    bulletin-format.ts               # 주보 날짜·권호 표기 포맷
     sitemap.ts                       # sitemap 데이터 생성 유틸
     seed/                            # 시드 데이터 정의
     church.ts                        # 교회 기본 정보
     nav.ts / worship.ts / date.ts    # 내비게이션·예배 유형·날짜 유틸
 scripts/
+  copy-pdf-worker.mjs                # pdfjs 워커를 public/으로 복사 (predev/prebuild 훅)
   seed.ts                            # 개발/초기 데이터 시드
   seed-from-rapidapi.ts              # RapidAPI로 실제 설교 데이터 시드
   summarize-sermons.ts               # 설교 일괄 요약 (수동 실행)
   websub-subscribe.ts                # WebSub 최초 구독
   qstash-schedules.ts                # QStash 정기 스케줄 등록 (멱등)
   cleanup-thumbnails.ts              # 썸네일 후보 트림 + R2 고아 객체 정리 (dry-run 기본)
+  audit-bulletin-r2.ts               # bulletins/ 프리픽스 고아 객체 감사 (조회 기본, --delete)
   reset-db.ts                        # 개발 DB 초기화
   create-admin.ts                    # 관리자 계정 생성
   delete-user.ts                     # 사용자 계정 삭제
 drizzle/                             # Drizzle 마이그레이션과 메타데이터
 public/                              # map.html, 아이콘 등 경량 정적 자산 (이미지·영상 원본은 R2)
+                                     # pdf.worker.min.mjs는 빌드 훅이 복사 (git 미추적)
 e2e/                                 # 갤러리 업로드·서브내비·주보·페이지 크롬 Playwright 회귀 테스트
 ```
 
@@ -388,18 +412,24 @@ posts
 
 -- 주보
 bulletins
-  id             uuid primary key default gen_random_uuid()
-  bulletin_date  date not null
-  volume         text
-  issue          text
-  theme          text
-  scripture      text
-  sections       jsonb not null default '[]'::jsonb
-  is_published   boolean not null default false
-  created_by     text
-  created_at     timestamptz default now()
-  updated_at     timestamptz default now()
-  -- index (is_published, bulletin_date)
+  id                 uuid primary key default gen_random_uuid()
+  bulletin_date      date not null          -- unique. 같은 날짜 재생성은 항상 실수
+  volume             text
+  issue              text
+  sermon_title       text
+  scripture          text                   -- 설교 본문
+  preacher           text
+  hymns              text                   -- 찬송가 번호 (자유 텍스트)
+  responsive_reading text                   -- 교독문 번호
+  next_week          text                   -- 다음 주 예고 한 줄
+  pdf_url            text                   -- R2 원본 PDF (이미지 직접 업로드 시 없음)
+  notices            jsonb not null default '[]'::jsonb  -- 일정·공지 리스트
+  pages              jsonb not null default '[]'::jsonb  -- 면 이미지 (배열 순서 = 면 순서)
+  is_published       boolean not null default false
+  created_by         text
+  created_at         timestamptz default now()
+  updated_at         timestamptz default now()
+  -- index (is_published, bulletin_date), unique (bulletin_date)
 
 -- 갤러리 앨범
 gallery_albums
@@ -456,6 +486,8 @@ daily_page_stats
   page_views       integer not null
   created_at       timestamptz default now()
 ```
+
+> 주보의 `pages`는 `gallery_images`처럼 별도 테이블로 두지 않고 jsonb로 둡니다. 면 이미지는 개별 조회·수정 대상이 아니고(고치려면 PDF를 다시 올립니다) 항상 주보와 함께 읽히므로, 조인·삽입 루프·cascade 삭제가 전부 불필요합니다. `notices`·`pages` 모두 JSON 내부를 SQL로 쿼리하지 않습니다.
 
 > 설교 도메인은 `sermons`(핵심 메타) + `sermon_transcripts` / `sermon_summaries` / `sermon_thumbnails`(위성, 1:1) 구조로 분할되어 있습니다. 자막·요약·썸네일 컬럼은 위성 테이블로 이관이 완료되어 `sermons`에는 레거시 컬럼이 남아 있지 않습니다.
 
@@ -527,7 +559,7 @@ ANALYTICS_SALT=your_analytics_salt
 # 패키지 설치
 npm install
 
-# 개발 서버 실행
+# 개발 서버 실행 (predev가 pdfjs 워커를 public/으로 복사)
 npm run dev
 ```
 
@@ -646,16 +678,16 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 
 | 영역 | 테스트 | 검증 대상 |
 |---|---|---|
-| 업로드/스토리지 | `upload-sniff`, `r2`, `gallery-video` | 허용 MIME/파일 시그니처, R2 파일명 정규화·key prefix, 영상 형식·크기·서명 URL 검증 |
+| 업로드/스토리지 | `upload-sniff`, `r2`, `gallery-video` | 허용 MIME/파일 시그니처(`%PDF-` 포함), R2 파일명 정규화·key prefix, 주보 면·PDF key 형식과 presign prefix 가드, 영상 형식·크기·서명 URL 검증 |
 | 인증/SEO | `auth-origin`, `sitemap`, `seo/jsonld` | Trusted origin 정규화, sitemap URL 생성, JSON-LD 빌더 |
-| 주보 | `bulletin-editor`, `hwp/parse` | 주보 편집 데이터 변환/보정, HWP 문단·표 복원, 자동 섹션 분리, 헌금·계좌 제거 |
+| 주보 | `bulletin-editor`, `bulletin-format`, `bulletin-scale`, `bulletin-pdf`, `bulletin-paging`, `bulletin-zoom`, `actions/bulletins` | 공지·면 정규화/검증, 날짜·권호 표기, 긴 변 축소 클램프, PDF 면 렌더·WebP→JPEG 폴백·상한 거부, 면 이동 클램프·표기, 줌 클램프·앵커 고정·오프셋 클램프, 미검증 키 저장 거부 |
 | 설교 동기화 | `youtube/websub`, `sermons/sync`, `sermons/reconcile` | WebSub 서명 검증·Atom 파싱, 신규 삽입 계획·중복 방지, 정합성 백필 |
 | 설교 요약 | `sermons/summarize`(+integration), `ai/gemini`, `ai/sermon-summary`, `transcript/rapidapi`, `transcript/prompt` | claim 선점·지수 백오프·재시도 선별, Gemini 스키마/챕터 검증, 자막 fetch·프롬프트 빌드 |
 | 설교 표기 | `sermons/classify-title`, `sermons/format`, `sermons/list-title`, `sermons/sermon-date` | 제목 분류·표시 포맷·날짜 파싱 |
 | 썸네일 | `thumbnails/scripture`, `detect-caption-band`, `compose-text`, `generate-background`, `position`, `remove-background`, `store`(+integration), `webp`, `actions/thumbnails` | 성경구절 추출, 자막 밴드 crop, 텍스트 합성·배치, 배경 생성, 누끼, 후보 저장/트림, WebP 변환 |
 | 방문 분석 | `analytics/bots`, `analytics/datacenter`, `analytics/ip`, `analytics/paths`, `analytics/region-ko`, `analytics/server` | 봇·데이터센터 판별, IP 마스킹·해시, 지역 한글화, 수집 경로 필터, 체류시간 집계 |
 | 기타 유틸 | `worship`, `date`, `sse`, `db/schema`, `data/sermons`, `data/posts` | 예배 유형/필터, 날짜 유틸, SSE 파싱, 스키마 정합성, 설교 조회, 예약 게시 판별 |
-| 브라우저 E2E | `gallery-upload`, `gallery-video`, `subnav-scroll`, `bulletins`, `page-chrome` | 관리자 갤러리 업로드 흐름, 영상 폼 검증, 서브내비 라우트 스크롤 회귀, 주보 상세·라이트박스, 페이지 크롬(히어로 리마운트 방지) 회귀 |
+| 브라우저 E2E | `gallery-upload`, `gallery-video`, `subnav-scroll`, `bulletins`, `page-chrome` | 관리자 갤러리 업로드 흐름, 영상 폼 검증, 서브내비 라우트 스크롤 회귀, 주보 목록→상세→라이트박스(썸네일 선택과 라이트박스 진입 분리, 한 면 표시, 드래그로 면이 넘어가지 않음, Escape 복귀), 페이지 크롬(히어로 리마운트 방지) 회귀 |
 
 ---
 
@@ -665,8 +697,8 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 
 허용 key prefix는 다음 세 범위입니다.
 
-- `gallery/`: 갤러리 이미지
-- `bulletins/`: 주보 HWP 및 관련 업로드
+- `gallery/`: 갤러리 이미지·영상
+- `bulletins/`: 주보 면 이미지와 원본 PDF
 - `thumbnails/`: AI 설교 썸네일과 생성 배경
 
 업로드 처리 흐름:
@@ -674,30 +706,55 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 1. 관리자 화면에서 파일을 선택합니다.
 2. `upload-sniff.ts`에서 MIME/파일 시그니처를 검증합니다.
 3. `sanitizeR2Filename`으로 안전한 파일명을 만듭니다.
-4. `galleryImageKey` 또는 `bulletinHwpKey`로 prefix가 고정된 key를 생성합니다.
+4. `galleryImageKey` 등 prefix가 고정된 key 생성 함수를 씁니다.
 5. AWS S3 SDK 호환 클라이언트로 Cloudflare R2에 업로드합니다.
 6. 삭제 시에는 `R2_PUBLIC_URL`로 시작하고 허용 prefix에 포함된 key만 추출합니다.
+
+주보는 브라우저에서 변환하므로 별도 흐름을 씁니다. 서버 액션 `prepareBulletinUpload`가 업로드 id(`crypto.randomUUID()`)를 발급해 presigned PUT URL을 **배열로 한 번에** 내려주고, 브라우저가 R2에 병렬 PUT합니다. 저장 시 `assertBulletinAssets`가 각 키를 `headR2Object`로 확인하고, DB 저장 성공 후에 이전 업로드 id의 객체를 정리합니다. key 규칙은 다음과 같습니다.
+
+```text
+bulletins/{YYYY-MM-DD}/{uploadId}/{n}-full.webp      # 긴 변 2000px — 라이트박스
+bulletins/{YYYY-MM-DD}/{uploadId}/{n}-preview.webp   # 긴 변 1000px — 인라인·목록 표지·홈 카드
+bulletins/{YYYY-MM-DD}/{uploadId}/{n}-thumb.webp     # 긴 변 320px  — 썸네일 스트립
+bulletins/{YYYY-MM-DD}/{uploadId}/original.pdf       # 원본 PDF (이미지 업로드 시 없음)
+```
+
+부분 실패한 업로드의 객체는 고아로 남습니다. 다음 성공 업로드 시점의 정리 대상에 포함되며, 남은 것은 `npx tsx scripts/audit-bulletin-r2.ts`로 감사할 수 있습니다(`--delete`로 삭제).
 
 갤러리 영상은 Vercel 함수 본문 크기 제한을 우회하기 위해 별도 흐름을 사용합니다. 서버가 최대 10분 유효한 presigned PUT URL을 발급하면 브라우저가 R2로 직접 업로드하고, 업로드 후 서버가 HEAD 요청으로 객체의 MIME·크기를 재검증한 뒤 DB 레코드를 저장합니다. 브라우저에서 추출한 포스터는 일반 이미지 업로드 경로를 사용합니다. R2 버킷 CORS 설정은 [`docs/r2-cors-video-upload.md`](docs/r2-cors-video-upload.md)를 참고하세요.
 
 ---
 
-## 📖 주보 편집 모델
+## 📖 주보 데이터 모델
 
-주보 본문은 `bulletins.sections` JSONB에 구조화되어 저장됩니다.
+주보는 **스칼라 「한눈에」 필드 + 두 개의 JSONB 배열**로 구성됩니다.
 
 ```ts
-interface BulletinSection {
-  id: string
+/** 「이번 주 일정 · 공지」 통합 리스트. when이 있으면 시간 배지를 앞에 붙인다. */
+interface BulletinNotice {
   title: string
-  body?: string[]
-  rows?: { label: string; value: string }[]
-  tables?: { title: string; headers: string[]; rows: string[][] }[]
-  offerings?: { category: string; names: string[] }[]
+  detail: string
+  when?: string
+}
+
+/**
+ * 원본 주보 면 이미지. 배열 순서가 면 순서다.
+ * width·height는 full 기준이며 세 크기의 종횡비가 같으므로 한 번만 저장한다.
+ */
+interface BulletinPage {
+  width: number
+  height: number
+  fullUrl: string     // 긴 변 2000px — 라이트박스
+  previewUrl: string  // 긴 변 1000px — 인라인 큰 이미지, 목록 표지, 홈 카드
+  thumbUrl: string    // 긴 변 320px  — 인라인 썸네일 스트립
 }
 ```
 
-이 구조를 통해 예배 순서, 교회 소식, 표, 헌금자 명단처럼 서로 다른 형태의 주보 콘텐츠를 하나의 편집 UI에서 관리합니다.
+특별일정과 공지를 한 배열로 합친 이유는, 별도 배열로 두면 특별일정이 2개 이상일 때 카드 그리드가 깨지기 때문입니다. `when` 유무로 배지만 갈리는 단일 리스트면 개수에 무관하게 렌더되고 관리자 에디터도 하나로 줄어듭니다.
+
+### 이미지 방식의 대가
+
+원본을 이미지로 게시하므로 본문 전문 검색이 불가능하고, 스크린리더는 면 내용을 읽지 못합니다. 이를 **「이번 주 한눈에」 카드가 텍스트로 존재하는 것**으로 부분 보완하며, 면 이미지에는 `"{YYYY년 M월 D일} 주보 {n}면"` alt를 붙여 최소한 위치를 알립니다. 종이 주보로 이미 인쇄·배포되는 정보라는 판단에 따라 헌금 명단 등도 원본 그대로 공개하며, 면 단위 비공개 장치는 두지 않습니다.
 
 ---
 
@@ -746,7 +803,7 @@ https://공식-도메인/sitemap.xml
 위 "주요 기능"에 적힌 항목은 모두 운영 중인 기능입니다. 앞으로 다룰 과제는 다음과 같습니다.
 
 - [ ] 설교 요약/썸네일 파이프라인 관측성(잡 실패 알림·상태 대시보드)
-- [ ] 주보 HWP 파싱 정확도 개선 및 예외 케이스 확장
+- [ ] 주보 변환 실패 시 재시도 UX 및 고아 객체 자동 회수
 - [ ] 이미지 업로드 진행률/실패 재시도 UX 개선
 - [ ] 관리자 작업 로그 필터링 강화
 - [ ] 접근성 점검 결과 문서화
