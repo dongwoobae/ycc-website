@@ -3,20 +3,23 @@
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatPageAlt } from '@/lib/bulletin-format'
+import { clampPageIndex, isLastPage, movePage, pageLabel } from '@/lib/bulletin-paging'
 import {
-  lastSpreadStart,
-  moveSpread,
-  pagesPerSpread,
-  realignSpread,
-  spreadLabel,
-  spreadPageIndexes,
-  spreadStartForPage,
-} from '@/lib/bulletin-spread'
-import { isDraggable, nextZoom, offsetForStep, zoomScale, type Offset, type ZoomStep } from '@/lib/bulletin-zoom'
+  distance,
+  fitView,
+  isDraggable,
+  midpoint,
+  panTo,
+  scaleFor,
+  wheelZoomFactor,
+  zoomAt,
+  type Offset,
+  type ZoomState,
+} from '@/lib/bulletin-zoom'
 import type { BulletinPage } from '@/lib/types'
 
-/** 스와이프로 인정할 최소 가로 이동 거리(px). 이보다 짧으면 탭으로 본다. */
-const swipeThreshold = 50
+/** 확대 버튼·키보드 ＋/－ 한 번의 배율 변화. 제스처를 모르는 사용자의 줌 경로다. */
+const stepZoomFactor = 1.4
 
 interface BulletinLightboxProps {
   pages: BulletinPage[]
@@ -26,12 +29,22 @@ interface BulletinLightboxProps {
   onClose: () => void
 }
 
+/** 클라이언트 좌표를 스테이지 중심 기준으로 옮긴다 — transform-origin 이 center 이므로 원점을 맞춘다. */
+function anchorFor(stage: HTMLElement, clientX: number, clientY: number): Offset {
+  const box = stage.getBoundingClientRect()
+  return { x: clientX - (box.left + box.width / 2), y: clientY - (box.top + box.height / 2) }
+}
+
 /**
- * 전체화면 스프레드 뷰어.
+ * 전체화면 뷰어. 화면 폭과 무관하게 한 면씩 띄운다.
  *
  * Fullscreen API 에 의존하지 않는다 — iOS Safari 는 <video> 외의 요소에
  * requestFullscreen() 을 지원하지 않는다. position:fixed 오버레이로 구현하고
  * Fullscreen 은 지원되는 환경에서만 부가로 건다.
+ *
+ * 확대는 제스처가 전부다: 터치·트랙패드는 두 손가락 벌리기, 데스크탑은 휠 스크롤.
+ * 면 이동은 이동 버튼·면 목록·좌우 방향키뿐이다 — 드래그는 언제나 화면 이동이며
+ * 제스처로 면이 넘어가지 않는다. 확대해서 읽는 중에 면이 바뀌면 위치를 잃는다.
  */
 export default function BulletinLightbox({
   pages,
@@ -40,39 +53,44 @@ export default function BulletinLightbox({
   pdfUrl,
   onClose,
 }: BulletinLightboxProps) {
-  const initialPerSpread = typeof window === 'undefined' ? 1 : pagesPerSpread(window.innerWidth)
-  const [perSpread, setPerSpread] = useState(initialPerSpread)
-  // 진입 면을 스프레드 경계로 정렬해 둔다. 정렬하지 않으면 이후 moveSpread 가
-  // 어긋난 기준에서 계산돼 다음 면으로 가야 할 때 뒤로 돌아가는 일이 생긴다.
-  const [start, setStart] = useState(() => spreadStartForPage(startPageIndex, pages.length, initialPerSpread))
-  const [zoom, setZoom] = useState<ZoomStep>('fit')
-  const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 })
+  const [current, setCurrent] = useState(() => clampPageIndex(startPageIndex, pages.length))
+  // 배율과 오프셋은 항상 함께 바뀐다(확대하면 앵커를 맞추느라 오프셋도 움직인다).
+  // 따로 두면 한쪽만 반영된 중간 상태가 한 프레임 보인다.
+  const [view, setView] = useState<ZoomState>(fitView)
   const [showStrip, setShowStrip] = useState(false)
   // 스테이지 크기를 상태로 들고 있는다. 렌더 중에 ref 로 측정하면 첫 렌더에서 0이 나와
-  // 「맞춤」 배율이 0이 되고, 다시 그릴 계기가 없어 스프레드가 화면에 나타나지 않는다.
+  // 「맞춤」 배율이 0이 되고, 다시 그릴 계기가 없어 면이 화면에 나타나지 않는다.
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 })
   const stageRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
+  // 눌려 있는 포인터 전부. 2개가 되면 핀치, 1개면 드래그다.
+  const pointersRef = useRef(new Map<number, Offset>())
+  const pinchRef = useRef<{ startDistance: number; startZoom: number } | null>(null)
   const dragRef = useRef<{ pointerId: number; originX: number; originY: number; from: Offset } | null>(null)
 
-  const indexes = useMemo(() => spreadPageIndexes(start, pages.length, perSpread), [start, pages.length, perSpread])
+  const page = pages[clampPageIndex(current, pages.length)]
 
-  // 스프레드 콘텐츠의 자연 크기 — 나란히 붙인 폭 합계와 최대 높이
-  const content = useMemo(() => {
-    const shown = indexes.map((index) => pages[index]).filter(Boolean)
-    return {
-      width: shown.reduce((sum, page) => sum + page.width, 0),
-      height: shown.reduce((max, page) => Math.max(max, page.height), 0),
-    }
-  }, [indexes, pages])
+  // 면의 자연 크기
+  const content = useMemo(
+    () => ({ width: page?.width ?? 0, height: page?.height ?? 0 }),
+    [page?.width, page?.height]
+  )
 
   const move = useCallback(
     (delta: -1 | 1) => {
-      setStart((current) => moveSpread(current, delta, pages.length, perSpread))
-      setZoom('fit')
-      setOffset({ x: 0, y: 0 })
+      setCurrent((index) => movePage(index, delta, pages.length))
+      setView(fitView)
     },
-    [pages.length, perSpread]
+    [pages.length]
+  )
+
+  // 버튼·키보드 줌. 포인터 위치가 없으므로 화면 중앙을 앵커로 쓴다.
+  const zoomByStep = useCallback(
+    (direction: -1 | 1) => {
+      const factor = direction === 1 ? stepZoomFactor : 1 / stepZoomFactor
+      setView((currentView) => zoomAt(currentView, currentView.zoom * factor, { x: 0, y: 0 }, stageSize, content))
+    },
+    [stageSize, content]
   )
 
   // 스테이지 실측. 툴바·썸네일 스트립 토글로도 높이가 바뀌므로 창 resize 만으로는 부족하다.
@@ -87,35 +105,17 @@ export default function BulletinLightbox({
     return () => observer.disconnect()
   }, [])
 
-  // 폭이 바뀌면 현재 스프레드의 첫 면을 유지한 채 재정렬한다
-  useEffect(() => {
-    function onResize() {
-      const next = pagesPerSpread(window.innerWidth)
-      setPerSpread((current) => {
-        if (current === next) return current
-        setStart((currentStart) => realignSpread(currentStart, pages.length, next))
-        return next
-      })
-    }
-    onResize()
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [pages.length])
-
-  // 다음 스프레드 한 세트만 미리 받는다. 2000px WebP 는 장당 300~600KB 라
+  // 다음 면 하나만 미리 받는다. 2000px WebP 는 장당 300~600KB 라
   // 전부 프리로드하면 6면짜리에서 3MB 가까이 낭비된다.
   useEffect(() => {
-    const nextStart = moveSpread(start, 1, pages.length, perSpread)
-    if (nextStart === start) return
-    const preloaded = spreadPageIndexes(nextStart, pages.length, perSpread).map((index) => {
-      const image = new window.Image()
-      image.src = pages[index].fullUrl
-      return image
-    })
+    const next = movePage(current, 1, pages.length)
+    if (next === current) return
+    const image = new window.Image()
+    image.src = pages[next].fullUrl
     return () => {
-      for (const image of preloaded) image.src = ''
+      image.src = ''
     }
-  }, [start, perSpread, pages])
+  }, [current, pages])
 
   // 열릴 때 포커스를 닫기 버튼으로 옮기고 배경 스크롤을 잠근다
   useEffect(() => {
@@ -129,7 +129,31 @@ export default function BulletinLightbox({
     }
   }, [])
 
-  // Escape 로 닫고, 방향키로 스프레드를 넘기며, Tab 포커스를 오버레이 안에 가둔다
+  // 휠·트랙패드 줌. React 의 onWheel 은 루트에 passive 로 붙어 preventDefault 가 먹지 않는다.
+  // 막지 않으면 Ctrl+휠(맥 트랙패드 핀치가 보내는 이벤트)이 브라우저 페이지 줌으로 새어 나간다.
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    // 함수 선언문이 아니라 화살표 함수로 둔다 — 선언문은 호이스팅돼 위의 null 체크가 좁혀지지 않는다
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      const anchor = anchorFor(stage, event.clientX, event.clientY)
+      setView((currentView) =>
+        zoomAt(
+          currentView,
+          currentView.zoom * wheelZoomFactor(event.deltaY, event.deltaMode),
+          anchor,
+          stageSize,
+          content
+        )
+      )
+    }
+    stage.addEventListener('wheel', onWheel, { passive: false })
+    return () => stage.removeEventListener('wheel', onWheel)
+  }, [stageSize, content])
+
+  // Escape 로 닫고, 방향키로 면을 넘기며, ＋/－/0 으로 줌한다(포인터 장치 없이 쓰는 경로).
+  // Tab 포커스는 오버레이 안에 가둔다.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -145,6 +169,16 @@ export default function BulletinLightbox({
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
         move(-1)
+        return
+      }
+      if (event.key === '0') {
+        event.preventDefault()
+        setView(fitView)
+        return
+      }
+      if (event.key === '+' || event.key === '=' || event.key === '-' || event.key === '_') {
+        event.preventDefault()
+        zoomByStep(event.key === '-' || event.key === '_' ? -1 : 1)
         return
       }
       if (event.key !== 'Tab') return
@@ -165,47 +199,60 @@ export default function BulletinLightbox({
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [move, onClose])
+  }, [move, onClose, zoomByStep])
 
-  function applyZoom(step: ZoomStep) {
-    setZoom(step)
-    setOffset(offsetForStep(step, offset, stageSize, content))
-  }
-
-  // 확대 상태에서는 드래그가 화면 이동이고, 맞춤 상태에서는 같은 제스처가 스프레드 넘김이다.
-  // 스펙: "줌이 맞춤이 아닐 때는 스프레드 단위 이동 대신 드래그가 우선한다"
+  // 손가락이 둘이면 핀치, 하나면 드래그(화면 이동)다.
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    dragRef.current = { pointerId: event.pointerId, originX: event.clientX, originY: event.clientY, from: offset }
+    const pointers = pointersRef.current
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
     event.currentTarget.setPointerCapture(event.pointerId)
+
+    if (pointers.size >= 2) {
+      const [a, b] = [...pointers.values()]
+      pinchRef.current = { startDistance: distance(a, b), startZoom: view.zoom }
+      dragRef.current = null
+      return
+    }
+    dragRef.current = { pointerId: event.pointerId, originX: event.clientX, originY: event.clientY, from: view.offset }
   }
 
   function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const pointers = pointersRef.current
+    if (!pointers.has(event.pointerId)) return
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+    const pinch = pinchRef.current
+    if (pinch && pointers.size >= 2) {
+      if (!(pinch.startDistance > 0)) return
+      const [a, b] = [...pointers.values()]
+      // 시작 시점 기준의 절대 배율로 계산한다. 프레임마다 곱하면 오차가 쌓여 손가락과 어긋난다.
+      const target = pinch.startZoom * (distance(a, b) / pinch.startDistance)
+      const center = midpoint(a, b)
+      const anchor = anchorFor(event.currentTarget, center.x, center.y)
+      setView((currentView) => zoomAt(currentView, target, anchor, stageSize, content))
+      return
+    }
+
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) return
-    if (!isDraggable(zoom)) return
+    if (!isDraggable(view.zoom)) return
     const moved = {
       x: drag.from.x + (event.clientX - drag.originX),
       y: drag.from.y + (event.clientY - drag.originY),
     }
-    setOffset(offsetForStep(zoom, moved, stageSize, content))
+    setView((currentView) => panTo(currentView, moved, stageSize, content))
   }
 
   function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current
-    if (!drag || drag.pointerId !== event.pointerId) return
-    dragRef.current = null
-    if (isDraggable(zoom)) return
-
-    const dx = event.clientX - drag.originX
-    const dy = event.clientY - drag.originY
-    // 세로로 더 많이 움직였으면 스크롤 의도로 보고 무시한다
-    if (Math.abs(dx) < swipeThreshold || Math.abs(dx) <= Math.abs(dy)) return
-    move(dx < 0 ? 1 : -1)
+    const pointers = pointersRef.current
+    pointers.delete(event.pointerId)
+    if (pointers.size < 2) pinchRef.current = null
+    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null
   }
 
-  // 실측 전(0×0)에는 「맞춤」이 0을 주므로 스프레드를 그리지 않는다 — ResizeObserver 가
+  // 실측 전(0×0)에는 「맞춤」이 0을 주므로 면을 그리지 않는다 — ResizeObserver 가
   // 첫 페인트 직후 크기를 채우면 정상 배율로 나타난다.
-  const scale = zoomScale(zoom, stageSize, content)
+  const scale = scaleFor(view.zoom, stageSize, content)
 
   return (
     <div
@@ -219,24 +266,9 @@ export default function BulletinLightbox({
       </h2>
 
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
-        <div className="flex items-center gap-1.5">
-          <ToolButton onClick={() => setShowStrip((v) => !v)} pressed={showStrip} label="면 목록">
-            면 목록
-          </ToolButton>
-          <ToolButton onClick={() => applyZoom('fit')} pressed={zoom === 'fit'} label="화면에 맞춤">
-            맞춤
-          </ToolButton>
-          <ToolButton onClick={() => applyZoom('1x')} pressed={zoom === '1x'} label="원래 크기">
-            1×
-          </ToolButton>
-          <ToolButton onClick={() => applyZoom('2x')} pressed={zoom === '2x'} label="2배 확대">
-            2×
-          </ToolButton>
-          <ToolButton onClick={() => applyZoom(nextZoom(zoom, 1))} label="한 단계 확대">
-            ＋
-          </ToolButton>
-        </div>
-        <p className="text-xs font-bold text-white/60">{spreadLabel(start, pages.length, perSpread)}</p>
+        <ToolButton onClick={() => setShowStrip((v) => !v)} pressed={showStrip} label="면 목록">
+          면 목록
+        </ToolButton>
         <div className="flex items-center gap-1.5">
           {pdfUrl ? (
             <a
@@ -260,26 +292,23 @@ export default function BulletinLightbox({
 
       {showStrip ? (
         <div className="flex gap-2 overflow-x-auto border-b border-white/10 px-3 py-2">
-          {pages.map((page, index) => (
+          {pages.map((item, index) => (
             <button
-              key={page.thumbUrl}
+              key={item.thumbUrl}
               type="button"
               onClick={() => {
-                setStart(realignSpread(index, pages.length, perSpread))
-                setZoom('fit')
-                setOffset({ x: 0, y: 0 })
+                setCurrent(index)
+                setView(fitView)
               }}
               className={
-                indexes.includes(index)
-                  ? 'shrink-0 rounded border-2 border-gold'
-                  : 'shrink-0 rounded border border-white/20'
+                index === current ? 'shrink-0 rounded border-2 border-gold' : 'shrink-0 rounded border border-white/20'
               }
             >
               <Image
-                src={page.thumbUrl}
+                src={item.thumbUrl}
                 alt={formatPageAlt(bulletinDate, index + 1)}
                 width={48}
-                height={Math.round((48 * page.height) / page.width)}
+                height={Math.round((48 * item.height) / item.width)}
                 unoptimized
               />
             </button>
@@ -287,42 +316,48 @@ export default function BulletinLightbox({
         </div>
       ) : null}
 
-      <div className="flex flex-1 items-center gap-2 overflow-hidden px-2 py-3">
-        <NavButton onClick={() => move(-1)} label="이전 면" disabled={start === 0}>
-          ‹
-        </NavButton>
-        <div
-          ref={stageRef}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          className="relative flex flex-1 items-center justify-center overflow-hidden"
-          style={{ cursor: isDraggable(zoom) ? 'grab' : 'default', touchAction: 'none' }}
-        >
+      <div
+        ref={stageRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        className="relative flex flex-1 items-center justify-center overflow-hidden"
+        style={{ cursor: isDraggable(view.zoom) ? 'grab' : 'default', touchAction: 'none' }}
+      >
+        {page ? (
           <div
-            className="flex items-start gap-2"
+            data-testid="bulletin-lightbox-page"
             style={{
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+              transform: `translate(${view.offset.x}px, ${view.offset.y}px) scale(${scale})`,
               transformOrigin: 'center center',
             }}
           >
-            {indexes.map((index) => (
-              <SpreadPage
-                key={pages[index].fullUrl}
-                page={pages[index]}
-                alt={formatPageAlt(bulletinDate, index + 1)}
-              />
-            ))}
+            <LightboxPage page={page} alt={formatPageAlt(bulletinDate, current + 1)} />
           </div>
+        ) : null}
+      </div>
+
+      {/* 조작은 전부 하단 바에 모은다. 면 위에 띄우면 읽는 면적은 벌지만 무엇이 눌리는 것인지
+          알아보기 어렵다. 확대·이동을 처음 쓰는 사람 기준으로는 항상 보이고 글자가 붙어 있는
+          쪽이 낫고, 아래쪽이 손가락이 닿는 자리다. */}
+      <div className="border-t border-white/10 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2">
+        <div className="flex items-center justify-center gap-2">
+          <ZoomButton onClick={() => zoomByStep(-1)} label="작게 보기">－ 작게</ZoomButton>
+          <ZoomButton onClick={() => setView(fitView)} label="화면에 맞추기">원래대로</ZoomButton>
+          <ZoomButton onClick={() => zoomByStep(1)} label="크게 보기">＋ 크게</ZoomButton>
         </div>
-        <NavButton
-          onClick={() => move(1)}
-          label="다음 면"
-          disabled={start >= lastSpreadStart(pages.length, perSpread)}
-        >
-          ›
-        </NavButton>
+        <div className="mt-2 flex items-center gap-2">
+          <NavButton onClick={() => move(-1)} label="이전 면 보기" hidden={current === 0}>
+            ◀ 이전 면
+          </NavButton>
+          <p className="w-24 shrink-0 text-center text-sm font-bold text-white/80">
+            {pageLabel(current, pages.length)}
+          </p>
+          <NavButton onClick={() => move(1)} label="다음 면 보기" hidden={isLastPage(current, pages.length)}>
+            다음 면 ▶
+          </NavButton>
+        </div>
       </div>
     </div>
   )
@@ -332,20 +367,12 @@ export default function BulletinLightbox({
  * 인라인에서 이미 받아둔 preview 를 먼저 깔고, full 로드가 끝나면 그 위로 덮는다.
  * 라이트박스를 열자마자 흰 화면을 보지 않게 하는 것이 목적이다.
  */
-function SpreadPage({ page, alt }: { page: BulletinPage; alt: string }) {
+function LightboxPage({ page, alt }: { page: BulletinPage; alt: string }) {
   const [fullLoaded, setFullLoaded] = useState(false)
 
   return (
     <div className="relative bg-white" style={{ width: page.width, height: page.height }}>
-      <Image
-        src={page.previewUrl}
-        alt=""
-        aria-hidden
-        fill
-        unoptimized
-        sizes="100vw"
-        className="object-contain"
-      />
+      <Image src={page.previewUrl} alt="" aria-hidden fill unoptimized sizes="100vw" className="object-contain" />
       <Image
         src={page.fullUrl}
         alt={alt}
@@ -388,24 +415,48 @@ function ToolButton({
   )
 }
 
+/**
+ * 하단 이동 버튼. 어두운 툴바 위에서 가장 잘 읽히는 조합인 흰 바탕 + 딥네이비 글자를 쓴다.
+ * 딥네이비 바탕은 툴바(#14171d)와 둘 다 어두워 경계가 흐려진다.
+ *
+ * 화살표만 두지 않고 「이전 면」·「다음 면」을 함께 적는다 — 기호만으로는 무엇이 넘어가는지
+ * 알 수 없고, 이 뷰어에서 면을 넘기는 방법은 이 버튼과 면 목록뿐이다.
+ */
 function NavButton({
   onClick,
   label,
-  disabled,
+  hidden,
   children,
 }: {
   onClick: () => void
   label: string
-  disabled: boolean
+  hidden: boolean
   children: React.ReactNode
 }) {
+  // 첫 면·마지막 면에서는 버튼을 지우되 자리는 남긴다. 폭까지 사라지면 남은 버튼이
+  // 늘어나면서 위치가 바뀌어, 같은 자리를 두 번 누를 수 없게 된다.
+  if (hidden) return <div className="h-14 flex-1" aria-hidden />
+
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      disabled={disabled}
-      className="h-14 w-8 shrink-0 rounded-lg bg-white/10 text-lg text-white/70 transition hover:bg-white/20 disabled:opacity-30"
+      className="h-14 flex-1 rounded-lg bg-white text-base font-extrabold text-[#0B1F5C] transition hover:bg-white/85"
+    >
+      {children}
+    </button>
+  )
+}
+
+/** 확대 버튼. 이동보다는 부차적이라 한 단계 낮은 대비로 두되, 라벨은 똑같이 붙인다. */
+function ZoomButton({ onClick, label, children }: { onClick: () => void; label: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="h-11 flex-1 rounded-lg bg-white/15 text-sm font-bold text-white transition hover:bg-white/25"
     >
       {children}
     </button>

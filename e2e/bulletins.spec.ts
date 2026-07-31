@@ -32,7 +32,7 @@ test('썸네일 클릭은 큰 이미지만 바꾸고 라이트박스를 열지 �
   expect(after).not.toBe(before)
 })
 
-test('원본 크게 보기로 라이트박스를 열고 이동·줌·Escape 닫기가 동작한다', async ({ page }) => {
+test('원본 크게 보기로 라이트박스를 열고 이동·휠 줌·Escape 닫기가 동작한다', async ({ page }) => {
   test.skip(!(await openLatestBulletin(page)), '게시된 주보가 없음')
 
   const openButton = page.getByRole('button', { name: '원본 크게 보기' })
@@ -42,11 +42,27 @@ test('원본 크게 보기로 라이트박스를 열고 이동·줌·Escape 닫�
   await expect(dialog).toBeVisible()
   await expect(dialog.getByRole('button', { name: '닫기' })).toBeFocused()
 
-  await dialog.getByRole('button', { name: '2배 확대' }).click()
-  await expect(dialog.getByRole('button', { name: '2배 확대' })).toHaveAttribute('aria-pressed', 'true')
+  // 제스처를 모르는 사용자를 위해 확대 버튼과 글자 라벨이 붙은 이동 버튼이 항상 보인다
+  await expect(dialog.getByRole('button', { name: '크게 보기' })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '작게 보기' })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '화면에 맞추기' })).toBeVisible()
+  // 첫 면에서는 「이전 면」 버튼을 렌더하지 않는다
+  await expect(dialog.getByRole('button', { name: '이전 면 보기' })).toHaveCount(0)
+
+  const pageCount = Number(/\/ (\d+)면$/.exec((await dialog.getByText(/^\d+ \/ \d+면$/).textContent()) ?? '')?.[1])
+  if (pageCount > 1) await expect(dialog.getByRole('button', { name: '다음 면 보기' })).toBeVisible()
+
+  const stage = dialog.getByTestId('bulletin-lightbox-page')
+  const before = await stage.evaluate((el) => getComputedStyle(el).transform)
+  const box = await stage.boundingBox()
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+  await page.mouse.wheel(0, -400)
+  await expect.poll(() => stage.evaluate((el) => getComputedStyle(el).transform)).not.toBe(before)
 
   await page.keyboard.press('ArrowRight')
   await page.keyboard.press('ArrowLeft')
+  // 면을 넘기면 배율이 맞춤으로 되돌아온다
+  await expect.poll(() => stage.evaluate((el) => getComputedStyle(el).transform)).toBe(before)
 
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
@@ -54,18 +70,37 @@ test('원본 크게 보기로 라이트박스를 열고 이동·줌·Escape 닫�
   await expect(openButton).toBeFocused()
 })
 
-test('데스크탑은 3면, 모바일은 1면을 동시에 띄운다', async ({ page }) => {
+test('어느 화면 폭에서도 한 면만 띄운다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   test.skip(!(await openLatestBulletin(page)), '게시된 주보가 없음')
   await page.getByRole('button', { name: '원본 크게 보기' }).click()
-  const desktopLabel = await page.getByRole('dialog').getByText(/\/ \d+면$/).textContent()
+
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByTestId('bulletin-lightbox-page')).toHaveCount(1)
+  await expect(dialog.getByText(/^\d+ \/ \d+면$/)).toBeVisible()
 
   await page.setViewportSize({ width: 390, height: 844 })
-  const mobileLabel = await page.getByRole('dialog').getByText(/\/ \d+면$/).textContent()
+  await expect(dialog.getByTestId('bulletin-lightbox-page')).toHaveCount(1)
+  await expect(dialog.getByText(/^\d+ \/ \d+면$/)).toBeVisible()
+})
 
-  // 데스크탑은 범위 표기(1 – 3), 모바일은 단일 표기(1)
-  expect(desktopLabel).not.toBe(mobileLabel)
-  expect(mobileLabel).not.toContain('–')
+test('드래그로는 면이 넘어가지 않는다 — 이동은 버튼·면 목록·방향키뿐', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  test.skip(!(await openLatestBulletin(page)), '게시된 주보가 없음')
+  await page.getByRole('button', { name: '원본 크게 보기' }).click()
+
+  const dialog = page.getByRole('dialog')
+  const label = dialog.getByText(/^\d+ \/ \d+면$/)
+  const before = await label.textContent()
+
+  const box = await dialog.getByTestId('bulletin-lightbox-page').boundingBox()
+  const y = box!.y + box!.height / 2
+  await page.mouse.move(box!.x + box!.width * 0.8, y)
+  await page.mouse.down()
+  await page.mouse.move(box!.x + box!.width * 0.1, y, { steps: 10 })
+  await page.mouse.up()
+
+  await expect(label).toHaveText(before!)
 })
 
 test('면이 없는 주보도 상세·목록이 깨지지 않는다', async ({ page }) => {
