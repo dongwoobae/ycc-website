@@ -13,6 +13,11 @@ describe('isSummaryInProgress', () => {
     expect(isSummaryInProgress({ summaryStatus: 'ready', worshipType: '주일예배' })).toBe(false)
     expect(isSummaryInProgress({ summaryStatus: 'failed', worshipType: '주일예배' })).toBe(false)
   })
+
+  // 자막이 영영 안 생기는 건은 "준비중" 문구를 계속 띄우면 안 된다.
+  it('does not show pending when youtube never produced a transcript', () => {
+    expect(isSummaryInProgress({ summaryStatus: 'no_transcript', worshipType: '주일예배' })).toBe(false)
+  })
 })
 
 describe('clampFontLevel', () => {

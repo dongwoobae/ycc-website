@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { togglePublishAction } from '@/lib/actions/sermons'
 import { sermonListTitle } from '@/lib/sermons/list-title'
+import { SUMMARY_STATUS_META } from '@/lib/sermons/summary-status'
 import { worshipTypes } from '@/lib/worship'
 import { useSermonSync } from './useSermonSync'
 import SermonSyncModal from './SermonSyncModal'
@@ -32,22 +33,15 @@ function ThumbnailBadge({ custom }: { custom: boolean }) {
   )
 }
 
-// 요약 상태별 원형 표시. DB 값은 none/pending/ready/failed.
-const SUMMARY_META: Record<string, { color: string; label: string }> = {
-  ready: { color: '#16a34a', label: '완료' },
-  pending: { color: '#92633a', label: '대기' },
-  none: { color: '#9ca3af', label: '없음' },
-  failed: { color: '#dc2626', label: '실패' },
-}
-
-// 정렬 우선순위(작을수록 위). 첫 클릭: failed→none→pending→ready 순.
-const SORT_RANK: Record<string, number> = { failed: 0, none: 1, pending: 2, ready: 3 }
+// 정렬 우선순위(작을수록 위). 첫 클릭: 조치 필요한 순 — failed→none→pending→no_transcript→ready.
+// no_transcript(자막없음)는 재시도해도 소용없는 종결 상태라 failed 아래, ready 위에 둔다.
+const SORT_RANK: Record<string, number> = { failed: 0, none: 1, pending: 2, no_transcript: 3, ready: 4 }
 
 // 0: 초기(날짜순) · 1: 오름차순(failed 위) · 2: 내림차순(ready 위)
 type SortState = 0 | 1 | 2
 
 function SummaryBadge({ status }: { status: string }) {
-  const meta = SUMMARY_META[status] ?? SUMMARY_META.none
+  const meta = SUMMARY_STATUS_META[status] ?? SUMMARY_STATUS_META.none
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: meta.color }} />

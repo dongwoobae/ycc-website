@@ -71,10 +71,11 @@ export default function DashboardView({ stats }: { stats: AdminDashboardStats })
         <h2 className="mb-3 text-sm font-semibold text-ink-muted">
           요약 파이프라인 <span className="font-normal">(자동 요약 대상 {summary.total}편)</span>
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <SummaryBadge label="완료(ready)" value={summary.ready} />
           <SummaryBadge label="진행중(pending)" value={summary.pending} />
           <SummaryBadge label="실패(failed)" value={summary.failed} tone="danger" />
+          <SummaryBadge label="자막없음(유튜브)" value={summary.noTranscript} />
           <SummaryBadge label="남은 작업(none+failed)" value={summary.remaining} tone="accent" />
         </div>
         <div className="mt-4 rounded-xl bg-paper p-5 shadow-sm">

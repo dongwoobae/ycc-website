@@ -21,6 +21,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "seed:rapidapi": "tsx --env-file=.env.local scripts/seed-from-rapidapi.ts",
     "summarize:sermons": "tsx --env-file=.env.local scripts/summarize-sermons.ts",
+    "backfill:no-transcript": "tsx scripts/backfill-no-transcript.ts",
     "websub:subscribe": "tsx scripts/websub-subscribe.ts",
     "qstash:schedules": "tsx scripts/qstash-schedules.ts",
     "thumbnails:cleanup": "tsx scripts/cleanup-thumbnails.ts",

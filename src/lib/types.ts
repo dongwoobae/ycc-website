@@ -23,7 +23,8 @@ export interface Sermon {
   summary?: string
   quickSummary?: string[]
   chapters?: SermonChapter[]
-  summaryStatus: 'none' | 'pending' | 'ready' | 'failed'
+  // no_transcript = 유튜브가 자막을 끝내 생성하지 않은 종결 상태(재시도 대상 아님). failed와 구분한다.
+  summaryStatus: 'none' | 'pending' | 'ready' | 'failed' | 'no_transcript'
   isPublished: boolean
 }
 

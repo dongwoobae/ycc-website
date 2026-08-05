@@ -22,7 +22,15 @@ export interface AdminDashboardStats {
     bulletins: CountPair
     albums: CountPair
   }
-  summary: { ready: number; pending: number; failed: number; none: number; total: number; remaining: number }
+  summary: {
+    ready: number
+    pending: number
+    failed: number
+    none: number
+    noTranscript: number
+    total: number
+    remaining: number
+  }
   failedSermons: FailedSermon[]
   alerts: { uncategorized: number; missingPreacher: number; summaryFailed: number }
 }
@@ -85,6 +93,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const pending = byStatus('pending')
   const failed = byStatus('failed')
   const none = byStatus('none')
+  // 자막 자체가 없어 요약이 불가능한 건 — 재시도 대상이 아니므로 실패·남은 작업 집계에서 뺀다.
+  const noTranscript = byStatus('no_transcript')
 
   return {
     content: {
@@ -93,7 +103,15 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       bulletins: bulletinContent[0],
       albums: albumContent[0],
     },
-    summary: { ready, pending, failed, none, total: ready + pending + failed + none, remaining: none + failed },
+    summary: {
+      ready,
+      pending,
+      failed,
+      none,
+      noTranscript,
+      total: ready + pending + failed + none + noTranscript,
+      remaining: none + failed,
+    },
     failedSermons,
     alerts: { uncategorized: uncategorized[0].c, missingPreacher: missingPreacher[0].c, summaryFailed: failed },
   }

@@ -28,9 +28,10 @@ export async function POST(req: Request) {
       await publishJob('fetch-transcript', { sermonId, videoId, attempt: attempt + 1 }, RETRY_DELAY_SECONDS)
       return Response.json({ ok: true, retry: attempt + 1 })
     }
-    console.error(`[fetch-transcript] ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기 videoId=${videoId}`)
-    await log('error', 'sermon', sermonId, `자막 취득 ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기 — 요약 미진행: videoId=${videoId}`)
-    await db.update(sermonSummaries).set({ summaryStatus: 'failed' }).where(eq(sermonSummaries.sermonId, sermonId))
+    // 유튜브가 자막을 끝내 만들지 않은 경우 — 재시도해도 달라지지 않으므로 failed가 아닌 종결 상태로 남긴다.
+    console.error(`[fetch-transcript] ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기(자막 없음) videoId=${videoId}`)
+    await log('error', 'sermon', sermonId, `자막 없음 — ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기, 요약 미진행: videoId=${videoId}`)
+    await db.update(sermonSummaries).set({ summaryStatus: 'no_transcript' }).where(eq(sermonSummaries.sermonId, sermonId))
     return Response.json({ ok: true, gaveUp: true })
   }
 

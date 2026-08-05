@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { generateSummaryAction, updateSermonAction, type SermonEditInput } from '@/lib/actions/sermons'
 import { formatTimestamp } from '@/lib/sermons/format'
+import { summaryStatusLabel } from '@/lib/sermons/summary-status'
 import type { SermonChapter } from '@/lib/types'
 import type { ThumbnailCandidate, ThumbnailStyle, ThumbnailText } from '@/lib/thumbnails/types'
 import { worshipTypes } from '@/lib/worship'
@@ -148,8 +149,14 @@ export default function SermonEditForm({
 
       <div className="rounded-lg border border-line p-4">
         <p className="text-sm text-ink-muted">
-          요약 상태: <strong>{summaryStatus}</strong>
+          요약 상태: <strong>{summaryStatusLabel(summaryStatus)}</strong>
         </p>
+        {summaryStatus === 'no_transcript' && (
+          <p className="mt-1 text-xs text-ink-muted">
+            유튜브에 자막이 생성되지 않아 자동 요약을 건너뛴 건입니다. 자막이 뒤늦게 생겼다면 &lsquo;요약 재생성&rsquo;으로
+            다시 시도할 수 있어요.
+          </p>
+        )}
         {quickSummary.length > 0 && (
           <ul className="mt-3 list-disc pl-5 text-sm text-ink-muted">
             {quickSummary.map((line, i) => (
