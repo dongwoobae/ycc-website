@@ -1,6 +1,6 @@
 # 인물컷형(누끼) 썸네일 구현 설계
 
-> 선행 스펙 `docs/superpowers/specs/2026-06-25-sermon-ai-thumbnail-design.md`의 Task 6(인물컷형) 보류분을, 그 사이 바뀐 "배경 생성 → CSS 라이브 프리뷰 → 적용 시 PNG 합성" 아키텍처에 맞춰 완성한다.
+> 선행 스펙 `docs/specs/2026-06-25-sermon-ai-thumbnail-design.md`의 Task 6(인물컷형) 보류분을, 그 사이 바뀐 "배경 생성 → CSS 라이브 프리뷰 → 적용 시 PNG 합성" 아키텍처에 맞춰 완성한다.
 
 ## 목표
 
