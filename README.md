@@ -820,7 +820,7 @@ https://공식-도메인/sitemap.xml
 | 주요 본문 | `#3A4664` |
 | 구분선 | `#E3E8F2` |
 
-폰트는 본문·타이틀 모두 Pretendard를 사용합니다. 전송량 때문에 풀셋이 아니라 서브셋판(굵기 5종, 각 262KB)을 self-host 합니다 — 서브셋 범위 밖 글자는 대체 글꼴로 표시됩니다.
+폰트는 본문·타이틀 모두 Pretendard를 사용합니다. 굵기 5종을 self-host 하되 풀셋(각 ~750KB)이 아니라 **동적 서브셋**을 씁니다 — `unicode-range`로 쪼갠 조각을 브라우저가 그 페이지에 실제로 쓰인 범위만 받습니다(페이지당 280~400KB). 조각과 `@font-face` CSS는 `prebuild`의 `scripts/copy-pretendard-subset.mjs`가 만듭니다. 글자 커버리지는 풀셋과 같습니다.
 
 ---
 
