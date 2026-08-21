@@ -4,7 +4,11 @@ import { makeTestDb, insertSermonFixture, type TestDb } from '@/test/pg'
 import { sermons, sermonThumbnails } from '@/lib/db/schema'
 
 const h = vi.hoisted(() => ({ db: null as unknown as TestDb }))
-vi.mock('@/lib/db', () => ({ get db() { return h.db } }))
+vi.mock('@/lib/db', () => ({
+  get db() {
+    return h.db
+  },
+}))
 vi.mock('./webp', () => ({ toWebp: vi.fn(async (buffer: Buffer) => buffer) }))
 
 // candidateKey의 Date.now()는 같은 ms에 충돌할 수 있어 카운터로 고유 URL을 만든다.

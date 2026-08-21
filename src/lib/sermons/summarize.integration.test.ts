@@ -4,7 +4,11 @@ import { sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
 const h = vi.hoisted(() => ({ db: null as unknown as TestDb }))
-vi.mock('@/lib/db', () => ({ get db() { return h.db } }))
+vi.mock('@/lib/db', () => ({
+  get db() {
+    return h.db
+  },
+}))
 // fetchTranscript는 외부호출이므로 모킹 — buildTranscriptText 경유 결과만 검증
 vi.mock('@/lib/transcript/rapidapi', () => ({
   fetchTranscript: vi.fn(async () => [{ text: 'hello', start: 0, dur: 1 }]),
@@ -13,17 +17,24 @@ vi.mock('@/lib/transcript/rapidapi', () => ({
 vi.mock('@/lib/ai/sermon-summary', async (orig) => ({
   ...(await orig<typeof import('@/lib/ai/sermon-summary')>()),
   generateSermonSummary: vi.fn(async () => ({
-    summary: '요약본', quickSummary: ['a', 'b'], chapters: [],
+    summary: '요약본',
+    quickSummary: ['a', 'b'],
+    chapters: [],
   })),
 }))
 
 let close: () => Promise<void>
-beforeAll(async () => { const t = await makeTestDb(); h.db = t.db; close = t.close })
-afterAll(async () => { await close() })
+beforeAll(async () => {
+  const t = await makeTestDb()
+  h.db = t.db
+  close = t.close
+})
+afterAll(async () => {
+  await close()
+})
 
 // 모듈은 mock 설정 이후 import (동적 import로 보장)
-const { claimSermonById, selectRetryTargets, fetchAndStoreTranscript, summarizeClaimed } =
-  await import('./summarize')
+const { claimSermonById, selectRetryTargets, fetchAndStoreTranscript, summarizeClaimed } = await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
   it('claims a none-status sermon by updating sermon_summaries, then blocks double-claim', async () => {

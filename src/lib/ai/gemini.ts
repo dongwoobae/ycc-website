@@ -24,10 +24,9 @@ export function isTransientGeminiError(error: unknown): boolean {
 export async function generateContentWithFallback(
   ai: GoogleGenAI,
   request: Omit<GenerateContentParameters, 'model'>,
-  primaryModel: string = resolveGeminiModel()
+  primaryModel: string = resolveGeminiModel(),
 ): Promise<GenerateContentResponse> {
-  const models =
-    primaryModel === FALLBACK_GEMINI_MODEL ? [primaryModel] : [primaryModel, FALLBACK_GEMINI_MODEL]
+  const models = primaryModel === FALLBACK_GEMINI_MODEL ? [primaryModel] : [primaryModel, FALLBACK_GEMINI_MODEL]
 
   let lastError: unknown
   for (const model of models) {

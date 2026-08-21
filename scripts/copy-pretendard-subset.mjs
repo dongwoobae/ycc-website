@@ -47,10 +47,15 @@ if (kept.length === 0) {
 await rm(outDir, { recursive: true, force: true })
 await mkdir(outDir, { recursive: true })
 await Promise.all(
-  [...files].map((file) => copyFile(path.join(staticDir, 'woff2-dynamic-subset', file), path.join(outDir, file)))
+  [...files].map((file) => copyFile(path.join(staticDir, 'woff2-dynamic-subset', file), path.join(outDir, file))),
 )
 // 460개 규칙이라 공백만 걷어도 수십 KB가 준다. 이 파일은 렌더를 막는 자리에 있다.
-const minified = kept.join('').replace(/\s*([{}:;,])\s*/g, '$1').replace(/\s+/g, ' ')
+const minified = kept
+  .join('')
+  .replace(/\s*([{}:;,])\s*/g, '$1')
+  .replace(/\s+/g, ' ')
 await writeFile(cssPath, minified, 'utf8')
 
-console.log(`[copy-pretendard-subset] @font-face ${kept.length}개 -> src/app/pretendard-subset.css, 조각 ${files.size}개 -> public${PUBLIC_PATH}/`)
+console.log(
+  `[copy-pretendard-subset] @font-face ${kept.length}개 -> src/app/pretendard-subset.css, 조각 ${files.size}개 -> public${PUBLIC_PATH}/`,
+)

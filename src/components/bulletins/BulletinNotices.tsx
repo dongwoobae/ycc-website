@@ -11,9 +11,7 @@ export default function BulletinNotices({ notices }: { notices: BulletinNotice[]
 
   return (
     <section className="rounded-2xl border border-line bg-paper p-6">
-      <h2 className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold-deep">
-        이번 주 일정 · 공지
-      </h2>
+      <h2 className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold-deep">이번 주 일정 · 공지</h2>
       <ul className="mt-3 divide-y divide-line-soft">
         {notices.map((notice, index) => (
           <li key={`${notice.title}-${index}`} className="flex gap-3 py-2.5">
@@ -28,7 +26,9 @@ export default function BulletinNotices({ notices }: { notices: BulletinNotice[]
             </span>
             <div className="min-w-0">
               {notice.title ? <h3 className="text-sm font-extrabold text-ink">{notice.title}</h3> : null}
-              {notice.detail ? <p className="mt-0.5 text-[13px] leading-relaxed text-ink-muted">{notice.detail}</p> : null}
+              {notice.detail ? (
+                <p className="mt-0.5 text-[13px] leading-relaxed text-ink-muted">{notice.detail}</p>
+              ) : null}
             </div>
           </li>
         ))}

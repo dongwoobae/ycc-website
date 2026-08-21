@@ -15,7 +15,11 @@ export async function POST(req: Request) {
   if (!(await verifyQStash(raw, req.headers.get('upstash-signature')))) {
     return new Response('unauthorized', { status: 401 })
   }
-  const { sermonId, videoId, attempt = 0 } = JSON.parse(raw) as {
+  const {
+    sermonId,
+    videoId,
+    attempt = 0,
+  } = JSON.parse(raw) as {
     sermonId: string
     videoId: string
     attempt?: number
@@ -24,14 +28,24 @@ export async function POST(req: Request) {
   const segments = await fetchTranscript(videoId)
   if (segments.length === 0) {
     if (attempt < MAX_TRANSCRIPT_RETRY) {
-      console.log(`[fetch-transcript] 자막 미준비, ${RETRY_DELAY_SECONDS / 60}분 후 재시도 videoId=${videoId} attempt=${attempt + 1}/${MAX_TRANSCRIPT_RETRY}`)
+      console.log(
+        `[fetch-transcript] 자막 미준비, ${RETRY_DELAY_SECONDS / 60}분 후 재시도 videoId=${videoId} attempt=${attempt + 1}/${MAX_TRANSCRIPT_RETRY}`,
+      )
       await publishJob('fetch-transcript', { sermonId, videoId, attempt: attempt + 1 }, RETRY_DELAY_SECONDS)
       return Response.json({ ok: true, retry: attempt + 1 })
     }
     // 유튜브가 자막을 끝내 만들지 않은 경우 — 재시도해도 달라지지 않으므로 failed가 아닌 종결 상태로 남긴다.
     console.error(`[fetch-transcript] ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기(자막 없음) videoId=${videoId}`)
-    await log('error', 'sermon', sermonId, `자막 없음 — ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기, 요약 미진행: videoId=${videoId}`)
-    await db.update(sermonSummaries).set({ summaryStatus: 'no_transcript' }).where(eq(sermonSummaries.sermonId, sermonId))
+    await log(
+      'error',
+      'sermon',
+      sermonId,
+      `자막 없음 — ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기, 요약 미진행: videoId=${videoId}`,
+    )
+    await db
+      .update(sermonSummaries)
+      .set({ summaryStatus: 'no_transcript' })
+      .where(eq(sermonSummaries.sermonId, sermonId))
     return Response.json({ ok: true, gaveUp: true })
   }
 

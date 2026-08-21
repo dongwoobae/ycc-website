@@ -21,9 +21,7 @@ export default function AdminPageHero({ title, image, eyebrow, subtitle }: Admin
       <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/60 to-ink/45" />
       <div className="relative flex h-full items-center px-6">
         <div className="min-w-0">
-          {eyebrow && (
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a8c6ef]">{eyebrow}</p>
-          )}
+          {eyebrow && <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a8c6ef]">{eyebrow}</p>}
           <h1 className="truncate text-2xl font-extrabold text-bg sm:text-3xl">{title}</h1>
           {subtitle && <p className="mt-1 line-clamp-1 text-sm text-bg/80">{subtitle}</p>}
         </div>

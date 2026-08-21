@@ -136,10 +136,7 @@ export async function updatePost(id: string, input: PostFormInput) {
 
 export async function deletePost(id: string) {
   const s = await requireAdmin()
-  const [deleted] = await db
-    .delete(posts)
-    .where(eq(posts.id, id))
-    .returning({ id: posts.id, title: posts.title })
+  const [deleted] = await db.delete(posts).where(eq(posts.id, id)).returning({ id: posts.id, title: posts.title })
 
   if (!deleted) throw new Error('post not found')
   await log('delete', 'post', deleted.id, deleted.title, s.user.id)

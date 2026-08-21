@@ -63,7 +63,7 @@ export default function BulletinOriginUpload({ bulletinDate, pageCount, onUpload
           const blob = page.blobs[target.size]
           await putWithProgress(target.uploadUrl, new File([blob], `${target.size}`, { type: rendered.mime }), () => {})
           bump()
-        })
+        }),
       )
 
       if (plan.pdf && isPdf) {
@@ -111,7 +111,9 @@ export default function BulletinOriginUpload({ bulletinDate, pageCount, onUpload
       />
       {pageCount > 0 ? <p className="mt-3 text-xs font-bold text-ink">현재 등록된 면: {pageCount}면</p> : null}
       {status ? <p className="mt-2 text-xs text-ink-muted">{status}</p> : null}
-      {error ? <p className="mt-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink">{error}</p> : null}
+      {error ? (
+        <p className="mt-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink">{error}</p>
+      ) : null}
     </div>
   )
 }
@@ -119,7 +121,7 @@ export default function BulletinOriginUpload({ bulletinDate, pageCount, onUpload
 function urlFor(
   plan: Awaited<ReturnType<typeof prepareBulletinUpload>>,
   pageNumber: number,
-  size: 'full' | 'preview' | 'thumb'
+  size: 'full' | 'preview' | 'thumb',
 ) {
   const target = plan.pages.find((item) => item.pageNumber === pageNumber && item.size === size)
   if (!target) throw new Error('업로드 대상 URL을 찾을 수 없습니다.')
@@ -134,9 +136,7 @@ function putPdf(url: string, file: File, contentDisposition: string) {
     xhr.setRequestHeader('Content-Type', 'application/pdf')
     xhr.setRequestHeader('Content-Disposition', contentDisposition)
     xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300
-        ? resolve()
-        : reject(new Error(`PDF 업로드 실패 (HTTP ${xhr.status})`))
+      xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`PDF 업로드 실패 (HTTP ${xhr.status})`))
     xhr.onerror = () => reject(new Error('PDF 업로드 실패 — 네트워크 또는 R2 CORS 설정을 확인하세요.'))
     xhr.send(file)
   })

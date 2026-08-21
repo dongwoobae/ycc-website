@@ -88,9 +88,7 @@ export async function cropAboveCaption(input: Buffer): Promise<CaptionCropResult
     const cropHeight = bandTop - margin
     if (cropHeight <= 0 || cropHeight >= H) return { buffer: input, cropped: false }
 
-    const buffer = await sharp(input)
-      .extract({ left: 0, top: 0, width: W, height: cropHeight })
-      .toBuffer()
+    const buffer = await sharp(input).extract({ left: 0, top: 0, width: W, height: cropHeight }).toBuffer()
     return { buffer, cropped: true }
   } catch {
     return { buffer: input, cropped: false }

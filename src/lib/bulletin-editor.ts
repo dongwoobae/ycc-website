@@ -30,7 +30,7 @@ export function normalizePages(value: BulletinPage[]): BulletinPage[] {
       Number.isFinite(page.width) &&
       Number.isFinite(page.height) &&
       page.width > 0 &&
-      page.height > 0
+      page.height > 0,
   )
 }
 

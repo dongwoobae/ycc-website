@@ -13,7 +13,7 @@ export type HeadlineFn = (sermon: ComposeSermonInput) => Promise<string>
 export async function composeThumbnailText(
   style: ThumbnailStyle,
   sermon: ComposeSermonInput,
-  headlineFn: HeadlineFn
+  headlineFn: HeadlineFn,
 ): Promise<ThumbnailText> {
   const scripture = extractScripture(sermon.summary)
   if (style === 'hook') {

@@ -46,21 +46,19 @@ export default function HistoryPage() {
           </Reveal>
           <Reveal variant="fade" delay={200}>
             <div className="mt-7 space-y-5 text-[17.5px] leading-9 text-ink-muted">
+              <p>{churchInfo.name}의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다.</p>
               <p>
-                {churchInfo.name}의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다.
+                19세기 미국의 부흥과 선교의 불씨는 조선 땅으로 이어졌고, 대구·경북 지역에 복음의 씨앗이 심겨졌습니다. 그
+                복음의 흐름은 영천 땅에도 닿아 영천제일교회를 거쳐 주남기도처로 이어졌고, 마침내 오늘의{' '}
+                {churchInfo.name}로 자라났습니다.
               </p>
               <p>
-                19세기 미국의 부흥과 선교의 불씨는 조선 땅으로 이어졌고, 대구·경북 지역에 복음의
-                씨앗이 심겨졌습니다. 그 복음의 흐름은 영천 땅에도 닿아 영천제일교회를 거쳐
-                주남기도처로 이어졌고, 마침내 오늘의 {churchInfo.name}로 자라났습니다.
+                작은 기도의 자리에서 시작된 교회는 오랜 세월 예배와 말씀, 섬김의 발걸음을 이어 오며 이 지역 가운데
+                복음의 빛을 비추어 왔습니다.
               </p>
               <p>
-                작은 기도의 자리에서 시작된 교회는 오랜 세월 예배와 말씀, 섬김의 발걸음을 이어 오며
-                이 지역 가운데 복음의 빛을 비추어 왔습니다.
-              </p>
-              <p>
-                {churchInfo.name}는 지금도 그 은혜의 뿌리 위에 서서, 다음 세대와 이웃을 향해 복음의
-                이야기를 이어가고 있습니다.
+                {churchInfo.name}는 지금도 그 은혜의 뿌리 위에 서서, 다음 세대와 이웃을 향해 복음의 이야기를 이어가고
+                있습니다.
               </p>
             </div>
           </Reveal>
@@ -75,11 +73,10 @@ export default function HistoryPage() {
               return (
                 <li key={year} className="relative mb-8 last:mb-0 sm:grid sm:grid-cols-2 sm:gap-10">
                   <span className="absolute left-1/2 top-6 hidden h-3.5 w-3.5 -translate-x-1/2 rounded-full border-[3px] border-surface bg-gold sm:block" />
-                  <Reveal
-                    variant={left ? 'left' : 'right'}
-                    className={left ? 'sm:col-start-1' : 'sm:col-start-2'}
-                  >
-                    <div className={`rounded-2xl border border-line bg-paper p-7 shadow-subtle ${left ? 'sm:text-right' : ''}`}>
+                  <Reveal variant={left ? 'left' : 'right'} className={left ? 'sm:col-start-1' : 'sm:col-start-2'}>
+                    <div
+                      className={`rounded-2xl border border-line bg-paper p-7 shadow-subtle ${left ? 'sm:text-right' : ''}`}
+                    >
                       <time className="text-3xl font-extrabold tracking-tight text-accent-deep">{year}</time>
                       <p className="mt-3 leading-7 text-ink-muted">{content}</p>
                     </div>

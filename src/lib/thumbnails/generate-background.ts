@@ -4,8 +4,7 @@ import type { ThumbnailStyle } from './types'
 const BACKGROUND_PROMPT: Record<ThumbnailStyle, string> = {
   classic:
     'A serene, reverent church worship background. Soft warm light, subtle cross or stained-glass bokeh, muted gradient. Cinematic, uncluttered, leaves empty space for text. Absolutely no text, no letters, no words.',
-  hook:
-    'A modern, vibrant Christian YouTube thumbnail background. Dramatic light rays, bold but tasteful gradient, depth of field. Energetic yet reverent. Leaves empty space for text. Absolutely no text, no letters, no words.',
+  hook: 'A modern, vibrant Christian YouTube thumbnail background. Dramatic light rays, bold but tasteful gradient, depth of field. Energetic yet reverent. Leaves empty space for text. Absolutely no text, no letters, no words.',
   cutout:
     'A clean studio-style gradient backdrop for a portrait, warm spotlight, soft vignette, church mood. Plain on one side for a person cutout and text. Absolutely no text, no letters, no words.',
 }

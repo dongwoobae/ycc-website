@@ -77,13 +77,7 @@ export function clampOffset(offset: Offset, scale: number, viewport: Size, conte
  * 중심 고정으로 확대하면 읽으려던 지점이 화면 밖으로 밀려난다. 손가락·커서 아래에 있던
  * 콘텐츠 지점이 그 자리에 그대로 남아야 확대가 "들여다보기"로 느껴진다.
  */
-export function zoomAt(
-  current: ZoomState,
-  target: number,
-  anchor: Offset,
-  viewport: Size,
-  content: Size
-): ZoomState {
+export function zoomAt(current: ZoomState, target: number, anchor: Offset, viewport: Size, content: Size): ZoomState {
   const zoom = clampZoom(target)
   const base = fitScale(viewport, content)
   const from = base * clampZoom(current.zoom)
@@ -101,7 +95,10 @@ export function zoomAt(
 
 /** 현재 배율에서 드래그로 옮긴 오프셋을 클램프한다. */
 export function panTo(current: ZoomState, offset: Offset, viewport: Size, content: Size): ZoomState {
-  return { zoom: current.zoom, offset: clampOffset(offset, scaleFor(current.zoom, viewport, content), viewport, content) }
+  return {
+    zoom: current.zoom,
+    offset: clampOffset(offset, scaleFor(current.zoom, viewport, content), viewport, content),
+  }
 }
 
 /** 휠 delta 를 픽셀로 정규화한다. Firefox 는 줄(1), 일부 환경은 페이지(2) 단위로 준다. */

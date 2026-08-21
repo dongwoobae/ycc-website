@@ -1,0 +1,5 @@
+# drizzle-kit 이 만들고 db:check 가 대조하는 산출물 — 손대면 스냅샷이 어긋난다
+drizzle/
+package-lock.json
+public/
+docs/review/

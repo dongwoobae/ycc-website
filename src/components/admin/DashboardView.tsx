@@ -32,7 +32,10 @@ function FailedList({ items }: { items: FailedSermon[] }) {
         <li key={s.id} className="flex items-center justify-between gap-3 py-2 text-sm">
           <span className="min-w-0 truncate text-ink">{sermonListTitle(s)}</span>
           <span className="shrink-0 text-xs text-ink-muted">{s.sermonDate}</span>
-          <Link href={`/admin/sermons/${s.id}/edit`} className="shrink-0 text-xs font-semibold text-accent-deep hover:underline">
+          <Link
+            href={`/admin/sermons/${s.id}/edit`}
+            className="shrink-0 text-xs font-semibold text-accent-deep hover:underline"
+          >
             재요약
           </Link>
         </li>
@@ -44,9 +47,14 @@ function FailedList({ items }: { items: FailedSermon[] }) {
 function AlertRow({ label, value, href }: { label: string; value: number; href: string }) {
   const ok = value === 0
   return (
-    <Link href={href} className="flex items-center justify-between rounded-lg border border-line bg-paper px-4 py-3 hover:shadow-sm">
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-lg border border-line bg-paper px-4 py-3 hover:shadow-sm"
+    >
       <span className="text-sm text-ink">{label}</span>
-      <span className={`text-sm font-bold ${ok ? 'text-ink-muted' : 'text-red-600'}`}>{ok ? '없음' : `${value}건`}</span>
+      <span className={`text-sm font-bold ${ok ? 'text-ink-muted' : 'text-red-600'}`}>
+        {ok ? '없음' : `${value}건`}
+      </span>
     </Link>
   )
 }

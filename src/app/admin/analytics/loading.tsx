@@ -4,7 +4,6 @@ import { Skeleton } from '@/components/ui/Skeleton'
 export default function Loading() {
   return (
     <div role="status" aria-label="접속 분석을 불러오는 중입니다">
-
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         {['오늘', '최근 7일', '최근 30일'].map((label) => (
           <section key={label} className="rounded-xl bg-paper p-4 shadow-sm">
@@ -37,10 +36,7 @@ export default function Loading() {
         </div>
       </section>
 
-      <AdminTableSkeleton
-        headings={['시작시각', '지역', 'IP', '페이지수', '총 체류']}
-        minWidthClass="min-w-[56rem]"
-      />
+      <AdminTableSkeleton headings={['시작시각', '지역', 'IP', '페이지수', '총 체류']} minWidthClass="min-w-[56rem]" />
     </div>
   )
 }

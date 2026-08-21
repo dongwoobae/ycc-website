@@ -18,41 +18,53 @@
 기존 classic/hook 골격을 그대로 따르고, 인물 전경(투명 PNG)을 한 겹 더 얹는다.
 
 ### 1. 누끼 모듈 (신규)
+
 `src/lib/thumbnails/remove-background.ts`
 
 ```
 removeBackground(imageUrl: string): Promise<Buffer>
 ```
+
 - remove.bg `POST https://api.remove.bg/v1.0/removebg`에 `image_url` + `size=auto` + `format=png` 전달, 헤더 `X-Api-Key`. 투명 PNG ArrayBuffer → Buffer.
 - `REMOVE_BG_API_KEY` 미설정 시 명확한 에러. 응답 비정상 시 status+본문 포함 에러.
 - 구현체 교체 가능하도록 인터페이스 단순 유지(추후 다른 누끼 API로 교체 용이).
 
 ### 2. 누끼 캐시 (스키마)
+
 `sermon_thumbnails` 테이블에 `thumbnail_cutout_url text` 컬럼 추가.
+
 - 마이그레이션: drizzle generate로 SQL 생성. **ycc는 drizzle-kit migrate 작동 불가** → 생성된 ADD COLUMN SQL을 postgres.js로 직접 적용(기존 우회 절차 동일).
 - 저장 위치: R2 `thumbnails/cutouts/{sermonId}-{ts}.png`.
 
 ### 3. 저장 헬퍼 (store.ts)
+
 `storeCutout(sermonId, png): Promise<string>` 추가 — R2 업로드 후 `sermon_thumbnails.thumbnail_cutout_url` upsert(없으면 행 생성), URL 반환.
 
 ### 4. 생성 액션 (cost)
+
 `generateThumbnailAction(id, 'cutout')` — 기존 cutout 차단(`throw`) 제거.
+
 - 배경: `resolveBgKeywords` → `generateBackground('cutout', keywords)` → `storeBackground`(기존 경로).
 - 누끼: `sermon_thumbnails.thumbnail_cutout_url` 캐시 확인 → 있으면 재사용, 없으면 `sermons.thumbnailUrl`로 `removeBackground` 호출 → `storeCutout`.
   - `thumbnailUrl`이 없으면 누끼 없이 배경만 진행(에러 아님).
 - 반환 타입 확장: `{ backgroundUrl: string; cutoutUrl?: string }`.
 
 ### 5. 적용 액션 (no cost)
+
 `composeAndApplyThumbnailAction(id, 'cutout', text, options)` — 기존 cutout 차단 제거.
+
 - 저장된 배경 fetch + (cutout이면) 저장된 누끼 fetch → 각각 Buffer → `renderThumbnail({ ..., cutoutDataUrl })`.
 - `render.tsx`는 이미 `cutoutDataUrl`(우하단·height720·object-contain)을 지원 — 수정 불필요.
 - `storeCandidate` → `customThumbnailUrl` 적용 → revalidate(기존 동일).
 
 ### 6. 프리뷰 미러링 (client)
+
 `src/components/admin/ThumbnailPreview.tsx`에 `cutout?: string` prop 추가.
+
 - 배경 `<img>`와 그라디언트 사이/위에 인물 `<img>`를 render.tsx와 동일 배치로: `position:absolute; right` ≈ `1.875cqw`(=24/1280), `bottom:0; height:100%; object-fit:contain`. (px→cqw 환산 기존 컨벤션 따름)
 
 ### 7. UI 배선
+
 - `ThumbnailStyleTab`: `cutout?: string` prop + state 추가. `generate()`가 결과의 `cutoutUrl`을 state에 반영하고 `ThumbnailPreview`에 전달. `onApply`는 변경 없음(서버가 DB에서 누끼 재조회).
 - `ThumbnailModal`: `cutoutUrl?: string` prop 추가, 탭에 전달. `DESCRIPTIONS.cutout`에서 "(준비 중)" 제거.
 - `edit/page.tsx`: `cutoutUrl={row.thumbnailCutoutUrl ?? undefined}` 전달.
@@ -80,6 +92,7 @@ removeBackground(imageUrl: string): Promise<Buffer>
 ## 환경변수
 
 `.env.example`에 추가:
+
 ```
 # remove.bg — 인물컷형 썸네일 누끼(배경 제거)
 REMOVE_BG_API_KEY=your_remove_bg_api_key

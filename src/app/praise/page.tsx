@@ -23,7 +23,10 @@ export default async function PraisePage() {
   const sermons = await getSermons()
 
   // 골격 카드 수를 실제 첫 페이지와 맞춰야 푸터가 밀리지 않는다.
-  const skeletonCount = Math.min(sermons.filter((s) => praiseSectionScope.includes(s.worshipType)).length, SERMONS_PAGE_SIZE)
+  const skeletonCount = Math.min(
+    sermons.filter((s) => praiseSectionScope.includes(s.worshipType)).length,
+    SERMONS_PAGE_SIZE,
+  )
 
   return (
     <>

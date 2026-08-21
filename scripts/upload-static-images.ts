@@ -58,7 +58,7 @@ async function main() {
         Body: body,
         ContentType: contentType,
         CacheControl: 'public, max-age=86400',
-      })
+      }),
     )
     uploaded++
     console.log(`ok  ${publicUrl}/${key}  (${body.length} bytes)`)

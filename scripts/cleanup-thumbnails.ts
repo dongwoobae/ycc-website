@@ -47,7 +47,7 @@ async function listThumbnailKeys(client: S3Client, bucket: string): Promise<stri
   let token: string | undefined
   do {
     const res = await client.send(
-      new ListObjectsV2Command({ Bucket: bucket, Prefix: 'thumbnails/', ContinuationToken: token })
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: 'thumbnails/', ContinuationToken: token }),
     )
     for (const obj of res.Contents ?? []) if (obj.Key) keys.push(obj.Key)
     token = res.NextContinuationToken
@@ -105,7 +105,7 @@ async function main() {
   const orphans = all.filter((key) => !referenced.has(key))
 
   console.log(
-    `\n후보 트림 대상 ${trimmedRows}행/${trimmedEntries}건, thumbnails/ 전체 ${all.length}건, 참조 유지 ${referenced.size}건, 삭제 대상 ${orphans.length}건`
+    `\n후보 트림 대상 ${trimmedRows}행/${trimmedEntries}건, thumbnails/ 전체 ${all.length}건, 참조 유지 ${referenced.size}건, 삭제 대상 ${orphans.length}건`,
   )
   for (const key of orphans) console.log(`  ${key}`)
 

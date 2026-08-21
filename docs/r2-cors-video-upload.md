@@ -13,10 +13,7 @@ Cloudflare 대시보드 → R2 → 해당 버킷 → Settings → CORS Policy �
 ```json
 [
   {
-    "AllowedOrigins": [
-      "https://www.ycjc.kr",
-      "http://localhost:3000"
-    ],
+    "AllowedOrigins": ["https://www.ycjc.kr", "http://localhost:3000"],
     "AllowedMethods": ["PUT"],
     "AllowedHeaders": ["*"],
     "MaxAgeSeconds": 3600

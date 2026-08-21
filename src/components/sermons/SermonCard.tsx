@@ -39,12 +39,8 @@ export default function SermonCard({ sermon }: { sermon: Sermon }) {
           <span>{sermon.worshipType === '미분류' ? '' : sermon.worshipType}</span>
           <time dateTime={sermon.sermonDate}>{sermon.sermonDate}</time>
         </div>
-        <h3 className="mt-3 line-clamp-2 text-xl font-extrabold leading-snug tracking-tight text-ink">
-          {title}
-        </h3>
-        {sermon.summary ? (
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-ink-muted">{sermon.summary}</p>
-        ) : null}
+        <h3 className="mt-3 line-clamp-2 text-xl font-extrabold leading-snug tracking-tight text-ink">{title}</h3>
+        {sermon.summary ? <p className="mt-2 line-clamp-2 text-sm leading-6 text-ink-muted">{sermon.summary}</p> : null}
       </div>
     </Link>
   )

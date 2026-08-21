@@ -9,7 +9,14 @@ interface BulletinFieldProps {
   onChange: (value: string) => void
 }
 
-export default function BulletinField({ id, label, value = '', type = 'text', required, onChange }: BulletinFieldProps) {
+export default function BulletinField({
+  id,
+  label,
+  value = '',
+  type = 'text',
+  required,
+  onChange,
+}: BulletinFieldProps) {
   return (
     <div>
       <label htmlFor={id} className="mb-2 block text-sm font-medium text-ink">

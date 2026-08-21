@@ -5,12 +5,7 @@ interface SectionTitleProps {
   align?: 'left' | 'center'
 }
 
-export default function SectionTitle({
-  eyebrow,
-  title,
-  description,
-  align = 'left',
-}: SectionTitleProps) {
+export default function SectionTitle({ eyebrow, title, description, align = 'left' }: SectionTitleProps) {
   return (
     <div className={align === 'center' ? 'mx-auto max-w-3xl text-center' : 'max-w-3xl'}>
       {eyebrow && <p className="mb-3 text-sm font-semibold text-accent-deep">{eyebrow}</p>}

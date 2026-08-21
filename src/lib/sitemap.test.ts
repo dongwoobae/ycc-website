@@ -10,7 +10,7 @@ describe('buildSitemapEntries', () => {
         bulletins: [{ id: 'bulletin-1', bulletinDate: '2026-06-09' }],
         albums: [{ id: 'album-1', eventDate: '2026-06-10' }],
       },
-      'https://example.com'
+      'https://example.com',
     )
 
     expect(entries.map((entry) => entry.url)).toEqual(
@@ -21,10 +21,10 @@ describe('buildSitemapEntries', () => {
         'https://example.com/news/post-1',
         'https://example.com/bulletins/bulletin-1',
         'https://example.com/gallery/album-1',
-      ])
+      ]),
     )
     expect(entries.find((entry) => entry.url.endsWith('/sermons/sermon-1'))?.lastModified).toEqual(
-      new Date('2026-06-07')
+      new Date('2026-06-07'),
     )
   })
 })

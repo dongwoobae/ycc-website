@@ -30,11 +30,15 @@ export default function SermonSyncModal({ phase, progress, doneMsg, onStart, onC
           {phase === 'confirm' && (
             <>
               <p className="leading-6 text-ink">
-                YouTube 채널에서 새 영상만 가져와 즉시 공개 등록합니다. 예배(주일·수요·금요·찬양)는 자막이 있으면 요약까지
-                자동 생성돼요. 진행 중에는 창을 닫지 마세요.
+                YouTube 채널에서 새 영상만 가져와 즉시 공개 등록합니다. 예배(주일·수요·금요·찬양)는 자막이 있으면
+                요약까지 자동 생성돼요. 진행 중에는 창을 닫지 마세요.
               </p>
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={onClose} className="rounded-md border border-line px-4 py-2 text-ink-muted">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-md border border-line px-4 py-2 text-ink-muted"
+                >
                   취소
                 </button>
                 <button

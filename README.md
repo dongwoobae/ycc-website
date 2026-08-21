@@ -162,30 +162,31 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
 
 ## 🛠️ 기술 스택
 
-| 구분 | 기술 |
-|---|---|
-| Framework | Next.js 16 App Router |
-| Language | TypeScript |
-| UI | React 19 |
-| Styling | Tailwind CSS v4, CSS variables |
-| Font | Pretendard 기반 산세리프 단일 체계 |
-| Auth | Better Auth, nextCookies plugin |
-| Database | Neon Postgres |
-| ORM | Drizzle ORM, Drizzle Kit |
-| Storage | Cloudflare R2, AWS S3 SDK |
-| AI 요약 | Google Gemini (`@google/genai`, `gemini-3.5-flash`) |
-| 이미지 생성 | OpenAI `gpt-image-2` (썸네일 배경) |
-| 배경 제거(누끼) | remove.bg API |
-| 썸네일 합성 | Next.js `ImageResponse`(`next/og`, Satori), sharp |
-| 메시지 큐·크론 | Upstash QStash |
-| 영상·자막 | RapidAPI yt-api |
-| 실시간 구독 | YouTube WebSub (PubSubHubbub) |
-| Validation | Zod |
-| 주보 PDF 변환 | `pdfjs-dist` 브라우저 렌더 → canvas → WebP 3종 |
-| Analytics | Vercel Analytics + Google Analytics + 자체 방문 분석(`page_views` 수집·일일 롤업) |
-| Test | Vitest (+ PGlite 기반 DB 통합 테스트), Playwright E2E |
-| Lint | ESLint 9, eslint-config-next |
-| Deploy | Vercel |
+| 구분            | 기술                                                                              |
+| --------------- | --------------------------------------------------------------------------------- |
+| Framework       | Next.js 16 App Router                                                             |
+| Language        | TypeScript                                                                        |
+| UI              | React 19                                                                          |
+| Styling         | Tailwind CSS v4, CSS variables                                                    |
+| Font            | Pretendard 기반 산세리프 단일 체계                                                |
+| Auth            | Better Auth, nextCookies plugin                                                   |
+| Database        | Neon Postgres                                                                     |
+| ORM             | Drizzle ORM, Drizzle Kit                                                          |
+| Storage         | Cloudflare R2, AWS S3 SDK                                                         |
+| AI 요약         | Google Gemini (`@google/genai`, `gemini-3.5-flash`)                               |
+| 이미지 생성     | OpenAI `gpt-image-2` (썸네일 배경)                                                |
+| 배경 제거(누끼) | remove.bg API                                                                     |
+| 썸네일 합성     | Next.js `ImageResponse`(`next/og`, Satori), sharp                                 |
+| 메시지 큐·크론  | Upstash QStash                                                                    |
+| 영상·자막       | RapidAPI yt-api                                                                   |
+| 실시간 구독     | YouTube WebSub (PubSubHubbub)                                                     |
+| Validation      | Zod                                                                               |
+| 주보 PDF 변환   | `pdfjs-dist` 브라우저 렌더 → canvas → WebP 3종                                    |
+| Analytics       | Vercel Analytics + Google Analytics + 자체 방문 분석(`page_views` 수집·일일 롤업) |
+| Test            | Vitest (+ PGlite 기반 DB 통합 테스트), Playwright E2E                             |
+| Lint            | ESLint 9, eslint-config-next                                                      |
+| Format          | Prettier 3 (`.prettierrc.json`, 세미콜론 없음·작은따옴표·120칸)                   |
+| Deploy          | Vercel                                                                            |
 
 ---
 
@@ -569,6 +570,9 @@ npm run dev
 # ESLint 검사
 npm run lint
 
+# Prettier 포맷 (검사만: npm run format:check)
+npm run format
+
 # TypeScript 검사
 npm run typecheck
 
@@ -629,12 +633,12 @@ npm run qstash:schedules
 
 `qstash:schedules`는 다음 4개 스케줄을 등록/갱신합니다.
 
-| 스케줄 | 주기 | 역할 |
-|---|---|---|
-| `websub-renew` | 2일마다 | WebSub 구독 lease 갱신 |
-| `retry-summaries` | 매시간 | 실패한 요약 재시도 |
-| `reconcile-sermons` | 매일 | 채널 재생목록 ↔ DB 정합성 대조·누락 백필 |
-| `analytics-rollup` | 매일 | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
+| 스케줄              | 주기    | 역할                                           |
+| ------------------- | ------- | ---------------------------------------------- |
+| `websub-renew`      | 2일마다 | WebSub 구독 lease 갱신                         |
+| `retry-summaries`   | 매시간  | 실패한 요약 재시도                             |
+| `reconcile-sermons` | 매일    | 채널 재생목록 ↔ DB 정합성 대조·누락 백필       |
+| `analytics-rollup`  | 매일    | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
 
 실제 설교 데이터 시드와 일괄 요약(수동 보충):
 
@@ -679,18 +683,18 @@ npm run delete-user -- admin@example.com
 
 Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심으로 구성되어 있으며, DB가 필요한 로직은 PGlite 기반 통합 테스트(`*.integration.test.ts`)로 검증합니다.
 
-| 영역 | 테스트 | 검증 대상 |
-|---|---|---|
-| 업로드/스토리지 | `upload-sniff`, `r2`, `gallery-video` | 허용 MIME/파일 시그니처(`%PDF-` 포함), R2 파일명 정규화·key prefix, 주보 면·PDF key 형식과 presign prefix 가드, 영상 형식·크기·서명 URL 검증 |
-| 인증/SEO | `auth-origin`, `sitemap`, `seo/jsonld` | Trusted origin 정규화, sitemap URL 생성, JSON-LD 빌더 |
-| 주보 | `bulletin-editor`, `bulletin-format`, `bulletin-scale`, `bulletin-pdf`, `bulletin-paging`, `bulletin-zoom`, `actions/bulletins` | 공지·면 정규화/검증, 날짜·권호 표기, 긴 변 축소 클램프, PDF 면 렌더·WebP→JPEG 폴백·상한 거부, 면 이동 클램프·표기, 줌 클램프·앵커 고정·오프셋 클램프, 미검증 키 저장 거부 |
-| 설교 동기화 | `youtube/websub`, `sermons/sync`, `sermons/reconcile` | WebSub 서명 검증·Atom 파싱, 신규 삽입 계획·중복 방지, 정합성 백필 |
-| 설교 요약 | `sermons/summarize`(+integration), `ai/gemini`, `ai/sermon-summary`, `transcript/rapidapi`, `transcript/prompt` | claim 선점·지수 백오프·재시도 선별, Gemini 스키마/챕터 검증, 자막 fetch·프롬프트 빌드 |
-| 설교 표기 | `sermons/classify-title`, `sermons/format`, `sermons/list-title`, `sermons/sermon-date` | 제목 분류·표시 포맷·날짜 파싱 |
-| 썸네일 | `thumbnails/scripture`, `detect-caption-band`, `compose-text`, `generate-background`, `position`, `remove-background`, `store`(+integration), `webp`, `actions/thumbnails` | 성경구절 추출, 자막 밴드 crop, 텍스트 합성·배치, 배경 생성, 누끼, 후보 저장/트림, WebP 변환 |
-| 방문 분석 | `analytics/bots`, `analytics/datacenter`, `analytics/ip`, `analytics/paths`, `analytics/region-ko`, `analytics/server` | 봇·데이터센터 판별, IP 마스킹·해시, 지역 한글화, 수집 경로 필터, 체류시간 집계 |
-| 기타 유틸 | `worship`, `date`, `sse`, `db/schema`, `data/sermons`, `data/posts` | 예배 유형/필터, 날짜 유틸, SSE 파싱, 스키마 정합성, 설교 조회, 예약 게시 판별 |
-| 브라우저 E2E | `gallery-upload`, `gallery-video`, `subnav-scroll`, `bulletins`, `page-chrome` | 관리자 갤러리 업로드 흐름, 영상 폼 검증, 서브내비 라우트 스크롤 회귀, 주보 목록→상세→라이트박스(썸네일 선택과 라이트박스 진입 분리, 한 면 표시, 드래그로 면이 넘어가지 않음, Escape 복귀), 페이지 크롬(히어로 리마운트 방지) 회귀 |
+| 영역            | 테스트                                                                                                                                                                     | 검증 대상                                                                                                                                                                                                                         |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 업로드/스토리지 | `upload-sniff`, `r2`, `gallery-video`                                                                                                                                      | 허용 MIME/파일 시그니처(`%PDF-` 포함), R2 파일명 정규화·key prefix, 주보 면·PDF key 형식과 presign prefix 가드, 영상 형식·크기·서명 URL 검증                                                                                      |
+| 인증/SEO        | `auth-origin`, `sitemap`, `seo/jsonld`                                                                                                                                     | Trusted origin 정규화, sitemap URL 생성, JSON-LD 빌더                                                                                                                                                                             |
+| 주보            | `bulletin-editor`, `bulletin-format`, `bulletin-scale`, `bulletin-pdf`, `bulletin-paging`, `bulletin-zoom`, `actions/bulletins`                                            | 공지·면 정규화/검증, 날짜·권호 표기, 긴 변 축소 클램프, PDF 면 렌더·WebP→JPEG 폴백·상한 거부, 면 이동 클램프·표기, 줌 클램프·앵커 고정·오프셋 클램프, 미검증 키 저장 거부                                                         |
+| 설교 동기화     | `youtube/websub`, `sermons/sync`, `sermons/reconcile`                                                                                                                      | WebSub 서명 검증·Atom 파싱, 신규 삽입 계획·중복 방지, 정합성 백필                                                                                                                                                                 |
+| 설교 요약       | `sermons/summarize`(+integration), `ai/gemini`, `ai/sermon-summary`, `transcript/rapidapi`, `transcript/prompt`                                                            | claim 선점·지수 백오프·재시도 선별, Gemini 스키마/챕터 검증, 자막 fetch·프롬프트 빌드                                                                                                                                             |
+| 설교 표기       | `sermons/classify-title`, `sermons/format`, `sermons/list-title`, `sermons/sermon-date`                                                                                    | 제목 분류·표시 포맷·날짜 파싱                                                                                                                                                                                                     |
+| 썸네일          | `thumbnails/scripture`, `detect-caption-band`, `compose-text`, `generate-background`, `position`, `remove-background`, `store`(+integration), `webp`, `actions/thumbnails` | 성경구절 추출, 자막 밴드 crop, 텍스트 합성·배치, 배경 생성, 누끼, 후보 저장/트림, WebP 변환                                                                                                                                       |
+| 방문 분석       | `analytics/bots`, `analytics/datacenter`, `analytics/ip`, `analytics/paths`, `analytics/region-ko`, `analytics/server`                                                     | 봇·데이터센터 판별, IP 마스킹·해시, 지역 한글화, 수집 경로 필터, 체류시간 집계                                                                                                                                                    |
+| 기타 유틸       | `worship`, `date`, `sse`, `db/schema`, `data/sermons`, `data/posts`                                                                                                        | 예배 유형/필터, 날짜 유틸, SSE 파싱, 스키마 정합성, 설교 조회, 예약 게시 판별                                                                                                                                                     |
+| 브라우저 E2E    | `gallery-upload`, `gallery-video`, `subnav-scroll`, `bulletins`, `page-chrome`                                                                                             | 관리자 갤러리 업로드 흐름, 영상 폼 검증, 서브내비 라우트 스크롤 회귀, 주보 목록→상세→라이트박스(썸네일 선택과 라이트박스 진입 분리, 한 면 표시, 드래그로 면이 넘어가지 않음, Escape 복귀), 페이지 크롬(히어로 리마운트 방지) 회귀 |
 
 ---
 
@@ -698,17 +702,20 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 
 `main` 대상 push·PR에서 네 job이 병렬로 돕니다.
 
-| Job | 하는 일 |
-|---|---|
-| Lint | `eslint` |
-| Typecheck | `tsc --noEmit` |
-| Test (unit) | `vitest run` — PGlite 인메모리 Postgres라 외부 의존성이 없습니다 |
-| Build & Lighthouse | 마이그레이션 검증·적용 → 시드 → `next build` → `lhci autorun` |
+| Job                | 하는 일                                                          |
+| ------------------ | ---------------------------------------------------------------- |
+| Lint               | `eslint` + `prettier --check`                                    |
+| Typecheck          | `tsc --noEmit`                                                   |
+| Test (unit)        | `vitest run` — PGlite 인메모리 Postgres라 외부 의존성이 없습니다 |
+| Build & Lighthouse | 마이그레이션 검증·적용 → 시드 → `next build` → `lhci autorun`    |
 
 Build job은 Postgres 서비스 컨테이너와 Neon HTTP 프록시(`ghcr.io/timowilhelm/local-neon-http-proxy`)를 띄웁니다.
 `src/lib/db/index.ts`가 모듈 최상위에서 접속을 만들고 상세 라우트 4개가 `generateStaticParams`에서 DB를 읽기 때문에,
 **빌드 자체가 살아 있는 DB를 요구**합니다. 앱은 neon-http로 말하므로 프록시가 그 HTTP 요청을 Postgres로 옮기고,
 드라이버 종점은 `NEON_HTTP_PROXY` 환경변수로만 갈아끼웁니다 — 이 변수가 없으면 평소대로 Neon 클라우드로 붙습니다.
+
+`endOfLine`은 `auto`입니다 — 이 저장소에는 `.gitattributes`가 없고 Windows 작업 트리가 CRLF라,
+`lf`로 고정하면 로컬에서 전 파일이 매번 불일치로 잡힙니다.
 
 Lighthouse 임계값은 `.lighthouserc.json`에 있고 **접근성 0.9 미만이면 CI가 실패**합니다(성능·모범사례·SEO는 경고).
 리포트는 실패 여부와 무관하게 `lighthouse-reports` 아티팩트로 올라갑니다.
@@ -770,9 +777,9 @@ interface BulletinNotice {
 interface BulletinPage {
   width: number
   height: number
-  fullUrl: string     // 긴 변 2000px — 라이트박스
-  previewUrl: string  // 긴 변 1000px — 인라인 큰 이미지, 목록 표지, 홈 카드
-  thumbUrl: string    // 긴 변 320px  — 인라인 썸네일 스트립
+  fullUrl: string // 긴 변 2000px — 라이트박스
+  previewUrl: string // 긴 변 1000px — 인라인 큰 이미지, 목록 표지, 홈 카드
+  thumbUrl: string // 긴 변 320px  — 인라인 썸네일 스트립
 }
 ```
 
@@ -809,18 +816,18 @@ https://공식-도메인/sitemap.xml
 
 교회 홈페이지의 신뢰감과 명료함을 위해 딥 네이비·로열 블루·골드 팔레트, 넓은 여백, Pretendard 산세리프 단일 체계, 부드러운 reveal motion을 사용합니다. 페이지 Hero는 navy/royal/beige의 단색 3톤으로 구분합니다.
 
-| 역할 | 색상 |
-|---|---|
-| 딥 네이비 | `#0B1F5C` |
+| 역할        | 색상      |
+| ----------- | --------- |
+| 딥 네이비   | `#0B1F5C` |
 | 푸터 네이비 | `#071540` |
-| 로열 블루 | `#2153B4` |
+| 로열 블루   | `#2153B4` |
 | 골드 포인트 | `#E8B54D` |
 | 베이지 Hero | `#F0EEE3` |
-| 섹션 표면 | `#F7F8FB` |
-| 주요 본문 | `#3A4664` |
-| 구분선 | `#E3E8F2` |
+| 섹션 표면   | `#F7F8FB` |
+| 주요 본문   | `#3A4664` |
+| 구분선      | `#E3E8F2` |
 
-폰트는 본문·타이틀 모두 Pretendard를 사용합니다. 굵기 5종을 self-host 하되 풀셋(각 ~750KB)이 아니라 **동적 서브셋**을 씁니다 — `unicode-range`로 쪼갠 조각을 브라우저가 그 페이지에 실제로 쓰인 범위만 받습니다(페이지당 280~400KB). 조각과 `@font-face` CSS는 `prebuild`의 `scripts/copy-pretendard-subset.mjs`가 만듭니다. 글자 커버리지는 풀셋과 같습니다.
+폰트는 본문·타이틀 모두 Pretendard를 사용합니다. 굵기 5종을 self-host 하되 풀셋(각 ~~750KB)이 아니라 **동적 서브셋**을 씁니다 — `unicode-range`로 쪼갠 조각을 브라우저가 그 페이지에 실제로 쓰인 범위만 받습니다(페이지당 280~~400KB). 조각과 `@font-face` CSS는 `prebuild`의 `scripts/copy-pretendard-subset.mjs`가 만듭니다. 글자 커버리지는 풀셋과 같습니다.
 
 ---
 
@@ -837,15 +844,15 @@ https://공식-도메인/sitemap.xml
 
 ## 🙋 프로젝트 정보
 
-| 항목 | 내용 |
-|---|---|
-| 프로젝트명 | 영천중앙교회 홈페이지 |
-| 대상 기관 | 영천중앙교회 |
-| 주소 | 경북 영천시 완산중앙8길 21 |
-| 대표 전화 | `054-334-6644~5` |
-| 운영 도메인 | `https://www.ycjc.kr` |
-| 주요 사용자 | 성도, 새가족, 지역 주민, 교회 운영자 |
-| 핵심 목적 | 예배/설교/주보/소식 제공 및 교회 콘텐츠 운영 효율화 |
+| 항목        | 내용                                                |
+| ----------- | --------------------------------------------------- |
+| 프로젝트명  | 영천중앙교회 홈페이지                               |
+| 대상 기관   | 영천중앙교회                                        |
+| 주소        | 경북 영천시 완산중앙8길 21                          |
+| 대표 전화   | `054-334-6644~5`                                    |
+| 운영 도메인 | `https://www.ycjc.kr`                               |
+| 주요 사용자 | 성도, 새가족, 지역 주민, 교회 운영자                |
+| 핵심 목적   | 예배/설교/주보/소식 제공 및 교회 콘텐츠 운영 효율화 |
 
 ---
 

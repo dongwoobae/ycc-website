@@ -9,9 +9,15 @@ interface Props {
 }
 
 const LABELS: Record<ThumbnailPosition, string> = {
-  'top-left': '좌상', 'top-center': '상', 'top-right': '우상',
-  'middle-left': '좌', 'middle-center': '중앙', 'middle-right': '우',
-  'bottom-left': '좌하', 'bottom-center': '하', 'bottom-right': '우하',
+  'top-left': '좌상',
+  'top-center': '상',
+  'top-right': '우상',
+  'middle-left': '좌',
+  'middle-center': '중앙',
+  'middle-right': '우',
+  'bottom-left': '좌하',
+  'bottom-center': '하',
+  'bottom-right': '우하',
 }
 
 export default function ThumbnailPositionGrid({ value, onChange, disabled }: Props) {
@@ -27,9 +33,7 @@ export default function ThumbnailPositionGrid({ value, onChange, disabled }: Pro
             onClick={() => onChange(pos)}
             aria-pressed={value === pos}
             className={`aspect-square rounded text-[10px] font-semibold disabled:opacity-50 ${
-              value === pos
-                ? 'bg-accent-deep text-white'
-                : 'border border-line text-ink-muted hover:border-accent'
+              value === pos ? 'bg-accent-deep text-white' : 'border border-line text-ink-muted hover:border-accent'
             }`}
           >
             {LABELS[pos]}

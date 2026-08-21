@@ -11,9 +11,7 @@ export default function PostCard({ post }: { post: Post }) {
   return (
     <Link
       href={`/news/${post.id}`}
-      className={`block rounded-xl px-5 py-7 transition duration-200 hover:pl-7 ${
-        post.isPinned ? 'bg-sky-50' : ''
-      }`}
+      className={`block rounded-xl px-5 py-7 transition duration-200 hover:pl-7 ${post.isPinned ? 'bg-sky-50' : ''}`}
     >
       <div className="flex items-center gap-3">
         <span className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${chipStyles[post.category]}`}>

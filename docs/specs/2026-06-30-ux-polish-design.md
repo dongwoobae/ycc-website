@@ -10,6 +10,7 @@
 aria 다수)도 양호하다. 빠진 "마지막 한 겹"을 메우는 것이 목표다.
 
 확정된 제약:
+
 - **양방향 기능·행사 캘린더·생중계 추가하지 않음** (디모데 앱 운용 / 생중계 미운영).
 - **Vercel Hobby tier** — `next/image`의 Image Transformations 쿼터를 소모하면 안 됨.
 
@@ -46,11 +47,13 @@ JSON-LD가 0건이다. 공용 `<JsonLd>` 컴포넌트(`<script type="application
 ### 3. 이미지 — 트랜스포메이션 쿼터 제거
 
 `next/image`가 **이미 최적화된** 소스를 재변환하며 쿼터를 낭비하는 구조다.
+
 - 갤러리 업로드: `src/lib/actions/gallery.ts`에서 sharp로 1920px webp(q75) 변환 후 R2 저장.
 - YouTube 썸네일 / Unsplash 히어로: CDN이 이미 사이즈 지정해서 제공.
 - 로컬 정적: webp 15 + png 6.
 
 **선택된 방식: `unoptimized` 플래그.**
+
 - `next.config.ts`에 `images: { unoptimized: true }` 추가.
   → 모든 트랜스포메이션 즉시 0. 컴포넌트 API·lazy 로딩·width/height(CLS 방지) 유지.
 - `placeholder="blur"` 이미지 사용처 없음 확인 → 회귀 없음.

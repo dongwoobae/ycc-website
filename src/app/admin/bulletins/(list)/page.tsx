@@ -15,12 +15,18 @@ export default async function AdminBulletinsPage() {
           <thead className="bg-surface text-ink-muted">
             <tr>
               {['날짜', '권/호', '설교 제목', '면', '공개', '관리'].map((heading) => (
-                <th key={heading} className="px-4 py-3 text-left font-medium">{heading}</th>
+                <th key={heading} className="px-4 py-3 text-left font-medium">
+                  {heading}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? <EmptyRow /> : rows.map((bulletin) => <BulletinRow key={bulletin.id} bulletin={bulletin} />)}
+            {rows.length === 0 ? (
+              <EmptyRow />
+            ) : (
+              rows.map((bulletin) => <BulletinRow key={bulletin.id} bulletin={bulletin} />)
+            )}
           </tbody>
         </table>
       </div>
@@ -31,7 +37,9 @@ export default async function AdminBulletinsPage() {
 function EmptyRow() {
   return (
     <tr className="border-t border-line">
-      <td className="px-4 py-3 text-ink-muted" colSpan={6}>등록된 주보가 없습니다.</td>
+      <td className="px-4 py-3 text-ink-muted" colSpan={6}>
+        등록된 주보가 없습니다.
+      </td>
     </tr>
   )
 }
@@ -55,7 +63,9 @@ function BulletinRow({ bulletin }: { bulletin: Awaited<ReturnType<typeof getBull
       <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
         {bulletin.isPublished && !bulletin.sermonTitle ? publicLink(bulletin.bulletinDate) : bulletin.bulletinDate}
       </td>
-      <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{[bulletin.volume, bulletin.issue].filter(Boolean).join(' ') || '-'}</td>
+      <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
+        {[bulletin.volume, bulletin.issue].filter(Boolean).join(' ') || '-'}
+      </td>
       <td className="px-4 py-3 font-medium text-ink">
         {bulletin.isPublished && bulletin.sermonTitle ? publicLink(bulletin.sermonTitle) : bulletin.sermonTitle || '-'}
       </td>
@@ -63,11 +73,18 @@ function BulletinRow({ bulletin }: { bulletin: Awaited<ReturnType<typeof getBull
       <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{bulletin.isPublished ? '공개' : '비공개'}</td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/admin/bulletins/${bulletin.id}/edit`} className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface">
+          <Link
+            href={`/admin/bulletins/${bulletin.id}/edit`}
+            className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-surface"
+          >
             수정
           </Link>
           <form action={deleteBulletin.bind(null, bulletin.id)}>
-            <SubmitButton confirmMessage="주보와 원본 파일을 삭제합니다. 계속할까요?" pendingLabel="삭제 중..." className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-surface">
+            <SubmitButton
+              confirmMessage="주보와 원본 파일을 삭제합니다. 계속할까요?"
+              pendingLabel="삭제 중..."
+              className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-surface"
+            >
               삭제
             </SubmitButton>
           </form>

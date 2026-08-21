@@ -69,7 +69,10 @@ export default function ThumbnailModal({
   }
 
   function apply(text: ThumbnailText, options: ThumbnailRenderOptions) {
-    run(() => composeAndApplyThumbnailAction(sermonId, tab, text, options), '썸네일 적용에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    run(
+      () => composeAndApplyThumbnailAction(sermonId, tab, text, options),
+      '썸네일 적용에 실패했습니다. 잠시 후 다시 시도해주세요.',
+    )
   }
 
   function applyCandidate(url: string) {

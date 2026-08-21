@@ -71,10 +71,7 @@ export async function suggestThumbnailTextAction(id: string, style: ThumbnailSty
  * 실시간 진행률이 필요한 경우 SSE 라우트(`/api/admin/sermons/[id]/thumbnail/stream`)를
  * 쓰고, 이 액션은 진행률이 불필요한 호출부의 폴백으로 유지한다.
  */
-export async function generateThumbnailAction(
-  id: string,
-  style: ThumbnailStyle
-): Promise<GenerateThumbnailResult> {
+export async function generateThumbnailAction(id: string, style: ThumbnailStyle): Promise<GenerateThumbnailResult> {
   const session = await requireAdmin()
   const result = await generateThumbnail(id, style)
   await log('create', 'sermon', id, `thumbnail:bg:${style}`, session.user.id)
@@ -89,7 +86,7 @@ export async function composeAndApplyThumbnailAction(
   id: string,
   style: ThumbnailStyle,
   text: ThumbnailText,
-  options: ThumbnailRenderOptions
+  options: ThumbnailRenderOptions,
 ): Promise<ThumbnailActionResult> {
   const session = await requireAdmin()
 

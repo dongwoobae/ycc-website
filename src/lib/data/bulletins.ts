@@ -95,7 +95,7 @@ export interface BulletinNeighbor {
  * 날짜 비교만으로 인접 주보가 하나로 결정된다.
  */
 export async function getAdjacentBulletins(
-  bulletinDate: string
+  bulletinDate: string,
 ): Promise<{ previous?: BulletinNeighbor; next?: BulletinNeighbor }> {
   const columns = { id: bulletinsTable.id, bulletinDate: bulletinsTable.bulletinDate }
 

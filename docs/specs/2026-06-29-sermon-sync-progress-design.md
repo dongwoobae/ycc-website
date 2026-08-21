@@ -23,6 +23,7 @@ SSE 스트리밍 + 프로그레스바 모달로 이 문제를 해결한 선례�
 ## 아키텍처 (3계층)
 
 ### ① 백엔드 — 신규 SSE 라우트
+
 `src/app/api/admin/sermons/sync/stream/route.ts` (GET)
 
 - **인증**: `auth.api.getSession({ headers })`로 세션 확인, 없으면 `401` 반환.
@@ -38,10 +39,16 @@ SSE 스트리밍 + 프로그레스바 모달로 이 문제를 해결한 선례�
   이 경우 재실행으로 이어받는다(insert는 `onConflictDoNothing` 멱등). 상수로 명시해 조정 가능.
 
 ### ② 도메인 — `resyncAllSermons` 리팩터
+
 `src/lib/sermons/sync.ts`
 
 ```ts
-interface SyncProgress { current: number; total: number; title: string; phase: string }
+interface SyncProgress {
+  current: number
+  total: number
+  title: string
+  phase: string
+}
 export async function resyncAllSermons(
   onProgress?: (p: SyncProgress) => void,
 ): Promise<{ inserted: number; summarized: number }>
@@ -55,6 +62,7 @@ export async function resyncAllSermons(
 - `syncNowAction` 서버액션은 SSE로 대체되어 미사용 → 제거.
 
 ### ③ 프론트 — 훅 + 모달 분리
+
 컴포넌트 50줄 규칙·관심사 분리를 위해 둘로 나눈다.
 
 - `src/components/admin/useSermonSync.ts`
@@ -86,11 +94,11 @@ export async function resyncAllSermons(
 
 ## SSE 이벤트 스키마
 
-| event    | data                                   |
-|----------|----------------------------------------|
-| progress | `{ current, total, title, phase }`     |
-| done     | `{ inserted, summarized }`             |
-| error    | `{ message }`                          |
+| event    | data                               |
+| -------- | ---------------------------------- |
+| progress | `{ current, total, title, phase }` |
+| done     | `{ inserted, summarized }`         |
+| error    | `{ message }`                      |
 
 ## 에러 처리
 
@@ -108,11 +116,13 @@ export async function resyncAllSermons(
 ## 변경 파일 요약
 
 신규:
+
 - `src/app/api/admin/sermons/sync/stream/route.ts`
 - `src/components/admin/useSermonSync.ts`
 - `src/components/admin/SermonSyncModal.tsx`
 
 수정:
+
 - `src/lib/sermons/sync.ts` (`resyncAllSermons`에 onProgress 추가)
 - `src/lib/actions/sermons.ts` (`syncNowAction` 제거)
 - `src/components/admin/SermonAdminTable.tsx` (버튼 → 모달 연결)

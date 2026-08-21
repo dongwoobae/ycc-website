@@ -19,7 +19,12 @@ export default function BulletinGlanceFields({ form, onChange }: BulletinGlanceF
         required
         onChange={(bulletinDate) => onChange({ bulletinDate })}
       />
-      <BulletinField id="preacher" label="설교자" value={form.preacher} onChange={(preacher) => onChange({ preacher })} />
+      <BulletinField
+        id="preacher"
+        label="설교자"
+        value={form.preacher}
+        onChange={(preacher) => onChange({ preacher })}
+      />
       <BulletinField id="volume" label="권" value={form.volume} onChange={(volume) => onChange({ volume })} />
       <BulletinField id="issue" label="호" value={form.issue} onChange={(issue) => onChange({ issue })} />
       <div className="md:col-span-2">

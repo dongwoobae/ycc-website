@@ -44,9 +44,7 @@ export default function PageHero({ eyebrow, title, subtitle, tone = 'navy' }: Pa
           )}
         </Reveal>
         <Reveal variant="fade-up" delay={100}>
-          <h1 className="mt-3.5 text-4xl font-extrabold leading-tight tracking-tight sm:text-[58px]">
-            {title}
-          </h1>
+          <h1 className="mt-3.5 text-4xl font-extrabold leading-tight tracking-tight sm:text-[58px]">{title}</h1>
         </Reveal>
         {subtitle && (
           <Reveal variant="fade-up" delay={220}>

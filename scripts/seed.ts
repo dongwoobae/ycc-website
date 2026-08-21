@@ -30,7 +30,10 @@ async function main() {
       })
       .returning({ id: schema.sermons.id })
     // summary는 위성(SoT)에 저장, 자막/썸네일은 기본 행만 생성
-    await db.insert(schema.sermonSummaries).values({ sermonId: row.id, summary: s.summary ?? null }).onConflictDoNothing()
+    await db
+      .insert(schema.sermonSummaries)
+      .values({ sermonId: row.id, summary: s.summary ?? null })
+      .onConflictDoNothing()
     await db.insert(schema.sermonTranscripts).values({ sermonId: row.id }).onConflictDoNothing()
     await db.insert(schema.sermonThumbnails).values({ sermonId: row.id }).onConflictDoNothing()
   }

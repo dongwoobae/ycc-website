@@ -29,11 +29,7 @@ export default function BulletinView({ bulletin, previous, next }: BulletinViewP
             </section>
           ) : null}
         </div>
-        <BulletinPageViewer
-          pages={bulletin.pages}
-          bulletinDate={bulletin.bulletinDate}
-          pdfUrl={bulletin.pdfUrl}
-        />
+        <BulletinPageViewer pages={bulletin.pages} bulletinDate={bulletin.bulletinDate} pdfUrl={bulletin.pdfUrl} />
       </div>
 
       <nav className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-5 text-sm">

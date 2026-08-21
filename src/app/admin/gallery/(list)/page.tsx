@@ -13,11 +13,13 @@ function formatDate(value: string | null) {
 export default async function AdminGalleryPage() {
   await verifySession()
 
-  const rows = await db.select().from(galleryAlbums).orderBy(desc(galleryAlbums.eventDate), desc(galleryAlbums.createdAt))
+  const rows = await db
+    .select()
+    .from(galleryAlbums)
+    .orderBy(desc(galleryAlbums.eventDate), desc(galleryAlbums.createdAt))
 
   return (
     <div>
-
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
         <table className="min-w-[48rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">
@@ -65,7 +67,9 @@ export default async function AdminGalleryPage() {
                         album.title
                       )}
                     </p>
-                    {album.description ? <p className="mt-1 line-clamp-1 text-xs text-ink-muted">{album.description}</p> : null}
+                    {album.description ? (
+                      <p className="mt-1 line-clamp-1 text-xs text-ink-muted">{album.description}</p>
+                    ) : null}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
                     {album.isPublished ? '공개' : '비공개'}

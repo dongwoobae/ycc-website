@@ -31,7 +31,11 @@ vi.mock('@/lib/db', () => ({
 import { storeCandidate } from './store'
 
 function candidate(n: number): ThumbnailCandidate {
-  return { style: 'classic', url: `https://r2.example/thumbnails/candidates/s1/classic-${n}.webp`, createdAt: `2026-07-0${n}` }
+  return {
+    style: 'classic',
+    url: `https://r2.example/thumbnails/candidates/s1/classic-${n}.webp`,
+    createdAt: `2026-07-0${n}`,
+  }
 }
 
 const NEW_URL = 'https://r2.example/thumbnails/candidates/s1/classic-999.webp'
@@ -52,9 +56,7 @@ describe('storeCandidate', () => {
   })
 
   it('트림 결과에 남은 후보는 삭제하지 않는다', async () => {
-    selectLimit
-      .mockResolvedValueOnce([{ candidates: [candidate(1)] }])
-      .mockResolvedValueOnce([{ appliedUrl: null }])
+    selectLimit.mockResolvedValueOnce([{ candidates: [candidate(1)] }]).mockResolvedValueOnce([{ appliedUrl: null }])
     returningMock.mockResolvedValue([{ candidates: [candidate(1), NEW_CANDIDATE] }])
 
     await storeCandidate('s1', 'classic', PNG)

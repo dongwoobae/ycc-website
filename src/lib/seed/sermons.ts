@@ -10,7 +10,7 @@ function youtubeIdFromUrl(videoUrl: string) {
 function sermon(
   input: Omit<Sermon, 'youtubeId' | 'thumbnailUrl' | 'isPublished' | 'summaryStatus'> & {
     summaryStatus?: Sermon['summaryStatus']
-  }
+  },
 ): Sermon {
   const youtubeId = youtubeIdFromUrl(input.videoUrl)
   return {

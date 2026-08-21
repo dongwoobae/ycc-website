@@ -2,9 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { absoluteUrl } from '../site-origin'
 
 export type WebSubNotification =
-  | { kind: 'upload'; videoId: string; published: string }
-  | { kind: 'deleted' }
-  | { kind: 'unknown' }
+  { kind: 'upload'; videoId: string; published: string } | { kind: 'deleted' } | { kind: 'unknown' }
 
 const HUB = 'https://pubsubhubbub.appspot.com/subscribe'
 

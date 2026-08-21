@@ -4,7 +4,7 @@ import { encodeCanvas, maxBulletinFileSize, maxBulletinPages, validateOriginFile
 describe('validateOriginFile', () => {
   it('40MB를 넘는 파일을 거부한다', () => {
     expect(validateOriginFile({ size: maxBulletinFileSize + 1, type: 'application/pdf' })).toBe(
-      '파일이 너무 큽니다. 40MB 이하로 올려주세요.'
+      '파일이 너무 큽니다. 40MB 이하로 올려주세요.',
     )
   })
 
@@ -16,7 +16,7 @@ describe('validateOriginFile', () => {
 
   it('그 외 형식을 거부한다', () => {
     expect(validateOriginFile({ size: 1000, type: 'application/x-hwp' })).toBe(
-      'PDF 또는 이미지 파일만 올릴 수 있습니다.'
+      'PDF 또는 이미지 파일만 올릴 수 있습니다.',
     )
   })
 })
@@ -58,8 +58,6 @@ describe('encodeCanvas', () => {
   })
 
   it('둘 다 실패하면 던진다', async () => {
-    await expect(encodeCanvas(fakeCanvas({}), 'image/webp')).rejects.toThrow(
-      '이미지 변환에 실패했습니다'
-    )
+    await expect(encodeCanvas(fakeCanvas({}), 'image/webp')).rejects.toThrow('이미지 변환에 실패했습니다')
   })
 })

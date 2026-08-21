@@ -42,7 +42,7 @@ async function listKeys(client: S3Client, bucket: string, prefix: string): Promi
   let token: string | undefined
   do {
     const res = await client.send(
-      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token })
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }),
     )
     for (const obj of res.Contents ?? []) if (obj.Key) keys.push(obj.Key)
     token = res.NextContinuationToken

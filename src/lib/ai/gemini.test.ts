@@ -32,10 +32,7 @@ describe('generateContentWithFallback', () => {
   })
 
   it('primary 503이면 fallback 모델로 1회 재시도', async () => {
-    const fn = vi
-      .fn()
-      .mockRejectedValueOnce({ status: 503 })
-      .mockResolvedValueOnce({ text: 'from-fallback' })
+    const fn = vi.fn().mockRejectedValueOnce({ status: 503 }).mockResolvedValueOnce({ text: 'from-fallback' })
     const res = await generateContentWithFallback(makeAi(fn), req, 'gemini-3.5-flash')
     expect(res).toEqual({ text: 'from-fallback' })
     expect(fn).toHaveBeenCalledTimes(2)

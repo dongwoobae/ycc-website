@@ -66,13 +66,18 @@ export default function RootLayout({
     <html lang="ko">
       <body className="flex min-h-screen flex-col bg-bg text-ink antialiased">
         <JsonLd data={buildChurchJsonLd()} />
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-ink focus:shadow-subtle">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-ink focus:shadow-subtle"
+        >
           Skip to content
         </a>
         <div className="site-chrome contents">
           <Header />
         </div>
-        <main id="main-content" className="flex-1">{children}</main>
+        <main id="main-content" className="flex-1">
+          {children}
+        </main>
         <Footer />
         <Tracker />
         <Analytics />

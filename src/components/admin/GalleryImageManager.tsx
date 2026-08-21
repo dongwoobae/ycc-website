@@ -16,7 +16,7 @@ interface GalleryImageManagerProps {
   createVideoUploadAction: (
     fileName: string,
     contentType: string,
-    size: number
+    size: number,
   ) => Promise<{ uploadUrl: string; publicUrl: string }>
   updateImageAction: (imageId: string, caption: string, alt: string) => Promise<void>
   deleteAction: (imageId: string) => Promise<void>
@@ -108,7 +108,7 @@ export default function GalleryImageManager({
               uploadedCount += 1
               setProgress(`업로드 중 (${uploadedCount}/${compressed.length})`)
             }
-          })
+          }),
         )
 
         // 3) DB 저장 — sortOrder 경합을 피해 순차 실행
@@ -219,8 +219,10 @@ export default function GalleryImageManager({
         await updateImageAction(imageId, editCaption, editAlt)
         setOrderedImages((current) =>
           current.map((image) =>
-            image.id === imageId ? { ...image, caption: editCaption.trim() || undefined, alt: editAlt.trim() || image.alt } : image
-          )
+            image.id === imageId
+              ? { ...image, caption: editCaption.trim() || undefined, alt: editAlt.trim() || image.alt }
+              : image,
+          ),
         )
         setEditingId(null)
         router.refresh()
@@ -357,10 +359,14 @@ export default function GalleryImageManager({
           </button>
         </div>
 
-        {error ? <p className="mb-4 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink">{error}</p> : null}
+        {error ? (
+          <p className="mb-4 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink">{error}</p>
+        ) : null}
 
         {orderedImages.length === 0 ? (
-          <p className="rounded-lg border border-line bg-bg px-4 py-6 text-sm text-ink-muted">등록된 사진·영상이 없습니다.</p>
+          <p className="rounded-lg border border-line bg-bg px-4 py-6 text-sm text-ink-muted">
+            등록된 사진·영상이 없습니다.
+          </p>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {orderedImages.map((image, index) => (

@@ -26,7 +26,9 @@ export const profiles = pgTable('profiles', {
 })
 
 export const sermonSeries = pgTable('sermon_series', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   title: text('title').notNull(),
   description: text('description'),
   coverImgUrl: text('cover_img_url'),
@@ -35,48 +37,64 @@ export const sermonSeries = pgTable('sermon_series', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 })
 
-export const sermons = pgTable('sermons', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-  title: text('title').notNull(),
-  displayTitle: text('display_title'),
-  preacher: text('preacher'),
-  seriesId: uuid('series_id').references(() => sermonSeries.id, { onDelete: 'set null' }),
-  worshipType: text('worship_type').notNull().default('주일예배'),
-  sermonDate: date('sermon_date').notNull(),
-  videoUrl: text('video_url'),
-  audioUrl: text('audio_url'),
-  notesUrl: text('notes_url'),
-  thumbnailUrl: text('thumbnail_url'),
-  customThumbnailUrl: text('custom_thumbnail_url'),
-  youtubeVideoId: text('youtube_video_id').unique(),
-  durationSeconds: integer('duration_seconds'),
-  isPublished: boolean('is_published').notNull().default(false),
-  createdBy: text('created_by'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  // 요약/자막/썸네일 컬럼은 위성 테이블(sermon_summaries/transcripts/thumbnails)로 이관됨(0013에서 DROP).
-}, (t) => [index('sermons_published_date_idx').on(t.isPublished, t.sermonDate)])
+export const sermons = pgTable(
+  'sermons',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    title: text('title').notNull(),
+    displayTitle: text('display_title'),
+    preacher: text('preacher'),
+    seriesId: uuid('series_id').references(() => sermonSeries.id, { onDelete: 'set null' }),
+    worshipType: text('worship_type').notNull().default('주일예배'),
+    sermonDate: date('sermon_date').notNull(),
+    videoUrl: text('video_url'),
+    audioUrl: text('audio_url'),
+    notesUrl: text('notes_url'),
+    thumbnailUrl: text('thumbnail_url'),
+    customThumbnailUrl: text('custom_thumbnail_url'),
+    youtubeVideoId: text('youtube_video_id').unique(),
+    durationSeconds: integer('duration_seconds'),
+    isPublished: boolean('is_published').notNull().default(false),
+    createdBy: text('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    // 요약/자막/썸네일 컬럼은 위성 테이블(sermon_summaries/transcripts/thumbnails)로 이관됨(0013에서 DROP).
+  },
+  (t) => [index('sermons_published_date_idx').on(t.isPublished, t.sermonDate)],
+)
 
 export const sermonTranscripts = pgTable('sermon_transcripts', {
-  sermonId: uuid('sermon_id').primaryKey().references(() => sermons.id, { onDelete: 'cascade' }),
+  sermonId: uuid('sermon_id')
+    .primaryKey()
+    .references(() => sermons.id, { onDelete: 'cascade' }),
   transcriptText: text('transcript_text'),
   transcriptFetchedAt: timestamp('transcript_fetched_at', { withTimezone: true }),
 })
 
-export const sermonSummaries = pgTable('sermon_summaries', {
-  sermonId: uuid('sermon_id').primaryKey().references(() => sermons.id, { onDelete: 'cascade' }),
-  summary: text('summary'),
-  quickSummary: jsonb('quick_summary').$type<string[]>(),
-  chapters: jsonb('chapters').$type<SermonChapter[]>(),
-  summaryStatus: text('summary_status').notNull().default('none'),
-  summaryAttempts: integer('summary_attempts').notNull().default(0),
-  summaryNextRetryAt: timestamp('summary_next_retry_at', { withTimezone: true }),
-  summaryGeneratedAt: timestamp('summary_generated_at', { withTimezone: true }),
-  summaryModel: text('summary_model'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-}, (t) => [index('sermon_summaries_status_retry_idx').on(t.summaryStatus, t.summaryNextRetryAt)])
+export const sermonSummaries = pgTable(
+  'sermon_summaries',
+  {
+    sermonId: uuid('sermon_id')
+      .primaryKey()
+      .references(() => sermons.id, { onDelete: 'cascade' }),
+    summary: text('summary'),
+    quickSummary: jsonb('quick_summary').$type<string[]>(),
+    chapters: jsonb('chapters').$type<SermonChapter[]>(),
+    summaryStatus: text('summary_status').notNull().default('none'),
+    summaryAttempts: integer('summary_attempts').notNull().default(0),
+    summaryNextRetryAt: timestamp('summary_next_retry_at', { withTimezone: true }),
+    summaryGeneratedAt: timestamp('summary_generated_at', { withTimezone: true }),
+    summaryModel: text('summary_model'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('sermon_summaries_status_retry_idx').on(t.summaryStatus, t.summaryNextRetryAt)],
+)
 
 export const sermonThumbnails = pgTable('sermon_thumbnails', {
-  sermonId: uuid('sermon_id').primaryKey().references(() => sermons.id, { onDelete: 'cascade' }),
+  sermonId: uuid('sermon_id')
+    .primaryKey()
+    .references(() => sermons.id, { onDelete: 'cascade' }),
   thumbnailCandidates: jsonb('thumbnail_candidates').$type<ThumbnailCandidate[]>(),
   thumbnailBgKeywords: text('thumbnail_bg_keywords'),
   thumbnailBackgrounds: jsonb('thumbnail_backgrounds').$type<Partial<Record<ThumbnailStyle, string>>>(),
@@ -88,7 +106,9 @@ export const sermonThumbnails = pgTable('sermon_thumbnails', {
 export const posts = pgTable(
   'posts',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     title: text('title').notNull(),
     content: text('content'),
     category: text('category').notNull().default('공지'),
@@ -99,66 +119,96 @@ export const posts = pgTable(
     publishedAt: timestamp('published_at', { withTimezone: true }),
     createdBy: text('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     check('posts_category_check', sql`${t.category} IN ('공지','소식','행사')`),
     index('posts_published_pinned_at_idx').on(t.isPublished, t.isPinned, t.publishedAt),
-  ]
+  ],
 )
 
-export const bulletins = pgTable('bulletins', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-  bulletinDate: date('bulletin_date').notNull(),
-  volume: text('volume'),
-  issue: text('issue'),
-  sermonTitle: text('sermon_title'),
-  scripture: text('scripture'),
-  preacher: text('preacher'),
-  hymns: text('hymns'),
-  responsiveReading: text('responsive_reading'),
-  nextWeek: text('next_week'),
-  pdfUrl: text('pdf_url'),
-  notices: jsonb('notices').$type<BulletinNotice[]>().notNull().default(sql`'[]'::jsonb`),
-  pages: jsonb('pages').$type<BulletinPage[]>().notNull().default(sql`'[]'::jsonb`),
-  isPublished: boolean('is_published').notNull().default(false),
-  createdBy: text('created_by'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()),
-}, (t) => [
-  index('bulletins_published_date_idx').on(t.isPublished, t.bulletinDate),
-  // 주보는 날짜로 식별된다. 같은 날짜를 다시 만드는 것은 항상 실수이며(수정하려면 편집한다),
-  // 중복되면 목록에 같은 날짜가 두 번 나오고 홈 카드가 어느 것을 집을지 불확정해진다.
-  uniqueIndex('bulletins_date_key').on(t.bulletinDate),
-])
+export const bulletins = pgTable(
+  'bulletins',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    bulletinDate: date('bulletin_date').notNull(),
+    volume: text('volume'),
+    issue: text('issue'),
+    sermonTitle: text('sermon_title'),
+    scripture: text('scripture'),
+    preacher: text('preacher'),
+    hymns: text('hymns'),
+    responsiveReading: text('responsive_reading'),
+    nextWeek: text('next_week'),
+    pdfUrl: text('pdf_url'),
+    notices: jsonb('notices')
+      .$type<BulletinNotice[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    pages: jsonb('pages')
+      .$type<BulletinPage[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    isPublished: boolean('is_published').notNull().default(false),
+    createdBy: text('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    index('bulletins_published_date_idx').on(t.isPublished, t.bulletinDate),
+    // 주보는 날짜로 식별된다. 같은 날짜를 다시 만드는 것은 항상 실수이며(수정하려면 편집한다),
+    // 중복되면 목록에 같은 날짜가 두 번 나오고 홈 카드가 어느 것을 집을지 불확정해진다.
+    uniqueIndex('bulletins_date_key').on(t.bulletinDate),
+  ],
+)
 
-export const galleryAlbums = pgTable('gallery_albums', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-  title: text('title').notNull(),
-  description: text('description'),
-  coverImgUrl: text('cover_img_url'),
-  eventDate: date('event_date'),
-  isPublished: boolean('is_published').notNull().default(false),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-}, (t) => [index('gallery_albums_published_event_created_idx').on(t.isPublished, t.eventDate, t.createdAt)])
+export const galleryAlbums = pgTable(
+  'gallery_albums',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    title: text('title').notNull(),
+    description: text('description'),
+    coverImgUrl: text('cover_img_url'),
+    eventDate: date('event_date'),
+    isPublished: boolean('is_published').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('gallery_albums_published_event_created_idx').on(t.isPublished, t.eventDate, t.createdAt)],
+)
 
-export const galleryImages = pgTable('gallery_images', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-  albumId: uuid('album_id')
-    .notNull()
-    .references(() => galleryAlbums.id, { onDelete: 'cascade' }),
-  imageUrl: text('image_url').notNull(),
-  // 영상도 이 테이블에 함께 저장한다: mediaType='video'면 imageUrl이 영상 URL, posterUrl이 썸네일
-  mediaType: text('media_type').notNull().default('image'),
-  posterUrl: text('poster_url'),
-  caption: text('caption'),
-  alt: text('alt'),
-  sortOrder: integer('sort_order').notNull().default(0),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-}, (t) => [index('gallery_images_album_sort_idx').on(t.albumId, t.sortOrder)])
+export const galleryImages = pgTable(
+  'gallery_images',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    albumId: uuid('album_id')
+      .notNull()
+      .references(() => galleryAlbums.id, { onDelete: 'cascade' }),
+    imageUrl: text('image_url').notNull(),
+    // 영상도 이 테이블에 함께 저장한다: mediaType='video'면 imageUrl이 영상 URL, posterUrl이 썸네일
+    mediaType: text('media_type').notNull().default('image'),
+    posterUrl: text('poster_url'),
+    caption: text('caption'),
+    alt: text('alt'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index('gallery_images_album_sort_idx').on(t.albumId, t.sortOrder)],
+)
 
 export const appLogs = pgTable('app_logs', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   action: text('action').notNull(),
   entityType: text('entity_type').notNull(),
   entityId: uuid('entity_id'),
@@ -167,23 +217,27 @@ export const appLogs = pgTable('app_logs', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 })
 
-export const pageViews = pgTable('page_views', {
-  id: uuid('id').primaryKey(),
-  visitorId: text('visitor_id').notNull(),
-  sessionId: text('session_id').notNull(),
-  path: text('path').notNull(),
-  referrer: text('referrer'),
-  region: text('region'),
-  country: text('country'),
-  countryRegion: text('country_region'),
-  ipMasked: text('ip_masked'),
-  userAgent: text('user_agent'),
-  durationSeconds: integer('duration_seconds').notNull().default(0),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-}, (t) => [
-  index('page_views_created_visitor_idx').on(t.createdAt, t.visitorId),
-  index('page_views_session_created_idx').on(t.sessionId, t.createdAt),
-])
+export const pageViews = pgTable(
+  'page_views',
+  {
+    id: uuid('id').primaryKey(),
+    visitorId: text('visitor_id').notNull(),
+    sessionId: text('session_id').notNull(),
+    path: text('path').notNull(),
+    referrer: text('referrer'),
+    region: text('region'),
+    country: text('country'),
+    countryRegion: text('country_region'),
+    ipMasked: text('ip_masked'),
+    userAgent: text('user_agent'),
+    durationSeconds: integer('duration_seconds').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    index('page_views_created_visitor_idx').on(t.createdAt, t.visitorId),
+    index('page_views_session_created_idx').on(t.sessionId, t.createdAt),
+  ],
+)
 
 export const dailyPageStats = pgTable('daily_page_stats', {
   date: date('date').primaryKey(),

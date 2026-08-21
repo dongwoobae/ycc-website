@@ -140,10 +140,7 @@ export async function prepareBulletinUpload(input: {
  * 둘 다 확인한다.
  */
 export async function assertBulletinAssets(pages: BulletinPage[], pdfUrl: string | undefined): Promise<void> {
-  const urls = [
-    ...pages.flatMap((page) => [page.fullUrl, page.previewUrl, page.thumbUrl]),
-    ...(pdfUrl ? [pdfUrl] : []),
-  ]
+  const urls = [...pages.flatMap((page) => [page.fullUrl, page.previewUrl, page.thumbUrl]), ...(pdfUrl ? [pdfUrl] : [])]
   for (const url of urls) {
     const key = keyFromUrl(url)
     if (!key.startsWith('bulletins/')) throw new Error('invalid bulletin asset url')
@@ -247,7 +244,7 @@ export async function updateBulletin(id: string, input: BulletinFormInput) {
   // DB가 새 세트를 가리킨 뒤에 옛 세트를 지운다. 순서를 뒤집으면 교체 실패 시 이미지가 사라진다.
   const nextKeys = new Set(bulletinAssetKeys(input.pages, input.pdfUrl))
   const staleKeys = bulletinAssetKeys(previous.pages ?? [], previous.pdfUrl ?? undefined).filter(
-    (key) => !nextKeys.has(key)
+    (key) => !nextKeys.has(key),
   )
   await Promise.all(staleKeys.map((key) => deleteR2BestEffort(key, s.user.id)))
 
@@ -257,15 +254,12 @@ export async function updateBulletin(id: string, input: BulletinFormInput) {
 
 export async function deleteBulletin(id: string) {
   const s = await requireSession()
-  const [deleted] = await db
-    .delete(bulletins)
-    .where(eq(bulletins.id, id))
-    .returning({
-      id: bulletins.id,
-      title: bulletins.bulletinDate,
-      pages: bulletins.pages,
-      pdfUrl: bulletins.pdfUrl,
-    })
+  const [deleted] = await db.delete(bulletins).where(eq(bulletins.id, id)).returning({
+    id: bulletins.id,
+    title: bulletins.bulletinDate,
+    pages: bulletins.pages,
+    pdfUrl: bulletins.pdfUrl,
+  })
   if (!deleted) throw new Error('bulletin not found')
 
   const keys = bulletinAssetKeys(deleted.pages ?? [], deleted.pdfUrl ?? undefined)

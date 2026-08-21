@@ -36,7 +36,7 @@ describe('pickKoreanTrackUrl', () => {
       pickKoreanTrackUrl([
         { languageCode: 'en', url: 'en' },
         { languageCode: 'ko', url: 'ko' },
-      ])
+      ]),
     ).toBe('ko')
     expect(pickKoreanTrackUrl([{ languageCode: 'ko-KR', url: 'kokr' }])).toBe('kokr')
   })
@@ -55,7 +55,7 @@ describe('normalizeDirectTranscript', () => {
           { text: '  hello   world ', duration: 3.24, offset: 0.04, lang: 'en' },
           { text: 'second line', duration: 2, offset: 65.9, lang: 'en' },
         ],
-      })
+      }),
     ).toEqual([
       { startSeconds: 0, text: 'hello world' },
       { startSeconds: 65, text: 'second line' },

@@ -83,7 +83,9 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <Container size="wide" className="flex flex-wrap items-center justify-between gap-3 py-6 text-xs text-white/45">
-          <span>© {new Date().getFullYear()} {churchInfo.name}. All rights reserved.</span>
+          <span>
+            © {new Date().getFullYear()} {churchInfo.name}. All rights reserved.
+          </span>
           <span>{churchInfo.denomination}</span>
         </Container>
       </div>

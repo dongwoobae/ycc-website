@@ -86,14 +86,14 @@ describe('prepareBulletinUpload', () => {
         pageCount: maxBulletinPages + 1,
         hasPdf: false,
         imageMime: 'image/webp',
-      })
+      }),
     ).rejects.toThrow('면 수는')
   })
 
   it('날짜 형식이 틀리면 거부한다', async () => {
     const { prepareBulletinUpload } = await import('./bulletins')
     await expect(
-      prepareBulletinUpload({ date: '2026/07/26', pageCount: 1, hasPdf: false, imageMime: 'image/webp' })
+      prepareBulletinUpload({ date: '2026/07/26', pageCount: 1, hasPdf: false, imageMime: 'image/webp' }),
     ).rejects.toThrow('bulletinDate is required')
   })
 })
@@ -108,14 +108,14 @@ describe('assertBulletinAssets', () => {
   it('우리 bulletins/ 키가 아닌 URL은 거부한다 — 임의 값 주입 차단', async () => {
     const { assertBulletinAssets } = await import('./bulletins')
     await expect(
-      assertBulletinAssets([{ ...page, fullUrl: 'https://evil.example.com/x.webp' }], undefined)
+      assertBulletinAssets([{ ...page, fullUrl: 'https://evil.example.com/x.webp' }], undefined),
     ).rejects.toThrow('invalid bulletin asset url')
   })
 
   it('gallery/ 키도 거부한다', async () => {
     const { assertBulletinAssets } = await import('./bulletins')
     await expect(
-      assertBulletinAssets([{ ...page, thumbUrl: 'https://cdn.example.com/gallery/x.webp' }], undefined)
+      assertBulletinAssets([{ ...page, thumbUrl: 'https://cdn.example.com/gallery/x.webp' }], undefined),
     ).rejects.toThrow('invalid bulletin asset url')
   })
 

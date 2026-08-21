@@ -1,17 +1,17 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { z } from "zod";
-import type { SermonChapter } from "@/lib/types";
-import { generateContentWithFallback, resolveGeminiModel } from "./gemini";
+import { GoogleGenAI, Type } from '@google/genai'
+import { z } from 'zod'
+import type { SermonChapter } from '@/lib/types'
+import { generateContentWithFallback, resolveGeminiModel } from './gemini'
 
 // summarize.ts의 summaryModel 기록과 일치시키기 위해 재노출한다.
-export { DEFAULT_GEMINI_MODEL } from "./gemini";
+export { DEFAULT_GEMINI_MODEL } from './gemini'
 
 export interface SermonSummaryResult {
-  summary: string;
-  quickSummary: string[];
-  chapters: SermonChapter[];
+  summary: string
+  quickSummary: string[]
+  chapters: SermonChapter[]
   /** 실제 응답을 생성한 모델(폴백 발생 시 폴백 모델). 기록(provenance)용. */
-  model?: string;
+  model?: string
 }
 
 const schema = z.object({
@@ -26,17 +26,17 @@ const schema = z.object({
       }),
     )
     .min(1),
-});
+})
 
 export function parseSermonSummary(raw: unknown, durationSeconds: number | null): SermonSummaryResult {
-  const parsed = schema.parse(raw);
-  let prev = -1;
+  const parsed = schema.parse(raw)
+  let prev = -1
   for (const c of parsed.chapters) {
-    if (c.startSeconds <= prev) throw new Error("chapters must be strictly ascending");
-    if (durationSeconds != null && c.startSeconds > durationSeconds) throw new Error("chapter beyond duration");
-    prev = c.startSeconds;
+    if (c.startSeconds <= prev) throw new Error('chapters must be strictly ascending')
+    if (durationSeconds != null && c.startSeconds > durationSeconds) throw new Error('chapter beyond duration')
+    prev = c.startSeconds
   }
-  return parsed;
+  return parsed
 }
 
 const PROMPT = `당신은 한국어 설교 영상을 요약하는 도우미입니다.
@@ -50,7 +50,7 @@ const PROMPT = `당신은 한국어 설교 영상을 요약하는 도우미입�
 startSeconds는 원고에 표기된 [MM:SS] 타임스탬프를 초로 환산해 사용하고, 0부터 오름차순이어야 합니다.
 
 [자막 원고]
-`;
+`
 
 const responseSchema = {
   type: Type.OBJECT,
@@ -66,38 +66,38 @@ const responseSchema = {
           title: { type: Type.STRING },
           summary: { type: Type.STRING },
         },
-        required: ["startSeconds", "title", "summary"],
+        required: ['startSeconds', 'title', 'summary'],
       },
     },
   },
-  required: ["summary", "quickSummary", "chapters"],
-};
+  required: ['summary', 'quickSummary', 'chapters'],
+}
 
 export async function generateSermonSummary(
   transcriptText: string,
   durationSeconds: number | null,
 ): Promise<SermonSummaryResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
-  if (!transcriptText.trim()) throw new Error("empty transcript");
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
+  if (!transcriptText.trim()) throw new Error('empty transcript')
 
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey })
   const res = await generateContentWithFallback(ai, {
     contents: [
       {
-        role: "user",
+        role: 'user',
         parts: [{ text: PROMPT + transcriptText }],
       },
     ],
     config: {
       temperature: 0.2,
-      responseMimeType: "application/json",
+      responseMimeType: 'application/json',
       responseSchema,
     },
-  });
+  })
 
-  const text = res.text;
-  if (!text) throw new Error("gemini returned empty response");
-  const parsed = parseSermonSummary(JSON.parse(text), durationSeconds);
-  return { ...parsed, model: res.modelVersion || resolveGeminiModel() };
+  const text = res.text
+  if (!text) throw new Error('gemini returned empty response')
+  const parsed = parseSermonSummary(JSON.parse(text), durationSeconds)
+  return { ...parsed, model: res.modelVersion || resolveGeminiModel() }
 }

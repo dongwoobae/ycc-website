@@ -26,5 +26,4 @@ export const churchInfo = {
 /** 대표번호 표기 (예: "054-334-6644~5") — 두 번호의 끝자리만 묶어 노출 */
 export const churchPhoneDisplay = `${churchInfo.phone}~${churchInfo.phone2.slice(-1)}`
 
-export const churchOfferingAccountDisplay =
-  `${churchInfo.offeringAccount.bank} ${churchInfo.offeringAccount.number} ${churchInfo.offeringAccount.holder}`
+export const churchOfferingAccountDisplay = `${churchInfo.offeringAccount.bank} ${churchInfo.offeringAccount.number} ${churchInfo.offeringAccount.holder}`

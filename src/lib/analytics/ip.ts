@@ -15,9 +15,7 @@ function expandIpv6(input: string): string[] | null {
 
   const left = leftRaw ? leftRaw.split(':') : []
   const right = rightRaw ? rightRaw.split(':') : []
-  const groups = input.includes('::')
-    ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right]
-    : left
+  const groups = input.includes('::') ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right] : left
 
   if (groups.length !== 8) return null
   if (groups.some((group) => !/^[0-9a-f]{1,4}$/.test(group))) return null

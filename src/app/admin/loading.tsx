@@ -38,10 +38,7 @@ export default function Loading() {
         <h2 className="mb-3 text-sm font-semibold text-ink-muted">점검 알림</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between rounded-lg border border-line bg-paper px-4 py-3"
-            >
+            <div key={i} className="flex items-center justify-between rounded-lg border border-line bg-paper px-4 py-3">
               <Skeleton className="h-4 w-28" />
               <Skeleton className="h-4 w-10" />
             </div>
