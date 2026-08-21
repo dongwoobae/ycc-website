@@ -8,10 +8,7 @@ import type { Post, PostCategory } from '@/lib/types'
  * 예약 게시: 공개 체크됐지만 게시 시각(publishedAt)이 아직 오지 않은 상태.
  * 공개 페이지에서는 숨겨지고, 시각이 지나면 자동 노출된다(관리자 화면 '예약' 표시용).
  */
-export function isScheduled(
-  post: { isPublished: boolean; publishedAt: Date | null },
-  now: Date = new Date()
-): boolean {
+export function isScheduled(post: { isPublished: boolean; publishedAt: Date | null }, now: Date = new Date()): boolean {
   return post.isPublished && post.publishedAt != null && post.publishedAt.getTime() > now.getTime()
 }
 
@@ -24,7 +21,7 @@ export function isScheduled(
 function publiclyVisible() {
   return and(
     eq(postsTable.isPublished, true),
-    or(isNull(postsTable.publishedAt), lte(postsTable.publishedAt, new Date()))
+    or(isNull(postsTable.publishedAt), lte(postsTable.publishedAt, new Date())),
   )
 }
 

@@ -41,14 +41,14 @@ AI로 의미를 매핑하는 안(파서는 구조만, Gemini가 분류)을 검�
 
 **신규 스칼라**
 
-| 컬럼 | 타입 | 용도 |
-|---|---|---|
-| `sermon_title` | text | 설교 제목 |
-| `preacher` | text | 설교자 |
-| `hymns` | text | 찬송가 번호. 자유 텍스트 (`새 210장 · 통 40장`) |
-| `responsive_reading` | text | 교독문 번호 |
-| `next_week` | text | 다음 주 예고 한 줄 |
-| `pdf_url` | text | R2 원본 PDF. nullable (이미지 직접 업로드 시 없음) |
+| 컬럼                 | 타입 | 용도                                               |
+| -------------------- | ---- | -------------------------------------------------- |
+| `sermon_title`       | text | 설교 제목                                          |
+| `preacher`           | text | 설교자                                             |
+| `hymns`              | text | 찬송가 번호. 자유 텍스트 (`새 210장 · 통 40장`)    |
+| `responsive_reading` | text | 교독문 번호                                        |
+| `next_week`          | text | 다음 주 예고 한 줄                                 |
+| `pdf_url`            | text | R2 원본 PDF. nullable (이미지 직접 업로드 시 없음) |
 
 **신규 jsonb** — 둘 다 `NOT NULL DEFAULT '[]'::jsonb`
 
@@ -67,9 +67,9 @@ export interface BulletinNotice {
 export interface BulletinPage {
   width: number
   height: number
-  fullUrl: string     // 긴 변 2000px — 라이트박스
-  previewUrl: string  // 긴 변 1000px — 인라인 큰 이미지, 목록 표지, 홈 카드
-  thumbUrl: string    // 긴 변 320px — 인라인 썸네일 스트립
+  fullUrl: string // 긴 변 2000px — 라이트박스
+  previewUrl: string // 긴 변 1000px — 인라인 큰 이미지, 목록 표지, 홈 카드
+  thumbUrl: string // 긴 변 320px — 인라인 썸네일 스트립
 }
 ```
 
@@ -135,13 +135,13 @@ Next 16은 `new Worker()` 표현식을 번들러가 처리한다 (`node_modules/
 
 ### 모듈 경계
 
-| 모듈 | 책임 | 의존 |
-|---|---|---|
-| `lib/bulletin-pdf.ts` (client-only) | `renderPdfToPages(file) → {blob,width,height}[]` | `pdfjs-dist` (동적 import), canvas |
-| `lib/client-image-compress.ts` | 이미지 직접 업로드 경로의 압축 | 변경 없음 |
-| `lib/r2.ts` | `bulletinPageKey(date, uploadId, n, size, ext)`·`bulletinPdfKey(date, uploadId)`·`presignBulletinPut(key, contentType, disposition?)` 추가, `bulletinHwpKey` 삭제 | — |
-| `lib/upload-sniff.ts` | `sniffPdfMime`(`%PDF-`) 추가, `UploadMime`에 `application/pdf` 추가 | — |
-| `lib/actions/bulletins.ts` | presign 발급 / CRUD / 삭제 시 R2 정리 | r2, db |
+| 모듈                                | 책임                                                                                                                                                              | 의존                               |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `lib/bulletin-pdf.ts` (client-only) | `renderPdfToPages(file) → {blob,width,height}[]`                                                                                                                  | `pdfjs-dist` (동적 import), canvas |
+| `lib/client-image-compress.ts`      | 이미지 직접 업로드 경로의 압축                                                                                                                                    | 변경 없음                          |
+| `lib/r2.ts`                         | `bulletinPageKey(date, uploadId, n, size, ext)`·`bulletinPdfKey(date, uploadId)`·`presignBulletinPut(key, contentType, disposition?)` 추가, `bulletinHwpKey` 삭제 | —                                  |
+| `lib/upload-sniff.ts`               | `sniffPdfMime`(`%PDF-`) 추가, `UploadMime`에 `application/pdf` 추가                                                                                               | —                                  |
+| `lib/actions/bulletins.ts`          | presign 발급 / CRUD / 삭제 시 R2 정리                                                                                                                             | r2, db                             |
 
 새 의존성은 `pdfjs-dist` 하나이며 관리자 화면에서만 동적 import하므로 공개 번들에 포함되지 않는다.
 
@@ -168,12 +168,12 @@ R2 키 규칙은 위 「키 전략 — 업로드 단위 스테이징」이 유�
 
 #### 인라인 클릭 동작
 
-| 클릭 대상 | 동작 |
-|---|---|
-| 썸네일 스트립의 면 | 큰 이미지를 그 면으로 교체. **라이트박스를 열지 않는다** |
-| 큰 이미지 | 현재 면부터 라이트박스 열기 |
-| 「원본 크게 보기」 버튼 | 현재 면부터 라이트박스 열기 |
-| 「PDF 저장」 버튼 | `pdf_url` 다운로드. `pdf_url`이 없으면 버튼을 렌더하지 않는다 |
+| 클릭 대상               | 동작                                                          |
+| ----------------------- | ------------------------------------------------------------- |
+| 썸네일 스트립의 면      | 큰 이미지를 그 면으로 교체. **라이트박스를 열지 않는다**      |
+| 큰 이미지               | 현재 면부터 라이트박스 열기                                   |
+| 「원본 크게 보기」 버튼 | 현재 면부터 라이트박스 열기                                   |
+| 「PDF 저장」 버튼       | `pdf_url` 다운로드. `pdf_url`이 없으면 버튼을 렌더하지 않는다 |
 
 썸네일을 누르는 즉시 전체화면이 뜨면 면을 훑어보는 것이 불가능해지고, 잘못 눌렀을 때 빠져나오는 비용이 클릭보다 커진다. 그래서 썸네일은 선택 전용으로 둔다. 라이트박스 진입 경로를 큰 이미지와 버튼 둘로 두는 이유는, 이미지가 클릭 가능하다는 사실이 드러나지 않기 때문이다 — 버튼이 발견 가능성을 담당하고 이미지 클릭이 숙련 경로가 된다.
 
@@ -187,11 +187,11 @@ R2 키 규칙은 위 「키 전략 — 업로드 단위 스테이징」이 유�
 
 **주 사용자가 노인 교인이라는 것이 이 화면의 설계 기준이다.** 면 위에 띄우는 반투명 버튼, 만졌을 때만 나타나는 컨트롤, 제스처 전용 기능은 전부 "이미 아는 사람"에게만 깔끔하다. 처음 보는 사람은 버튼이 있다는 사실 자체를 모른다. 그래서 조작 요소는 **항상 보이고, 크고, 글자 라벨이 붙어 있고, 면을 가리지 않는 자리**에 둔다. 읽는 면적을 조금 내주는 대가다.
 
-| 위치 | 내용 |
-|---|---|
-| 상단 툴바 | 면 목록 토글 · PDF 저장 · 닫기 |
-| 스테이지 | 면 이미지만. 떠 있는 컨트롤 없음 |
-| 하단 바 1행 | `－ 작게` · `원래대로` · `＋ 크게` (높이 44px) |
+| 위치        | 내용                                              |
+| ----------- | ------------------------------------------------- |
+| 상단 툴바   | 면 목록 토글 · PDF 저장 · 닫기                    |
+| 스테이지    | 면 이미지만. 떠 있는 컨트롤 없음                  |
+| 하단 바 1행 | `－ 작게` · `원래대로` · `＋ 크게` (높이 44px)    |
 | 하단 바 2행 | `◀ 이전 면` · `3 / 6면` · `다음 면 ▶` (높이 56px) |
 
 **이동 버튼을 맨 아래에 둔다.** 모바일에서 엄지가 닿는 자리이고, 현재 위치 표기가 두 버튼 사이에 있어야 셋의 관계가 드러난다.
@@ -212,12 +212,12 @@ R2 키 규칙은 위 「키 전략 — 업로드 단위 스테이징」이 유�
 
 **어느 쪽으로도 확대할 수 있어야 한다.**
 
-| 환경 | 방법 |
-|---|---|
-| 모바일 · 태블릿 | 두 손가락 벌리기/오므리기(핀치) |
-| 데스크탑 · 트랙패드 | 휠 스크롤, 트랙패드 두 손가락 스크롤·핀치 |
+| 환경                   | 방법                                         |
+| ---------------------- | -------------------------------------------- |
+| 모바일 · 태블릿        | 두 손가락 벌리기/오므리기(핀치)              |
+| 데스크탑 · 트랙패드    | 휠 스크롤, 트랙패드 두 손가락 스크롤·핀치    |
 | 제스처를 모르는 사용자 | 하단 바의 `－ 작게` / `＋ 크게` / `원래대로` |
-| 키보드 | `＋` / `－` 로 한 단계씩, `0` 으로 맞춤 복귀 |
+| 키보드                 | `＋` / `－` 로 한 단계씩, `0` 으로 맞춤 복귀 |
 
 제스처는 연속값이고 버튼·키보드는 한 번에 ×1.4다. 둘은 같은 `zoom` 상태를 건드리므로 섞어 써도 어긋나지 않는다.
 
@@ -253,11 +253,11 @@ R2 키 규칙은 위 「키 전략 — 업로드 단위 스테이징」이 유�
 
 용도별 배정:
 
-| 위치 | 사용 크기 | 대략 용량 |
-|---|---|---|
-| 인라인 썸네일 스트립 | `thumbUrl` (320px) | 장당 ~25KB |
+| 위치                                 | 사용 크기             | 대략 용량   |
+| ------------------------------------ | --------------------- | ----------- |
+| 인라인 썸네일 스트립                 | `thumbUrl` (320px)    | 장당 ~25KB  |
 | 인라인 큰 이미지, 목록 표지, 홈 카드 | `previewUrl` (1000px) | 장당 ~120KB |
-| 라이트박스 | `fullUrl` (2000px) | 장당 ~450KB |
+| 라이트박스                           | `fullUrl` (2000px)    | 장당 ~450KB |
 
 - 첫 화면 밖 이미지는 `loading="lazy"`
 - `fullUrl`은 라이트박스에서만 쓰고, 프리로드는 **다음 면 한 장으로 제한**한다
@@ -289,14 +289,14 @@ R2 키 규칙은 위 「키 전략 — 업로드 단위 스테이징」이 유�
 
 사용처를 전수 확인한 결과 모두 주보 전용이며 다른 기능에 영향이 없다.
 
-| 삭제 대상 | 근거 |
-|---|---|
-| `src/lib/hwp/parse.ts` (385줄) + `src/lib/hwp/parse.test.ts` | 소비처가 주보뿐 |
-| `cfb` 의존성 (`package.json`) | `parse.ts`가 유일한 사용처 |
-| `sniffHwpMime` + `UploadMime`의 `'application/x-hwp'` | 주보 업로드 외 사용처 없음 |
-| `r2.ts`의 `bulletinHwpKey` | 현재 호출부가 없는 죽은 함수 |
-| `types.ts`의 `BulletinSection`·`BulletinTable`·`BulletinOffering` | 소비처 12개 파일 전부 주보 계열 |
-| `BulletinHwpUpload` `BulletinSectionEditor` `BulletinSectionText` `BulletinRowsEditor` `BulletinTablesEditor` `BulletinOfferingsEditor` | 표 편집 UI 전량 |
+| 삭제 대상                                                                                                                               | 근거                            |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `src/lib/hwp/parse.ts` (385줄) + `src/lib/hwp/parse.test.ts`                                                                            | 소비처가 주보뿐                 |
+| `cfb` 의존성 (`package.json`)                                                                                                           | `parse.ts`가 유일한 사용처      |
+| `sniffHwpMime` + `UploadMime`의 `'application/x-hwp'`                                                                                   | 주보 업로드 외 사용처 없음      |
+| `r2.ts`의 `bulletinHwpKey`                                                                                                              | 현재 호출부가 없는 죽은 함수    |
+| `types.ts`의 `BulletinSection`·`BulletinTable`·`BulletinOffering`                                                                       | 소비처 12개 파일 전부 주보 계열 |
+| `BulletinHwpUpload` `BulletinSectionEditor` `BulletinSectionText` `BulletinRowsEditor` `BulletinTablesEditor` `BulletinOfferingsEditor` | 표 편집 UI 전량                 |
 
 **R2 고아 객체 정리 — 별도 확인 필요.** `bulletinHwpKey`는 지금 호출부가 없지만 `c9060df feat: 주보 hwp 업로드 + 섹션 관리 CRUD` 시점에는 실제로 쓰였고, 키가 `bulletins/{uuid}-{파일명}.hwp` 형태였다. 따라서 R2 버킷에 과거 업로드분이 남아 있을 수 있다. 배포 전에 `bulletins/` 프리픽스를 인벤토리해 새 키 규칙(`bulletins/{날짜}/{uploadId}/...`)에 속하지 않는 객체를 확인하고 지운다. 이건 코드 변경이 아니라 운영 작업이므로 구현 계획의 별도 단계로 둔다.
 

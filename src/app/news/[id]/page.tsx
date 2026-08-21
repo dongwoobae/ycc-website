@@ -42,9 +42,7 @@ function NeighborRow({ label, arrow, neighbor }: { label: string; arrow: string;
     <>
       <span className="w-10 shrink-0 font-bold text-ink">{label}</span>
       <span className="shrink-0 text-ink-muted">{arrow}</span>
-      <span className="min-w-0 flex-1 truncate text-ink-muted">
-        {neighbor ? neighbor.title : '글이 없습니다'}
-      </span>
+      <span className="min-w-0 flex-1 truncate text-ink-muted">{neighbor ? neighbor.title : '글이 없습니다'}</span>
       {neighbor && <time className="shrink-0 text-sm text-faint">{neighbor.publishedAt}</time>}
     </>
   )

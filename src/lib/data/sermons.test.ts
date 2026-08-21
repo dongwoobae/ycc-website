@@ -32,9 +32,7 @@ describe('toSermon', () => {
   })
 
   it('falls back to youtube thumbnail when none stored', () => {
-    expect(toSermon({ ...base, thumbnailUrl: null }).thumbnailUrl).toBe(
-      'https://img.youtube.com/vi/abc/hqdefault.jpg'
-    )
+    expect(toSermon({ ...base, thumbnailUrl: null }).thumbnailUrl).toBe('https://img.youtube.com/vi/abc/hqdefault.jpg')
   })
 
   it('uses customThumbnailUrl first when present', () => {
@@ -43,7 +41,7 @@ describe('toSermon', () => {
         ...base,
         thumbnailUrl: 'https://img.youtube.com/vi/abc/hqdefault.jpg',
         customThumbnailUrl: 'https://r2.example/thumbnails/x.png',
-      }).thumbnailUrl
+      }).thumbnailUrl,
     ).toBe('https://r2.example/thumbnails/x.png')
   })
 
@@ -53,7 +51,7 @@ describe('toSermon', () => {
         ...base,
         thumbnailUrl: 'https://img.youtube.com/vi/abc/hqdefault.jpg',
         customThumbnailUrl: null,
-      }).thumbnailUrl
+      }).thumbnailUrl,
     ).toBe('https://img.youtube.com/vi/abc/hqdefault.jpg')
   })
 })

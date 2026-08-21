@@ -41,7 +41,7 @@ function toBlob(canvas: HTMLCanvasElement, mime: RenderedMime): Promise<Blob | n
  */
 export async function encodeCanvas(
   canvas: HTMLCanvasElement,
-  preferred: RenderedMime
+  preferred: RenderedMime,
 ): Promise<{ blob: Blob; mime: RenderedMime }> {
   if (preferred === 'image/webp') {
     const webp = await toBlob(canvas, 'image/webp')
@@ -72,7 +72,7 @@ async function encodeThreeSizes(
   source: HTMLCanvasElement,
   sourceWidth: number,
   sourceHeight: number,
-  preferred: RenderedMime
+  preferred: RenderedMime,
 ) {
   const blobs = {} as Record<BulletinSizeName, Blob>
   let mime = preferred

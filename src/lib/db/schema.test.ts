@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getTableColumns } from 'drizzle-orm'
-import {
-  dailyPageStats,
-  pageViews,
-  sermons,
-  sermonTranscripts,
-  sermonSummaries,
-  sermonThumbnails,
-} from './schema'
+import { dailyPageStats, pageViews, sermons, sermonTranscripts, sermonSummaries, sermonThumbnails } from './schema'
 
 describe('sermons schema', () => {
   it('keeps the core youtube columns', () => {
@@ -20,9 +13,19 @@ describe('sermons schema', () => {
   it('no longer has the columns moved to satellites (0013 DROP)', () => {
     const cols = Object.keys(getTableColumns(sermons))
     for (const c of [
-      'summary', 'transcriptText', 'transcriptFetchedAt', 'quickSummary', 'chapters',
-      'summaryStatus', 'summaryAttempts', 'summaryNextRetryAt', 'summaryGeneratedAt', 'summaryModel',
-      'thumbnailCandidates', 'thumbnailBgKeywords', 'thumbnailBackgrounds',
+      'summary',
+      'transcriptText',
+      'transcriptFetchedAt',
+      'quickSummary',
+      'chapters',
+      'summaryStatus',
+      'summaryAttempts',
+      'summaryNextRetryAt',
+      'summaryGeneratedAt',
+      'summaryModel',
+      'thumbnailCandidates',
+      'thumbnailBgKeywords',
+      'thumbnailBackgrounds',
     ]) {
       expect(cols).not.toContain(c)
     }
@@ -37,9 +40,18 @@ describe('sermon satellite tables', () => {
   it('sermon_summaries has summary + pipeline columns', () => {
     const cols = Object.keys(getTableColumns(sermonSummaries))
     for (const c of [
-      'sermonId', 'summary', 'quickSummary', 'chapters',
-      'summaryStatus', 'summaryAttempts', 'summaryNextRetryAt', 'summaryGeneratedAt', 'summaryModel', 'createdAt',
-    ]) expect(cols).toContain(c)
+      'sermonId',
+      'summary',
+      'quickSummary',
+      'chapters',
+      'summaryStatus',
+      'summaryAttempts',
+      'summaryNextRetryAt',
+      'summaryGeneratedAt',
+      'summaryModel',
+      'createdAt',
+    ])
+      expect(cols).toContain(c)
   })
   it('sermon_transcripts has transcript columns', () => {
     const cols = Object.keys(getTableColumns(sermonTranscripts))
@@ -57,9 +69,18 @@ describe('visitor analytics schema', () => {
   it('has page view tracking columns', () => {
     const cols = Object.keys(getTableColumns(pageViews))
     for (const c of [
-      'id', 'visitorId', 'sessionId', 'path', 'referrer', 'region', 'ipMasked', 'userAgent',
-      'durationSeconds', 'createdAt',
-    ]) expect(cols).toContain(c)
+      'id',
+      'visitorId',
+      'sessionId',
+      'path',
+      'referrer',
+      'region',
+      'ipMasked',
+      'userAgent',
+      'durationSeconds',
+      'createdAt',
+    ])
+      expect(cols).toContain(c)
   })
 
   it('has daily rollup columns', () => {

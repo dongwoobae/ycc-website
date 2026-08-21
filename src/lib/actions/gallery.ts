@@ -6,9 +6,22 @@ import { requireAdmin } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { galleryAlbums, galleryImages } from '@/lib/db/schema'
 import { maxImageSize, processAndUploadImage } from '@/lib/gallery-image'
-import { isAllowedVideoMime, maxVideoSize, videoExtByMime, videoUploadProblem, type AllowedVideoMime } from '@/lib/gallery-video'
+import {
+  isAllowedVideoMime,
+  maxVideoSize,
+  videoExtByMime,
+  videoUploadProblem,
+  type AllowedVideoMime,
+} from '@/lib/gallery-video'
 import { log } from '@/lib/logger'
-import { deleteFromR2, galleryVideoKey, headR2Object, keyFromUrl, presignGalleryVideoPut, publicUrlForKey } from '@/lib/r2'
+import {
+  deleteFromR2,
+  galleryVideoKey,
+  headR2Object,
+  keyFromUrl,
+  presignGalleryVideoPut,
+  publicUrlForKey,
+} from '@/lib/r2'
 
 function textValue(formData: FormData, name: string) {
   const value = formData.get(name)
@@ -207,7 +220,13 @@ export async function addImageRecord(albumId: string, imageUrl: string, caption:
   revalidateGalleryPaths(albumId)
 }
 
-export async function addVideoRecord(albumId: string, videoUrl: string, posterUrl: string, caption: string, alt: string) {
+export async function addVideoRecord(
+  albumId: string,
+  videoUrl: string,
+  posterUrl: string,
+  caption: string,
+  alt: string,
+) {
   const s = await requireSession()
   const videoKey = keyFromUrl(videoUrl)
   if (!videoKey.startsWith('gallery/')) throw new Error('invalid video url')
@@ -349,7 +368,7 @@ async function bulkUpdateImageOrder(imageIds: string[]) {
   if (imageIds.length === 0) return
   const cases = sql.join(
     imageIds.map((id, index) => sql`WHEN ${id} THEN ${index}`),
-    sql` `
+    sql` `,
   )
   await db
     .update(galleryImages)

@@ -20,9 +20,7 @@ export const maxDuration = 300
 export async function POST() {
   const session = await requireAdmin()
 
-  const rows = await db
-    .select({ id: sermons.id, url: sermons.customThumbnailUrl })
-    .from(sermons)
+  const rows = await db.select({ id: sermons.id, url: sermons.customThumbnailUrl }).from(sermons)
 
   let converted = 0
   let skipped = 0
@@ -56,7 +54,7 @@ export async function POST() {
     'sermon',
     undefined,
     `thumbnail:backfill-webp total=${rows.length} converted=${converted} skipped=${skipped} failed=${failed}`,
-    session.user.id
+    session.user.id,
   )
 
   if (converted > 0) {

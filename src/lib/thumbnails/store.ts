@@ -37,11 +37,7 @@ async function deleteQuietly(url: string | null | undefined) {
  * 저장된 URL은 위치 재배치(reposition) 시 배경 재사용에 쓰인다. (위성 행 부재 시 upsert로 생성)
  * 같은 스타일의 이전 배경은 더 이상 참조되지 않으므로 R2에서 삭제한다.
  */
-export async function storeBackground(
-  sermonId: string,
-  style: ThumbnailStyle,
-  png: Buffer
-): Promise<string> {
+export async function storeBackground(sermonId: string, style: ThumbnailStyle, png: Buffer): Promise<string> {
   const [existing] = await db
     .select({ backgrounds: sermonThumbnails.thumbnailBackgrounds })
     .from(sermonThumbnails)
@@ -56,9 +52,9 @@ export async function storeBackground(
     .onConflictDoUpdate({
       target: sermonThumbnails.sermonId,
       set: {
-        thumbnailBackgrounds: sql`coalesce(${sermonThumbnails.thumbnailBackgrounds}, '{}'::jsonb) || ${JSON.stringify(
-          { [style]: url }
-        )}::jsonb`,
+        thumbnailBackgrounds: sql`coalesce(${sermonThumbnails.thumbnailBackgrounds}, '{}'::jsonb) || ${JSON.stringify({
+          [style]: url,
+        })}::jsonb`,
       },
     })
     .returning({ id: sermonThumbnails.sermonId })
@@ -79,9 +75,9 @@ export async function storeText(sermonId: string, style: ThumbnailStyle, text: T
     .onConflictDoUpdate({
       target: sermonThumbnails.sermonId,
       set: {
-        thumbnailTexts: sql`coalesce(${sermonThumbnails.thumbnailTexts}, '{}'::jsonb) || ${JSON.stringify(
-          { [style]: text }
-        )}::jsonb`,
+        thumbnailTexts: sql`coalesce(${sermonThumbnails.thumbnailTexts}, '{}'::jsonb) || ${JSON.stringify({
+          [style]: text,
+        })}::jsonb`,
       },
     })
     .returning({ id: sermonThumbnails.sermonId })
@@ -91,7 +87,7 @@ export async function storeText(sermonId: string, style: ThumbnailStyle, text: T
 export async function storeCandidate(
   sermonId: string,
   style: ThumbnailStyle,
-  png: Buffer
+  png: Buffer,
 ): Promise<ThumbnailCandidate> {
   // 공개 표시본(customThumbnailUrl)이라 webp로 변환해 서빙 용량을 줄인다.
   // (unoptimized 환경에서 원본 PNG가 그대로 내려가 느려지는 문제 대응)

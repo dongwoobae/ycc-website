@@ -75,7 +75,7 @@ async function resolveCutout(id: string): Promise<string | undefined> {
 export async function generateThumbnail(
   id: string,
   style: ThumbnailStyle,
-  onProgress?: (p: ThumbnailGenProgress) => void
+  onProgress?: (p: ThumbnailGenProgress) => void,
 ): Promise<GenerateThumbnailResult> {
   const total = style === 'cutout' ? 4 : 3
   const report = (current: number, phase: string) => onProgress?.({ current, total, phase })

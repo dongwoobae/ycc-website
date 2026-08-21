@@ -14,20 +14,20 @@
 
 ## 확정된 의사결정
 
-| 항목 | 결정 |
-|---|---|
-| 업로드 감지 | **YouTube WebSub(PubSubHubbub) 푸시** — "올라왔다" 트리거 전용 |
-| 실데이터 소스 | **YouTube Data API v3** — 제목/길이/썸네일 + 재생목록 소속→worshipType (옵션3) |
-| 스케줄/큐 | **Upstash QStash** — 단계별 메시지 + 영상별 지연 재시도(패턴 B) + 구독갱신 Schedule |
-| 자막 수집 | **RapidAPI YouTube Transcript API** — 배열의 `text`를 공백 결합해 원고 텍스트화 |
-| AI 요약 | **Gemini 3.5 Flash** — 자막 원고 텍스트 + 세그먼트 타임스탬프 입력, 구조화 출력 |
-| 요약 산출물 | secondbrain.ai 스타일: **빠른 요약 불릿 + 타임스탬프 챕터**(클릭 시 영상 seek) |
-| 새 영상 판별 | **DB `youtube_video_id` 비교가 단일 권위 기준** (시간 컷오프 폐기) |
-| 요약 중복 방지 | **`summary_status='pending'` 원자적 conditional UPDATE claim** (+ stale 회수) |
-| 공개 흐름 | **자동 즉시 공개**(ingest 시 `isPublished=true`). 관리자는 사후 편집·비공개만 |
-| 설교자 | YouTube에서 못 얻음 → **기본값 `김선찬 담임목사`**(담임목사가 항상 설교자, `DEFAULT_PREACHER` 상수) |
-| 미분류 표시 | worshipType `미분류`는 영상은 공개하되 **필터·뱃지에서만 숨김**, 관리자 지정 시 표시 |
-| DB 마이그레이션 | **불필요** — 기존 `sermons` 스키마가 그대로 지원 |
+| 항목            | 결정                                                                                                |
+| --------------- | --------------------------------------------------------------------------------------------------- |
+| 업로드 감지     | **YouTube WebSub(PubSubHubbub) 푸시** — "올라왔다" 트리거 전용                                      |
+| 실데이터 소스   | **YouTube Data API v3** — 제목/길이/썸네일 + 재생목록 소속→worshipType (옵션3)                      |
+| 스케줄/큐       | **Upstash QStash** — 단계별 메시지 + 영상별 지연 재시도(패턴 B) + 구독갱신 Schedule                 |
+| 자막 수집       | **RapidAPI YouTube Transcript API** — 배열의 `text`를 공백 결합해 원고 텍스트화                     |
+| AI 요약         | **Gemini 3.5 Flash** — 자막 원고 텍스트 + 세그먼트 타임스탬프 입력, 구조화 출력                     |
+| 요약 산출물     | secondbrain.ai 스타일: **빠른 요약 불릿 + 타임스탬프 챕터**(클릭 시 영상 seek)                      |
+| 새 영상 판별    | **DB `youtube_video_id` 비교가 단일 권위 기준** (시간 컷오프 폐기)                                  |
+| 요약 중복 방지  | **`summary_status='pending'` 원자적 conditional UPDATE claim** (+ stale 회수)                       |
+| 공개 흐름       | **자동 즉시 공개**(ingest 시 `isPublished=true`). 관리자는 사후 편집·비공개만                       |
+| 설교자          | YouTube에서 못 얻음 → **기본값 `김선찬 담임목사`**(담임목사가 항상 설교자, `DEFAULT_PREACHER` 상수) |
+| 미분류 표시     | worshipType `미분류`는 영상은 공개하되 **필터·뱃지에서만 숨김**, 관리자 지정 시 표시                |
+| DB 마이그레이션 | **불필요** — 기존 `sermons` 스키마가 그대로 지원                                                    |
 
 ## 아키텍처 / 데이터 흐름
 
@@ -76,6 +76,7 @@
 ```
 
 ### 핵심 원칙
+
 - 단계마다 **QStash 메시지로 분리** → Vercel 함수 타임아웃 회피, 단계별 독립 재시도.
 - 모든 워커 엔드포인트는 **QStash 서명검증**으로 보호(외부 무단 호출 차단). 웹훅 POST는 **WEBSUB_SECRET HMAC** 검증.
 - 웹훅은 **무거운 작업 없이 즉시 200** 반환(전부 QStash 위임) → Google 재시도 폭주 방지.
@@ -129,12 +130,14 @@ RETURNING *;
 ## 컴포넌트 (재사용 / 변경 / 신규 / 제거)
 
 ### 재사용
+
 - `src/lib/db/schema.ts` — 컬럼 그대로.
 - `src/lib/ai/sermon-summary.ts`의 `parseSermonSummary`·Zod 스키마·`responseSchema` — 검증 로직 유지.
 - `src/lib/youtube/client.ts`(`getVideoDetails`·duration 파싱), `src/lib/sermons/playlists.ts`(재생목록→worshipType 매핑) — 옵션3 소속 판별에 사용.
 - Admin 테이블/편집(`src/app/admin/sermons/**`), 공개 상세(`src/app/sermons/[id]/page.tsx`), `YouTubePlayer`(seekTo) — 그대로.
 
 ### 변경
+
 - `src/lib/ai/sermon-summary.ts` — `generateSermonSummary` 시그니처를 **영상 URL(fileData) → 자막 원고 텍스트 + 세그먼트 타임스탬프**로 교체. 프롬프트도 "영상 시청" → "자막 원고 요약, 주어진 타임스탬프로 챕터 startSeconds 산정"으로 수정. `parseSermonSummary`/Zod는 유지.
 - `src/lib/sermons/summarize.ts` — claim 쿼리 유지, 요약 입력만 자막 텍스트로. QStash 워커가 호출.
 - `src/components/sermons/SermonSummary.tsx` — `ready`/진행중/`failed` 3상태 분기(진행중 시 "설교 요약 대기중.." 표시).
@@ -142,6 +145,7 @@ RETURNING *;
 - ingest 워커(신규) — `preacher = DEFAULT_PREACHER`, `isPublished=true`로 upsert.
 
 ### 신규
+
 - `src/lib/youtube/websub.ts` — 구독/갱신(허브 subscribe POST), Atom 파싱(videoId·published), HMAC 검증.
 - `src/lib/transcript/rapidapi.ts` — RapidAPI Transcript 호출, 배열→원고 텍스트·타임스탬프 추출, 자막 부재 판별.
 - `src/lib/qstash.ts` — QStash publish 헬퍼 + `Receiver` 서명검증.
@@ -153,6 +157,7 @@ RETURNING *;
 - `scripts/websub-subscribe.ts` — 최초 1회 수동 구독용(배포 후 실행).
 
 ### 제거
+
 - `src/app/api/cron/sync-sermons/route.ts`, `src/app/api/cron/summarize-sermons/route.ts`.
 - `vercel.json`의 `crons` 블록, `CRON_SECRET`.
 - `src/lib/sermons/sync.ts`의 전역 폴링 `syncSermons()`(재생목록 매핑 헬퍼는 별도 모듈로 보존).

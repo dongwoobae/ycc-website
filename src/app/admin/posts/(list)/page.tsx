@@ -16,7 +16,6 @@ export default async function AdminPostsPage() {
 
   return (
     <div>
-
       <div className="overflow-x-auto rounded-xl bg-paper shadow-sm">
         <table className="min-w-[52rem] w-full text-sm">
           <thead className="bg-surface text-ink-muted">

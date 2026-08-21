@@ -123,7 +123,13 @@ describe('zoomAt', () => {
   })
 
   it('실측 전(콘텐츠 0)에는 중앙으로 되돌린다', () => {
-    const result = zoomAt({ zoom: 1, offset: { x: 5, y: 5 } }, 2, { x: 10, y: 10 }, { width: 0, height: 0 }, { width: 0, height: 0 })
+    const result = zoomAt(
+      { zoom: 1, offset: { x: 5, y: 5 } },
+      2,
+      { x: 10, y: 10 },
+      { width: 0, height: 0 },
+      { width: 0, height: 0 },
+    )
     expect(result.offset).toEqual({ x: 0, y: 0 })
   })
 })

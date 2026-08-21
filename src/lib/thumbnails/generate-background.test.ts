@@ -24,7 +24,7 @@ describe('generateBackground', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ data: [{ b64_json: b64 }] }),
-      })
+      }),
     )
     const buf = await generateBackground('classic')
     expect(buf.toString()).toBe('PNGDATA')
@@ -37,7 +37,7 @@ describe('generateBackground', () => {
         ok: false,
         status: 500,
         text: async () => 'server error',
-      })
+      }),
     )
     await expect(generateBackground('classic')).rejects.toThrow()
   })

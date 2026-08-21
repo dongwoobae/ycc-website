@@ -14,7 +14,12 @@ export default function SermonsPagination({ page, totalPages, onChange }: Props)
 
   return (
     <nav className="mt-12 flex flex-wrap items-center justify-center gap-2" aria-label="설교 목록 페이지">
-      <button type="button" className={`${baseBtn} border-line`} disabled={page === 1} onClick={() => onChange(page - 1)}>
+      <button
+        type="button"
+        className={`${baseBtn} border-line`}
+        disabled={page === 1}
+        onClick={() => onChange(page - 1)}
+      >
         이전
       </button>
       {pages.map((p) => (

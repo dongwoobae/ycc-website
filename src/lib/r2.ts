@@ -83,7 +83,7 @@ export async function presignGalleryVideoPut(key: string, contentType: string, e
       Key: key,
       ContentType: contentType,
     }),
-    { expiresIn, signableHeaders: new Set(['content-type']) }
+    { expiresIn, signableHeaders: new Set(['content-type']) },
   )
 }
 
@@ -95,7 +95,7 @@ export async function headR2Object(key: string): Promise<{ size: number; content
       new HeadObjectCommand({
         Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
         Key: key,
-      })
+      }),
     )
     return { size: res.ContentLength ?? 0, contentType: res.ContentType ?? '' }
   } catch (error) {
@@ -129,7 +129,7 @@ export function bulletinPageKey(
   uploadId: string,
   pageNumber: number,
   size: BulletinPageSize,
-  ext: BulletinImageExt
+  ext: BulletinImageExt,
 ) {
   if (!Number.isInteger(pageNumber) || pageNumber < 1) throw new Error('invalid page number')
   return `${bulletinUploadPrefix(date, uploadId)}/${pageNumber}-${size}.${ext}`
@@ -150,7 +150,7 @@ export async function presignBulletinPut(
   key: string,
   contentType: string,
   contentDisposition?: string,
-  expiresIn = 900
+  expiresIn = 900,
 ) {
   if (!key.startsWith('bulletins/')) throw new Error('invalid key prefix')
   const signableHeaders = new Set(['content-type'])
@@ -163,7 +163,7 @@ export async function presignBulletinPut(
       ContentType: contentType,
       ...(contentDisposition ? { ContentDisposition: contentDisposition } : {}),
     }),
-    { expiresIn, signableHeaders }
+    { expiresIn, signableHeaders },
   )
 }
 
@@ -177,7 +177,7 @@ export async function listR2Keys(prefix: string): Promise<string[]> {
         Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
         Prefix: prefix,
         ContinuationToken: continuationToken,
-      })
+      }),
     )
     for (const item of res.Contents ?? []) if (item.Key) keys.push(item.Key)
     continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined
@@ -201,7 +201,7 @@ export async function uploadToR2(buffer: Buffer, key: string, contentType: Uploa
       Key: key,
       Body: body,
       ContentType: contentType,
-    })
+    }),
   )
   return publicUrlForKey(key)
 }
@@ -212,7 +212,7 @@ export async function deleteFromR2(key: string) {
     new DeleteObjectCommand({
       Bucket: requireEnv(bucket, 'R2_BUCKET_NAME'),
       Key: key,
-    })
+    }),
   )
 }
 

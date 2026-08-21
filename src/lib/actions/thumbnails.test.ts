@@ -47,7 +47,9 @@ describe('applyCandidateThumbnailAction', () => {
   const URL = 'https://r2.example/thumbnails/candidates/s1/classic-1.webp'
 
   it('후보 목록에 없는 URL이면 에러 반환', async () => {
-    selectLimit.mockResolvedValue([{ candidates: [{ style: 'classic', url: 'https://r2.example/other.webp', createdAt: '' }] }])
+    selectLimit.mockResolvedValue([
+      { candidates: [{ style: 'classic', url: 'https://r2.example/other.webp', createdAt: '' }] },
+    ])
     await expect(applyCandidateThumbnailAction('s1', URL)).resolves.toEqual({
       ok: false,
       error: expect.stringContaining('찾을 수 없습니다'),

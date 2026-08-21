@@ -49,13 +49,7 @@ export default async function EditSermonPage({ params }: { params: Promise<{ id:
             </div>
             {currentThumbnail ? (
               <div className="relative aspect-video overflow-hidden rounded-md bg-surface">
-                <Image
-                  src={currentThumbnail}
-                  alt="현재 설교 썸네일"
-                  fill
-                  sizes="20rem"
-                  className="object-cover"
-                />
+                <Image src={currentThumbnail} alt="현재 설교 썸네일" fill sizes="20rem" className="object-cover" />
               </div>
             ) : (
               <div className="flex aspect-video items-center justify-center rounded-md bg-surface text-sm text-ink-muted">

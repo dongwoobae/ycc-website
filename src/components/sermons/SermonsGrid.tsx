@@ -8,7 +8,13 @@ import SermonsPagination from '@/components/sermons/SermonsPagination'
 import SermonsToolbar, { type SortOrder } from '@/components/sermons/SermonsToolbar'
 import { SERMONS_PAGE_SIZE } from '@/components/sermons/SermonsGridSkeleton'
 import { sermonListTitle } from '@/lib/sermons/list-title'
-import { eventSectionScope, isPublicWorshipType, praiseSectionScope, sermonSectionScope, type WorshipFilterValue } from '@/lib/worship'
+import {
+  eventSectionScope,
+  isPublicWorshipType,
+  praiseSectionScope,
+  sermonSectionScope,
+  type WorshipFilterValue,
+} from '@/lib/worship'
 import type { Sermon } from '@/lib/types'
 
 // scope 객체는 함수(includes)를 담고 있어 서버→클라이언트 prop으로 넘길 수 없다.
@@ -20,13 +26,11 @@ export default function SermonsGrid({
   sermons: Sermon[]
   variant?: 'sermon' | 'praise' | 'event'
 }) {
-  const scope =
-    variant === 'praise' ? praiseSectionScope : variant === 'event' ? eventSectionScope : sermonSectionScope
+  const scope = variant === 'praise' ? praiseSectionScope : variant === 'event' ? eventSectionScope : sermonSectionScope
   const searchParams = useSearchParams()
   const worship = searchParams.get('worship')
   // 스코프(예배·설교 / 찬양)에 속하는 유형만 선택으로 인정한다.
-  const selected =
-    worship && isPublicWorshipType(worship) && scope.includes(worship) ? worship : undefined
+  const selected = worship && isPublicWorshipType(worship) && scope.includes(worship) ? worship : undefined
   const current: WorshipFilterValue = selected ?? '전체'
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOrder>('newest')
@@ -39,10 +43,10 @@ export default function SermonsGrid({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     const list = (selected ? scoped.filter((s) => s.worshipType === selected) : scoped).filter(
-      (s) => !q || sermonListTitle(s).toLowerCase().includes(q) || (s.summary ?? '').toLowerCase().includes(q)
+      (s) => !q || sermonListTitle(s).toLowerCase().includes(q) || (s.summary ?? '').toLowerCase().includes(q),
     )
     return [...list].sort((a, b) =>
-      sort === 'newest' ? b.sermonDate.localeCompare(a.sermonDate) : a.sermonDate.localeCompare(b.sermonDate)
+      sort === 'newest' ? b.sermonDate.localeCompare(a.sermonDate) : a.sermonDate.localeCompare(b.sermonDate),
     )
   }, [scoped, selected, query, sort])
 

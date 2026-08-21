@@ -49,13 +49,19 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     missingPreacher,
   ] = await Promise.all([
     db
-      .select({ total: count(), published: sql<number>`count(*) filter (where ${sermons.isPublished})`.mapWith(Number) })
+      .select({
+        total: count(),
+        published: sql<number>`count(*) filter (where ${sermons.isPublished})`.mapWith(Number),
+      })
       .from(sermons),
     db
       .select({ total: count(), published: sql<number>`count(*) filter (where ${posts.isPublished})`.mapWith(Number) })
       .from(posts),
     db
-      .select({ total: count(), published: sql<number>`count(*) filter (where ${bulletins.isPublished})`.mapWith(Number) })
+      .select({
+        total: count(),
+        published: sql<number>`count(*) filter (where ${bulletins.isPublished})`.mapWith(Number),
+      })
       .from(bulletins),
     db
       .select({

@@ -10,9 +10,7 @@ export function putWithProgress(url: string, file: File, onProgress: (percent: n
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100))
     }
     xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300
-        ? resolve()
-        : reject(new Error(`영상 업로드 실패 (HTTP ${xhr.status})`))
+      xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`영상 업로드 실패 (HTTP ${xhr.status})`))
     xhr.onerror = () => reject(new Error('영상 업로드 실패 — 네트워크 또는 R2 CORS 설정을 확인하세요.'))
     xhr.send(file)
   })

@@ -45,8 +45,6 @@ test('html 에 전역 smooth 스크롤이 다시 들어오지 않았다', async 
   // 전역 smooth 가 부활하면 라우트 전환 스크롤이 다시 중간에 멈춘다.
   // 부드러운 스크롤이 필요하면 scrollIntoView({ behavior: 'smooth' }) 로 호출부에서 지정할 것.
   await page.goto('/about/greeting')
-  const behavior = await page.evaluate(
-    () => getComputedStyle(document.documentElement).scrollBehavior
-  )
+  const behavior = await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)
   expect(behavior).not.toBe('smooth')
 })

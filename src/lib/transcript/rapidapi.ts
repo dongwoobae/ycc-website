@@ -137,7 +137,7 @@ export function pickKoreanTrackUrl(subtitles: SubtitleTrack[] | undefined): stri
 async function fetchTranscriptFromYoutubeTranscript3(
   videoId: string,
   host: string,
-  headers: Record<string, string>
+  headers: Record<string, string>,
 ): Promise<TranscriptSegment[]> {
   const url = new URL(`https://${host}/api/transcript`)
   url.searchParams.set('videoId', videoId)
@@ -153,7 +153,7 @@ async function fetchTranscriptFromYoutubeTranscript3(
 async function fetchTranscriptFromYtApi(
   videoId: string,
   host: string,
-  headers: Record<string, string>
+  headers: Record<string, string>,
 ): Promise<TranscriptSegment[]> {
   const listUrl = new URL(`https://${host}/subtitles`)
   listUrl.searchParams.set('id', videoId)

@@ -26,5 +26,5 @@ export function isDatacenterIp(ip: string | null | undefined): boolean {
   if (!ip) return false
   const value = ipv4ToInt(ip)
   if (value === null) return false
-  return RANGES.some(({ network, mask }) => ((value & mask) >>> 0) === network)
+  return RANGES.some(({ network, mask }) => (value & mask) >>> 0 === network)
 }

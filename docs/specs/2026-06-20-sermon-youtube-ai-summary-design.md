@@ -11,17 +11,18 @@ Gemini로 **빠른 요약(~10줄)** 과 **타임스탬프별 요약**(secondbrai
 
 ## 확정된 의사결정
 
-| 항목 | 결정 |
-|---|---|
-| 수집 방식 | 교회 YouTube **재생목록 자동 동기화** (채널 전체 아님) |
-| AI 요약 소스 | **Gemini에 YouTube URL 직접 입력** (자막 추출 X, STT X) |
-| 검수 흐름 | **자동 생성(draft) → 관리자 수동 공개** |
-| 동기화 트리거 | **Vercel Cron 자동 + admin "지금 동기화" 버튼** (둘 다) |
-| 타임스탬프 저장 | sermons 테이블의 **jsonb 컬럼** (별도 테이블 아님) |
-| 요약 실행 단위 | **영상당 개별 호출 + claim 기반 큐** (일괄 X — 타임아웃·경쟁조건 회피) |
-| 플레이어 점프 | **YouTube IFrame Player API** (`seekTo`) |
+| 항목            | 결정                                                                   |
+| --------------- | ---------------------------------------------------------------------- |
+| 수집 방식       | 교회 YouTube **재생목록 자동 동기화** (채널 전체 아님)                 |
+| AI 요약 소스    | **Gemini에 YouTube URL 직접 입력** (자막 추출 X, STT X)                |
+| 검수 흐름       | **자동 생성(draft) → 관리자 수동 공개**                                |
+| 동기화 트리거   | **Vercel Cron 자동 + admin "지금 동기화" 버튼** (둘 다)                |
+| 타임스탬프 저장 | sermons 테이블의 **jsonb 컬럼** (별도 테이블 아님)                     |
+| 요약 실행 단위  | **영상당 개별 호출 + claim 기반 큐** (일괄 X — 타임아웃·경쟁조건 회피) |
+| 플레이어 점프   | **YouTube IFrame Player API** (`seekTo`)                               |
 
 ### 자막 대신 Gemini를 쓰는 이유
+
 - YouTube 공식 API는 **자동 생성 자막을 다운로드할 수 없음**(수동 업로드 자막만 가능).
 - 비공식 `timedtext` 스크래핑은 구글이 데이터센터 IP를 차단 → Vercel 서버에서 불안정.
 - Gemini는 구글이 서버사이드로 영상을 직접 처리 → OAuth·스크래핑·IP차단 불필요, 자막 없어도 동작.
@@ -32,15 +33,15 @@ Gemini로 **빠른 요약(~10줄)** 과 **타임스탬프별 요약**(secondbrai
 
 설정 맵: `playlistId → { worshipType, autoSummary }`
 
-| 재생목록 | worshipType | autoSummary |
-|---|---|---|
-| 주일예배 | `주일예배` | ✅ |
-| 주일찬양예배 | `주일찬양예배` | ✅ |
-| 수요예배 | `수요예배` | ✅ |
-| 금요기도회 | `금요기도회` | ✅ |
-| 시온찬양대 | `시온찬양대` | ❌ (순수 찬양) |
-| 특송 | `특송` | ❌ (순수 찬양) |
-| 특별행사 | `특별행사` | ❌ (혼합 — 관리자 수동) |
+| 재생목록     | worshipType    | autoSummary             |
+| ------------ | -------------- | ----------------------- |
+| 주일예배     | `주일예배`     | ✅                      |
+| 주일찬양예배 | `주일찬양예배` | ✅                      |
+| 수요예배     | `수요예배`     | ✅                      |
+| 금요기도회   | `금요기도회`   | ✅                      |
+| 시온찬양대   | `시온찬양대`   | ❌ (순수 찬양)          |
+| 특송         | `특송`         | ❌ (순수 찬양)          |
+| 특별행사     | `특별행사`     | ❌ (혼합 — 관리자 수동) |
 
 - `autoSummary=false`인 재생목록도 동기화는 되며, admin의 "요약 생성" 버튼으로 수동 트리거 가능.
 - 실제 playlist ID는 구현 시 `.env.local`에 채운다. (주일예배는 YouTube 팟캐스트 형태지만 내부 playlist ID로 접근 가능.)
@@ -65,17 +66,17 @@ YT_PLAYLIST_SPECIAL_EVENT=
 
 기존 `summary`(text)는 카드/OG용 짧은 한 줄 소개로 유지. 추가 컬럼:
 
-| 컬럼 | 타입 | 설명 |
-|---|---|---|
-| `youtube_video_id` | text **unique** | 동기화 중복 방지 키 |
-| `duration_seconds` | integer | YouTube `contentDetails.duration` 파싱 |
-| `quick_summary` | jsonb | `string[]` — 빠른 요약 불릿 ~10개 |
-| `chapters` | jsonb | `[{ startSeconds:int, title:string, summary:string }]` |
-| `summary_status` | text | `none \| pending \| ready \| failed` (기본 `none`) |
-| `summary_attempts` | integer | 요약 시도 횟수 (기본 0, 재시도 상한 판단용) |
-| `summary_next_retry_at` | timestamptz | 다음 재시도 가능 시각 (실패 백오프) |
-| `summary_generated_at` | timestamptz | 요약 생성 시각 |
-| `summary_model` | text | 사용 모델 식별자(감사용) |
+| 컬럼                    | 타입            | 설명                                                   |
+| ----------------------- | --------------- | ------------------------------------------------------ |
+| `youtube_video_id`      | text **unique** | 동기화 중복 방지 키                                    |
+| `duration_seconds`      | integer         | YouTube `contentDetails.duration` 파싱                 |
+| `quick_summary`         | jsonb           | `string[]` — 빠른 요약 불릿 ~10개                      |
+| `chapters`              | jsonb           | `[{ startSeconds:int, title:string, summary:string }]` |
+| `summary_status`        | text            | `none \| pending \| ready \| failed` (기본 `none`)     |
+| `summary_attempts`      | integer         | 요약 시도 횟수 (기본 0, 재시도 상한 판단용)            |
+| `summary_next_retry_at` | timestamptz     | 다음 재시도 가능 시각 (실패 백오프)                    |
+| `summary_generated_at`  | timestamptz     | 요약 생성 시각                                         |
+| `summary_model`         | text            | 사용 모델 식별자(감사용)                               |
 
 - jsonb 선택 근거: 항상 설교와 함께 읽고, 기존 `bulletins.sections` jsonb 패턴과 일치. 조인 불필요.
 - `worship_type` 컬럼은 자유 텍스트(check 제약 없음) → enum 확장에 **마이그레이션 불필요**.
@@ -83,6 +84,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
 - 새 컬럼 추가 + `preacher` nullable 전환용 Drizzle 마이그레이션 1건 생성 필요.
 
 ### 타입 변경 (`src/lib/types.ts`)
+
 - `WorshipType`을 7종으로 확장: 기존 4종 + `시온찬양대 | 특송 | 특별행사`.
 - `SermonChapter { startSeconds:number; title:string; summary:string }` 추가.
 - `Sermon`에 `quickSummary?: string[]`, `chapters?: SermonChapter[]`, `durationSeconds?: number`,
@@ -90,6 +92,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
 - `preacher`를 optional(`preacher?: string`)로 조정.
 
 ### 재생목록 우선순위 (다중 소속 영상)
+
 - 한 영상이 여러 재생목록(예: 주일예배 + 특별행사)에 동시에 속할 수 있음. `youtube_video_id` unique라
   먼저 처리된 재생목록의 worshipType로 굳는 문제 발생.
 - 해결: 설정 맵에 **우선순위**를 부여(예배 > 특별행사 > 찬양). 동기화는 우선순위 높은 재생목록부터 순회하고,
@@ -98,6 +101,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
 ## 컴포넌트 구조
 
 ### 1. YouTube 클라이언트 — `src/lib/youtube/client.ts`
+
 - `listPlaylistVideos(playlistId)`: `playlistItems.list`로 영상 ID/제목/publishedAt/썸네일 수집.
   **`nextPageToken`을 끝까지 전수 순회**(부분 수집 금지). 페이지 상한/안전 가드 둠.
 - `getVideoDetails(ids[])`: `videos.list?part=contentDetails`로 길이(ISO8601 duration) 보강.
@@ -106,6 +110,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
 - 의존: `YOUTUBE_API_KEY`.
 
 ### 2. 동기화 — `src/lib/sermons/sync.ts`
+
 - `syncSermons()`: 설정 맵의 모든 재생목록을 순회.
   - 각 영상의 `youtube_video_id`가 이미 있으면 skip(중복 방지).
   - 새 영상만 **draft**로 insert: `isPublished=false`, `summary_status='none'`,
@@ -116,6 +121,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
 - 메타데이터만 빠르게 처리(요약 호출은 분리). 우선순위 높은 재생목록부터 순회해 worshipType 선점.
 
 ### 3. AI 요약 — `src/lib/ai/sermon-summary.ts`
+
 - `generateSermonSummary(videoUrl): Promise<{ summary; quickSummary: string[]; chapters: SermonChapter[] }>`
   - Gemini API에 YouTube URL을 `fileData` 파트로 전달 + **구조화 출력(response JSON schema)** 강제.
   - 한국어 출력, 낮은 temperature. 모델: **`gemini-3.5-flash`** (2026-05 GA, YouTube URL 영상 입력 지원), env/상수로 교체 가능.
@@ -126,11 +132,12 @@ YT_PLAYLIST_SPECIAL_EVENT=
 - 실패 시 throw → 호출부가 `summary_status='failed'`로 기록.
 
 ### 4. 요약 오케스트레이션 — `src/lib/sermons/summarize.ts` (claim 기반 큐)
+
 - ⚠️ **neon-http는 interactive transaction을 지원하지 않음** → "읽고→pending 표시→AI 호출"을 분리하면
   동시 실행 시 같은 설교를 중복 요약하는 경쟁 조건 발생. 따라서 **단일 원자적 조건부 UPDATE로 선점(claim)** 한다.
 - `claimNextSermon()`:
   - `UPDATE sermons SET summary_status='pending', summary_attempts=summary_attempts+1
-    WHERE id = (SELECT id FROM sermons WHERE <요약대상 & 재시도가능> ORDER BY ... LIMIT 1) RETURNING *`
+WHERE id = (SELECT id FROM sermons WHERE <요약대상 & 재시도가능> ORDER BY ... LIMIT 1) RETURNING *`
     형태의 단일 쿼리로 1건을 원자적으로 점유. (요약대상 = `summary_status IN ('none','failed')`,
     `summary_next_retry_at IS NULL OR <= now()`, `summary_attempts < MAX_ATTEMPTS`)
 - `processClaimedSermon(row)`: `generateSermonSummary` 호출 → 성공 시 컬럼 저장 + `status='ready'`,
@@ -142,6 +149,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
     60분 영상 1건 ≈ 30~90초 예상.
 
 ### 5. 트리거 엔드포인트 / 액션
+
 - Cron: `src/app/api/cron/sync-sermons/route.ts` — `CRON_SECRET` 검증 → `syncSermons()`(메타데이터만, 빠름).
 - 요약은 **별도 cron 워커** `src/app/api/cron/summarize-sermons/route.ts`로 분리:
   매 실행마다 `claimNextSermon()`을 **호출당 소수(예: 1~3건)만** 처리(autoSummary 대상 한정). 남은 건은 다음 틱에.
@@ -151,6 +159,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
   `updateSermon(...)`, `togglePublish(id)`. 모두 기존 `verifySession`/DAL로 가드.
 
 ### 6. Admin UI (현재 스텁 → 실제 구현)
+
 - `src/app/admin/sermons/page.tsx`: DB 기반 실제 테이블.
   - 컬럼: 날짜/제목/설교자/예배종류/공개여부/요약상태 배지.
   - 상단 "지금 동기화" 버튼. 행별 액션: 편집 / 요약 생성 / 공개 토글.
@@ -158,6 +167,7 @@ YT_PLAYLIST_SPECIAL_EVENT=
   생성된 빠른요약·챕터 확인/수정 + "요약 재생성" + 공개 토글.
 
 ### 7. 공개 페이지 — `src/app/sermons/[id]/page.tsx` + 컴포넌트
+
 - `src/components/sermons/YouTubePlayer.tsx`(신규, client): **IFrame Player API** 래퍼.
   타임스탬프 클릭 시 `player.seekTo(startSeconds)`로 영상 점프.
 - 상세 페이지 섹션:

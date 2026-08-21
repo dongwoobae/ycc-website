@@ -19,12 +19,12 @@
 
 ### 1. 드롭다운 재구성 — `src/lib/nav.ts` `newcomerLinks`
 
-| 새 라벨 | href | 대상 섹션 |
-|---|---|---|
-| 예배 안내 | `/newfamily#flow` | "주일예배는 이렇게 진행됩니다" (ServiceFlow) |
-| 자주 묻는 질문 | `/newfamily#faq` | 새가족 FAQ (Faq) |
-| 다음세대 안내 | `/newfamily#nextgen` | "아이와 함께 오셔도 괜찮습니다" (NextGeneration) |
-| 다시 오시는 길 | `/newfamily#visit` | 지도·주소·연락처 통합 (Visit) |
+| 새 라벨        | href                 | 대상 섹션                                        |
+| -------------- | -------------------- | ------------------------------------------------ |
+| 예배 안내      | `/newfamily#flow`    | "주일예배는 이렇게 진행됩니다" (ServiceFlow)     |
+| 자주 묻는 질문 | `/newfamily#faq`     | 새가족 FAQ (Faq)                                 |
+| 다음세대 안내  | `/newfamily#nextgen` | "아이와 함께 오셔도 괜찮습니다" (NextGeneration) |
+| 다시 오시는 길 | `/newfamily#visit`   | 지도·주소·연락처 통합 (Visit)                    |
 
 - 기존 "예배 시간표" 항목은 제거. 예배 시간은 #visit 섹션에 표시되며, 상세 안내는 "안내" 헤더의 `/worship`이 담당.
 - desc 문구는 라벨에 맞게 갱신.

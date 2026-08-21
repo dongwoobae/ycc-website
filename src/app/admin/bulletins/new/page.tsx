@@ -13,7 +13,10 @@ export default async function NewBulletinPage() {
           <p className="text-sm text-ink-muted">주보 관리</p>
           <h1 className="mt-1 text-xl font-bold text-ink">새 주보</h1>
         </div>
-        <Link href="/admin/bulletins" className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink transition hover:bg-surface">
+        <Link
+          href="/admin/bulletins"
+          className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink transition hover:bg-surface"
+        >
           목록
         </Link>
       </div>

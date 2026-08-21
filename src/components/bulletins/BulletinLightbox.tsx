@@ -71,17 +71,14 @@ export default function BulletinLightbox({
   const page = pages[clampPageIndex(current, pages.length)]
 
   // 면의 자연 크기
-  const content = useMemo(
-    () => ({ width: page?.width ?? 0, height: page?.height ?? 0 }),
-    [page?.width, page?.height]
-  )
+  const content = useMemo(() => ({ width: page?.width ?? 0, height: page?.height ?? 0 }), [page?.width, page?.height])
 
   const move = useCallback(
     (delta: -1 | 1) => {
       setCurrent((index) => movePage(index, delta, pages.length))
       setView(fitView)
     },
-    [pages.length]
+    [pages.length],
   )
 
   // 버튼·키보드 줌. 포인터 위치가 없으므로 화면 중앙을 앵커로 쓴다.
@@ -90,7 +87,7 @@ export default function BulletinLightbox({
       const factor = direction === 1 ? stepZoomFactor : 1 / stepZoomFactor
       setView((currentView) => zoomAt(currentView, currentView.zoom * factor, { x: 0, y: 0 }, stageSize, content))
     },
-    [stageSize, content]
+    [stageSize, content],
   )
 
   // 스테이지 실측. 툴바·썸네일 스트립 토글로도 높이가 바뀌므로 창 resize 만으로는 부족하다.
@@ -144,8 +141,8 @@ export default function BulletinLightbox({
           currentView.zoom * wheelZoomFactor(event.deltaY, event.deltaMode),
           anchor,
           stageSize,
-          content
-        )
+          content,
+        ),
       )
     }
     stage.addEventListener('wheel', onWheel, { passive: false })
@@ -184,7 +181,7 @@ export default function BulletinLightbox({
       if (event.key !== 'Tab') return
 
       const focusables = stageRef.current?.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       )
       if (!focusables || focusables.length === 0) return
       const first = focusables[0]
@@ -343,9 +340,15 @@ export default function BulletinLightbox({
           쪽이 낫고, 아래쪽이 손가락이 닿는 자리다. */}
       <div className="border-t border-white/10 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2">
         <div className="flex items-center justify-center gap-2">
-          <ZoomButton onClick={() => zoomByStep(-1)} label="작게 보기">－ 작게</ZoomButton>
-          <ZoomButton onClick={() => setView(fitView)} label="화면에 맞추기">원래대로</ZoomButton>
-          <ZoomButton onClick={() => zoomByStep(1)} label="크게 보기">＋ 크게</ZoomButton>
+          <ZoomButton onClick={() => zoomByStep(-1)} label="작게 보기">
+            － 작게
+          </ZoomButton>
+          <ZoomButton onClick={() => setView(fitView)} label="화면에 맞추기">
+            원래대로
+          </ZoomButton>
+          <ZoomButton onClick={() => zoomByStep(1)} label="크게 보기">
+            ＋ 크게
+          </ZoomButton>
         </div>
         <div className="mt-2 flex items-center gap-2">
           <NavButton onClick={() => move(-1)} label="이전 면 보기" hidden={current === 0}>

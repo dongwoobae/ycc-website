@@ -21,7 +21,10 @@ export default async function SermonsPage() {
   const sermons = await getSermons()
 
   // 골격 카드 수를 실제 첫 페이지와 맞춰야 푸터가 밀리지 않는다.
-  const skeletonCount = Math.min(sermons.filter((s) => sermonSectionScope.includes(s.worshipType)).length, SERMONS_PAGE_SIZE)
+  const skeletonCount = Math.min(
+    sermons.filter((s) => sermonSectionScope.includes(s.worshipType)).length,
+    SERMONS_PAGE_SIZE,
+  )
 
   // 히어로와 하위 메뉴는 (list)/layout.tsx 가 렌더한다
   return (

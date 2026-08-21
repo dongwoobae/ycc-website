@@ -9,7 +9,9 @@ import type { Sermon } from '@/lib/types'
 import { expectsAutoSummary } from '@/lib/worship'
 
 export function isSummaryInProgress(sermon: Pick<Sermon, 'summaryStatus' | 'worshipType'>): boolean {
-  return (sermon.summaryStatus === 'none' || sermon.summaryStatus === 'pending') && expectsAutoSummary(sermon.worshipType)
+  return (
+    (sermon.summaryStatus === 'none' || sermon.summaryStatus === 'pending') && expectsAutoSummary(sermon.worshipType)
+  )
 }
 
 export const SUMMARY_FONT_SIZES = ['1.25rem', '1.5rem', '1.75rem'] as const
@@ -102,9 +104,7 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
         {sermonListTitle(sermon)}
       </h1>
       <p className="mt-4 text-ink-muted">{sermon.sermonDate}</p>
-      {sermon.summary ? (
-        <p className={`mt-4 max-w-3xl text-ink ${summaryTextClass}`}>{sermon.summary}</p>
-      ) : null}
+      {sermon.summary ? <p className={`mt-4 max-w-3xl text-ink ${summaryTextClass}`}>{sermon.summary}</p> : null}
     </header>
   )
 

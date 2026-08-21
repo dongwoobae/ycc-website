@@ -18,9 +18,7 @@ export default function WorshipFilter({ current, basePath, pills }: Props) {
             key={item.value}
             href={href}
             className={`rounded-full border px-5 py-2.5 text-[14.5px] font-bold transition ${
-              active
-                ? 'border-accent bg-accent text-white'
-                : 'border-line bg-paper text-ink-muted hover:border-accent'
+              active ? 'border-accent bg-accent text-white' : 'border-line bg-paper text-ink-muted hover:border-accent'
             }`}
           >
             {item.label}

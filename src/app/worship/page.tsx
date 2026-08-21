@@ -3,11 +3,7 @@ import Container from '@/components/layout/Container'
 import PageHero from '@/components/layout/PageHero'
 import WorshipSubnav from '@/components/worship/WorshipSubnav'
 import Reveal from '@/components/ui/Reveal'
-import {
-  adultWorshipSchedule,
-  nextGenerationWorshipSchedule,
-  type WorshipScheduleItem,
-} from '@/lib/worship'
+import { adultWorshipSchedule, nextGenerationWorshipSchedule, type WorshipScheduleItem } from '@/lib/worship'
 import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
@@ -18,10 +14,7 @@ export const metadata: Metadata = {
   },
 }
 
-const allSchedule: readonly WorshipScheduleItem[] = [
-  ...adultWorshipSchedule,
-  ...nextGenerationWorshipSchedule,
-]
+const allSchedule: readonly WorshipScheduleItem[] = [...adultWorshipSchedule, ...nextGenerationWorshipSchedule]
 
 function pick(names: readonly string[]): WorshipScheduleItem[] {
   return names

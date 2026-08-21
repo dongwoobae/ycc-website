@@ -31,7 +31,9 @@ describe('keyFromUrl', () => {
 
   it('returns a bulletins key for the configured public origin', async () => {
     const { keyFromUrl } = await import('./r2')
-    expect(keyFromUrl('https://cdn.example.com/assets/bulletins/2026-07-26/x/1-full.webp')).toBe('bulletins/2026-07-26/x/1-full.webp')
+    expect(keyFromUrl('https://cdn.example.com/assets/bulletins/2026-07-26/x/1-full.webp')).toBe(
+      'bulletins/2026-07-26/x/1-full.webp',
+    )
   })
 
   it('returns a gallery key for the configured public origin', async () => {
@@ -116,10 +118,10 @@ describe('bulletin keys', () => {
   it('면 이미지 키에 날짜·업로드id·면번호·크기가 들어간다', async () => {
     const { bulletinPageKey } = await import('./r2')
     expect(bulletinPageKey('2026-07-26', uploadId, 1, 'full', 'webp')).toBe(
-      `bulletins/2026-07-26/${uploadId}/1-full.webp`
+      `bulletins/2026-07-26/${uploadId}/1-full.webp`,
     )
     expect(bulletinPageKey('2026-07-26', uploadId, 12, 'thumb', 'jpg')).toBe(
-      `bulletins/2026-07-26/${uploadId}/12-thumb.jpg`
+      `bulletins/2026-07-26/${uploadId}/12-thumb.jpg`,
     )
   })
 

@@ -49,7 +49,8 @@ const faqs = [
   },
   {
     question: '몇 시까지 도착하면 좋을까요?',
-    answer: '주일예배는 오전 11시에 시작합니다. 처음 오시는 분은 10분 정도 일찍 오시면 안내를 받고 자리에 앉기 좋습니다.',
+    answer:
+      '주일예배는 오전 11시에 시작합니다. 처음 오시는 분은 10분 정도 일찍 오시면 안내를 받고 자리에 앉기 좋습니다.',
   },
   {
     question: '주차는 가능한가요?',
@@ -126,10 +127,11 @@ function Welcome() {
               신앙의 문턱이 높게 느껴지신다면
               <br />
               그 마음 그대로 오셔도 괜찮습니다.
-              <br />
-              한 분 한 분을 귀한 가족으로 맞이하겠습니다.
+              <br />한 분 한 분을 귀한 가족으로 맞이하겠습니다.
             </blockquote>
-            <p className="mt-7 text-sm font-bold text-faint">{churchInfo.name} {churchInfo.seniorPastor.title} 드림</p>
+            <p className="mt-7 text-sm font-bold text-faint">
+              {churchInfo.name} {churchInfo.seniorPastor.title} 드림
+            </p>
           </div>
         </Reveal>
       </Container>
@@ -154,7 +156,10 @@ function ServiceFlow() {
         <Reveal delay={90}>
           <div className="mx-auto mt-10 grid max-w-3xl gap-3 sm:grid-cols-2">
             {flowWorshipItems.map((item) => (
-              <div key={item.name} className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-5 py-4">
+              <div
+                key={item.name}
+                className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-5 py-4"
+              >
                 <span className="text-lg font-extrabold text-ink">{item.name}</span>
                 <span className="text-sm font-semibold text-ink-muted">{item.displayTime}</span>
               </div>
@@ -172,7 +177,9 @@ function ServiceFlow() {
           {timeline.map((item, index) => (
             <Reveal key={item.title} delay={index * 90}>
               <div className="relative grid grid-cols-[56px_1fr] gap-5 pb-9 last:pb-0 sm:grid-cols-[64px_1fr] sm:gap-6">
-                {index !== timeline.length - 1 && <span className="absolute bottom-0 left-7 top-14 w-px bg-line sm:left-8 sm:top-16" aria-hidden />}
+                {index !== timeline.length - 1 && (
+                  <span className="absolute bottom-0 left-7 top-14 w-px bg-line sm:left-8 sm:top-16" aria-hidden />
+                )}
                 <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full border-2 border-paper bg-surface text-xl font-extrabold text-accent shadow-subtle sm:h-16 sm:w-16 sm:text-2xl">
                   {index + 1}
                 </span>
@@ -200,10 +207,16 @@ function Faq() {
         <div className="mx-auto mt-11 grid max-w-3xl gap-3.5">
           {faqs.map((faq, index) => (
             <Reveal key={faq.question} delay={index * 55}>
-              <details open={index === 0} className="group overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle">
+              <details
+                open={index === 0}
+                className="group overflow-hidden rounded-2xl border border-line bg-paper shadow-subtle"
+              >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-lg font-bold text-ink marker:hidden sm:px-6 [&::-webkit-details-marker]:hidden">
                   <span>{faq.question}</span>
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-xl leading-none text-accent transition group-open:rotate-45" aria-hidden>
+                  <span
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-xl leading-none text-accent transition group-open:rotate-45"
+                    aria-hidden
+                  >
                     +
                   </span>
                 </summary>
@@ -222,11 +235,7 @@ function NextGeneration() {
     <section id="nextgen" className="scroll-mt-28 bg-bg py-20 min-[960px]:py-28">
       <Container size="wide">
         <Reveal>
-          <SectionTitle
-            eyebrow="For Families"
-            title="주일학교 안내입니다"
-            align="center"
-          />
+          <SectionTitle eyebrow="For Families" title="주일학교 안내입니다" align="center" />
         </Reveal>
         <div className="mt-12 grid gap-6 min-[960px]:grid-cols-3">
           {nextGen.map((group, index) => (
@@ -274,7 +283,14 @@ function Visit() {
 function Cta() {
   return (
     <section className="relative isolate overflow-hidden bg-accent-deep py-24 text-center text-white min-[960px]:py-[150px]">
-      <Image src={staticImg('/images/church-cta.webp')} alt="" fill unoptimized sizes="100vw" className="-z-20 object-cover" />
+      <Image
+        src={staticImg('/images/church-cta.webp')}
+        alt=""
+        fill
+        unoptimized
+        sizes="100vw"
+        className="-z-20 object-cover"
+      />
       <div className="absolute inset-0 -z-10 bg-accent-deep/[0.82]" />
       <Container>
         <Reveal>

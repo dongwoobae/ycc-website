@@ -18,7 +18,9 @@ async function makeOversizedJpeg() {
   const width = 3200
   const height = 2400
   const raw = crypto.randomBytes(width * height * 3)
-  return sharp(raw, { raw: { width, height, channels: 3 } }).jpeg({ quality: 100 }).toBuffer()
+  return sharp(raw, { raw: { width, height, channels: 3 } })
+    .jpeg({ quality: 100 })
+    .toBuffer()
 }
 
 async function makeSmallJpeg(r: number, g: number, b: number) {
@@ -71,7 +73,7 @@ test('대용량 표지 업로드 시 전송 본문이 Vercel 4.5MB 한도 밑으
       request
         .allHeaders()
         .then((headers) => (headers['next-action'] ? Number(headers['content-length'] ?? 0) : 0))
-        .catch(() => 0)
+        .catch(() => 0),
     )
   })
 
@@ -106,7 +108,10 @@ test('여러 장 동시 선택 시 병렬 업로드되고 각 요청이 4.5MB �
   page.on('request', (request) => {
     if (request.method() !== 'POST' || !request.url().includes('/api/admin/gallery/upload')) return
     uploadBodySizes.push(
-      request.allHeaders().then((headers) => Number(headers['content-length'] ?? 0)).catch(() => 0)
+      request
+        .allHeaders()
+        .then((headers) => Number(headers['content-length'] ?? 0))
+        .catch(() => 0),
     )
   })
 

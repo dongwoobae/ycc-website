@@ -11,10 +11,7 @@ export default function Loading() {
         <Skeleton className="h-9 w-36 rounded-lg" />
         <Skeleton className="h-9 w-16 rounded-lg" />
       </div>
-      <AdminTableSkeleton
-        headings={['시간', '액션', '대상', 'ID', '메시지', '사용자']}
-        rows={10}
-      />
+      <AdminTableSkeleton headings={['시간', '액션', '대상', 'ID', '메시지', '사용자']} rows={10} />
     </div>
   )
 }

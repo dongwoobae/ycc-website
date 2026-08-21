@@ -22,6 +22,7 @@
 ## 작업 항목 (PDF 항목별)
 
 ### 1. 네비게이션 — 상단 우측 가로 메뉴
+
 - `Sidebar` 제거/비활성, `Header`의 기존 상단 가로 메뉴를 전 브레이크포인트에서 사용
 - 로고 좌측, 메뉴 우측 정렬
 - 바 스타일: 솔리드 `accent-deep` 블루 + 흰색 로고·메뉴
@@ -29,6 +30,7 @@
 - 관련 파일: `src/app/layout.tsx`(사이드바 마운트 제거), `src/components/layout/Header.tsx`, `Sidebar.tsx`, `BrandLogo.tsx`, `globals.css`(`.ycc-side` 정리)
 
 ### 2. 로고 자산
+
 - 출처: `Downloads/PCK_Logo`(컬러/그레이/단선 + 투명 PNG, .ai/.pdf 벡터), `Downloads/PCK_CI팬톤`(CI 매뉴얼)
 - 가능하면 벡터(.pdf/.ai)를 SVG로 변환해 사용(변환 도구 확인 필요), 불가 시 투명 PNG 사용
 - `public/brand/`에 배치: 컬러 휘장(밝은 배경용), 흰색/단색 휘장(다크 바용)
@@ -36,10 +38,12 @@
 - 파비콘/OG 이미지(`/brand/ycc-icon*`, `/brand/ycc-og.png`)도 PCK 휘장 기반으로 갱신 검토
 
 ### 3. 링크 미리보기(OG) 수식어구 제거
+
 - `src/app/layout.tsx` metadata: description/openGraph/twitter에서 "삶의 소망을 주는 은혜로운" 제거 → 교회명 중심 간결화
 - OG 이미지: 교회명 + 사진/배경색 형태 점검·갱신
 
 ### 4. 홈 4스크린 재구성
+
 1. **히어로** — 현행 `ImmersiveHero` 유지 (문구 검토)
 2. **#2 환영 문구** (`Manifesto` 교체) — "오래된 믿음 위에, 새로운 은혜가 머무는 / 영천중앙교회에 오신 여러분 환영합니다", 배경 블루→라벤더 부드러운 세로 그라데이션
 3. **#3 소개 + 바로가기** (`FullBleedBand` 교체) — "대한예수교장로회 영천중앙교회는…" 문구, 버튼 [예배안내][오시는길], 배경 교회사진 오버레이 강화(더 흐리게)
@@ -47,10 +51,12 @@
    - 말씀 › 주일예배·주일찬양예배·수요예배 (말씀요약 "한줄요약": 기존 AI 설교요약 첫 문장 재사용)
    - 주일학교 › 유치부·아동부·중고등부
    - 찬양 › 시온찬양대·할렐루야찬양대·호산나찬양대
+
 - 제거 후 메뉴로 이동: Gallery, NextGenCommunity, RecentSermons, Verse, Visit, CtaBand
 - `HomeScrollController`를 4스크린에 맞춰 조정, `page.tsx` 구성 변경
 
 ### 5. 메뉴 IA (하이브리드)
+
 ```
 소개        › 교회연혁(/about/history) · 담임목사인사(/about/greeting) · 섬기는사람들(/about/serving)
 안내        › 행복선언(신규) · 주일예배 · 주일학교(유치·아동·중고등부) · 청년부 · 수요예배 · 새벽예배 · 금요기도회
@@ -59,10 +65,12 @@
 처음오셨나요? › 예배시간표 · 교회지도 · 주소·연락처 · FNQ → /newfamily + /about/visit + FAQ
 소식        › 교회소식(/news) · 공지사항(/news 카테고리) ; 행사 사진은 /gallery 앨범(카테고리별)
 ```
+
 - **신규 제작:** 행복선언 페이지(전문은 PDF 3페이지 제공), FNQ(FAQ) 콘텐츠, 안내 메뉴 예배 안내 정리 페이지
 - 행사 사진 카테고리(소식): 2025전교인수련회, 2025성탄축하, 2026겨울성경학교, 2026특별새벽기도회, 구역모임, 청춘교실 → `gallery_albums`로 관리
 
 ### 6. 푸터
+
 - 소셜 아이콘: 유튜브(채널ID `UCzB3UsqsJhtFUvPEeOtTL6g` 보유) · 블로그(`churchInfo.blog`) · 디모데앱(DimodeSmart)
   - 디모데앱 링크: 소개 페이지 `https://www.dimode.co.kr/Page/Index/35121` (새 탭). PC·iOS·Android 모두 열리는 공식 벤더 페이지. (플레이스토어 `kr.co.dimode.smart`는 Android 전용이라 미채택)
 - 표기: 대한예수교장로회 / 영천중앙교회 / 전화 / 카피라이트 (현행 `Footer.tsx` 기반 보강)

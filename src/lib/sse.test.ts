@@ -3,9 +3,7 @@ import { formatSse, drainSseEvents } from './sse'
 
 describe('formatSse', () => {
   it('event/data 줄과 빈 줄 종료로 직렬화한다', () => {
-    expect(formatSse('progress', { current: 1, total: 3 })).toBe(
-      'event: progress\ndata: {"current":1,"total":3}\n\n',
-    )
+    expect(formatSse('progress', { current: 1, total: 3 })).toBe('event: progress\ndata: {"current":1,"total":3}\n\n')
   })
 })
 

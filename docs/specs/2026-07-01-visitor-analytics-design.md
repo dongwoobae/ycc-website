@@ -9,6 +9,7 @@
 관리자(admin)가 홈페이지 접속 현황을 자체 대시보드에서 확인할 수 있게 한다. Vercel Analytics 유사 기능이되, 데이터를 우리 DB에 쌓아 admin 페이지 내에서 직접 조회한다.
 
 보여줄 지표:
+
 - 방문자 수 / 페이지뷰(PV) 수 (오늘·최근 7일·30일)
 - 평균 체류시간 (세션 단위)
 - 개별 방문(세션) 로그 — 행을 펼치면 그 세션이 거친 페이지 동선 표시
@@ -16,42 +17,44 @@
 
 ## 2. 핵심 결정 사항 (확정)
 
-| 항목 | 결정 |
-|---|---|
-| 수집 방식 | 접근법 A — 클라이언트 트래커 + `/api/track` API 라우트 |
-| 방문 단위 | 세션(30분 고정 시간버킷 기반 **결정론적 세션ID** — DB 조회·경쟁조건 없음) |
-| 방문자 식별 | **쿠키리스 서버해시** — `sha256(ANALYTICS_SALT + KST날짜 + IP + User-Agent)` |
-| 동의 배너 | 불필요 (기기에 저장물 없음). 처리방침 고지는 별도 운영 영역 |
-| IP | 마스킹 저장(IPv4 끝옥텟 0, IPv6 하위 비트 0) + 지역명 |
-| 지역 산출 | Vercel geo 헤더(`x-vercel-ip-city` 등), 없으면 '알수없음' |
-| 추적 범위 | 공개 페이지만. 관리자 본인 제외, 봇/크롤러 제외 |
-| 보관 기간 | 상세 로그 **90일** 후 삭제, **일별 집계(방문자·PV)는 영구 보존** |
-| 대시보드 경로 | `/admin/analytics` |
-| 메뉴 권한 | 모든 관리자 (서버로그와 달리 계정 게이팅 없음) |
+| 항목          | 결정                                                                         |
+| ------------- | ---------------------------------------------------------------------------- |
+| 수집 방식     | 접근법 A — 클라이언트 트래커 + `/api/track` API 라우트                       |
+| 방문 단위     | 세션(30분 고정 시간버킷 기반 **결정론적 세션ID** — DB 조회·경쟁조건 없음)    |
+| 방문자 식별   | **쿠키리스 서버해시** — `sha256(ANALYTICS_SALT + KST날짜 + IP + User-Agent)` |
+| 동의 배너     | 불필요 (기기에 저장물 없음). 처리방침 고지는 별도 운영 영역                  |
+| IP            | 마스킹 저장(IPv4 끝옥텟 0, IPv6 하위 비트 0) + 지역명                        |
+| 지역 산출     | Vercel geo 헤더(`x-vercel-ip-city` 등), 없으면 '알수없음'                    |
+| 추적 범위     | 공개 페이지만. 관리자 본인 제외, 봇/크롤러 제외                              |
+| 보관 기간     | 상세 로그 **90일** 후 삭제, **일별 집계(방문자·PV)는 영구 보존**             |
+| 대시보드 경로 | `/admin/analytics`                                                           |
+| 메뉴 권한     | 모든 관리자 (서버로그와 달리 계정 게이팅 없음)                               |
 
 ## 3. 데이터 모델
 
 단일 테이블 `page_views` (drizzle, `src/lib/db/schema.ts`에 추가):
 
-| 컬럼 | 타입 | 설명 |
-|---|---|---|
-| `id` | uuid PK | 클라이언트가 페이지뷰마다 생성하는 `view_id`. duration UPDATE의 키 |
-| `visitor_id` | text notNull | 쿠키리스 일일 해시 (날짜별 로테이션) |
-| `session_id` | text notNull | 결정론적 세션 식별자 `hash(visitor_id + KST날짜 + 30분버킷)` |
-| `path` | text notNull | 방문 경로 (쿼리스트링 제외) |
-| `referrer` | text nullable | 유입 경로 (있으면) |
-| `region` | text nullable | 지역명 (예: 'Seoul'), 미상 시 null |
-| `ip_masked` | text nullable | 마스킹 IP (예: `123.45.67.0`) |
-| `user_agent` | text nullable | 원본 UA (봇 판별·디버그용) |
-| `duration_seconds` | integer notNull default 0 | heartbeat/beacon로 갱신되는 체류시간 |
-| `created_at` | timestamptz defaultNow | 진입 시각 |
+| 컬럼               | 타입                      | 설명                                                               |
+| ------------------ | ------------------------- | ------------------------------------------------------------------ |
+| `id`               | uuid PK                   | 클라이언트가 페이지뷰마다 생성하는 `view_id`. duration UPDATE의 키 |
+| `visitor_id`       | text notNull              | 쿠키리스 일일 해시 (날짜별 로테이션)                               |
+| `session_id`       | text notNull              | 결정론적 세션 식별자 `hash(visitor_id + KST날짜 + 30분버킷)`       |
+| `path`             | text notNull              | 방문 경로 (쿼리스트링 제외)                                        |
+| `referrer`         | text nullable             | 유입 경로 (있으면)                                                 |
+| `region`           | text nullable             | 지역명 (예: 'Seoul'), 미상 시 null                                 |
+| `ip_masked`        | text nullable             | 마스킹 IP (예: `123.45.67.0`)                                      |
+| `user_agent`       | text nullable             | 원본 UA (봇 판별·디버그용)                                         |
+| `duration_seconds` | integer notNull default 0 | heartbeat/beacon로 갱신되는 체류시간                               |
+| `created_at`       | timestamptz defaultNow    | 진입 시각                                                          |
 
 인덱스:
+
 - `(created_at, visitor_id)` — 기간 필터 + KST 일별 `count(distinct visitor_id)`
 - `(session_id, created_at)` — 세션 그룹핑·세션별 duration 합산·최신순 정렬
 - 세션ID가 결정론적이라 "직전 방문 조회" 인덱스는 불필요(조회 자체가 없음).
 
 최근(≤90일) 지표 산출 (이 테이블로):
+
 - 방문자 수 = `count(distinct visitor_id)`
 - PV = `count(*)`
 - 세션 수 = `count(distinct session_id)`
@@ -62,12 +65,12 @@
 
 런칭일부터 **완료된 모든 날**을 매일 집계해 보존한다(삭제 여부와 무관). `page_views`가 90일 후 삭제돼도 일별 추이는 이 테이블에 온전히 남는다.
 
-| 컬럼 | 타입 | 설명 |
-|---|---|---|
-| `date` | date PK | KST 기준 날짜 |
-| `unique_visitors` | integer notNull | 그날 `distinct visitor_id` 수 |
-| `page_views` | integer notNull | 그날 총 PV |
-| `created_at` | timestamptz defaultNow | 롤업 생성 시각 |
+| 컬럼              | 타입                   | 설명                          |
+| ----------------- | ---------------------- | ----------------------------- |
+| `date`            | date PK                | KST 기준 날짜                 |
+| `unique_visitors` | integer notNull        | 그날 `distinct visitor_id` 수 |
+| `page_views`      | integer notNull        | 그날 총 PV                    |
+| `created_at`      | timestamptz defaultNow | 롤업 생성 시각                |
 
 - `visitor_id`는 일일 로테이션 해시라 "그날 distinct visitor_id = 그날 순방문자"로 자연 일치.
 - 오늘(진행 중)은 미완료라 집계하지 않고, 대시보드에서 `page_views`로 실시간 계산.
@@ -76,6 +79,7 @@
 ## 4. 수집 흐름
 
 ### 4.1 클라이언트 트래커 (`src/components/analytics/Tracker.tsx`)
+
 - 공개 레이아웃에만 마운트되는 클라이언트 컴포넌트 (admin 레이아웃에는 미포함 → 관리자 화면 자동 배제).
 - 페이지 진입 시:
   1. `view_id = crypto.randomUUID()` 생성
@@ -89,7 +93,9 @@
 - Next App Router 경로 변경 감지: `usePathname`로 경로 바뀌면 이전 view의 leave 처리 후 새 view 시작.
 
 ### 4.2 API 라우트 (`src/app/api/track/route.ts`, Node 런타임)
+
 `POST`만 처리. **입력 검증·제외를 라우트 자체에서 수행**(클라 마운트 위치는 심층방어일 뿐, 진짜 게이트 아님). 요청 타입별:
+
 - 공통 선처리:
   - **경로 allowlist** — `path`가 공개 경로 규칙을 벗어나면(`/admin`,`/api`,`/sign-in`,정적자산 등) 즉시 204
   - **관리자 제외** — better-auth 세션 존재 시 204
@@ -106,6 +112,7 @@
   - **visitor_id 재계산 일치**를 요구해 남의 view 조작 차단, 3시간 창으로 오래된 행 갱신 차단, `greatest`로 순서 무관 최댓값 유지, 상한으로 이상치 컷
 
 ### 4.3 유틸리티
+
 - `src/lib/analytics/ip.ts` — `maskIp(ip)` (IPv4/IPv6), `hashVisitor(salt, date, ip, ua)`, `sessionId(visitorId, date, epochMs)`
 - `src/lib/analytics/bots.ts` — `isBot(userAgent)` (googlebot/bingbot/crawler/spider/bot 등 패턴)
 - `src/lib/analytics/paths.ts` — `isTrackablePath(path)` (공개경로 allowlist)

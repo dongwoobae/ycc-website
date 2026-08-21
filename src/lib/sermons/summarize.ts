@@ -125,7 +125,7 @@ export async function summarizeClaimed(
   id: string,
   durationSeconds: number | null,
   transcriptText: string,
-  attempts: number
+  attempts: number,
 ): Promise<'ready' | 'failed'> {
   const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
   try {
@@ -147,7 +147,12 @@ export async function summarizeClaimed(
     return 'ready'
   } catch (e) {
     console.error(`[summarize] ${id} failed`, e)
-    await log('error', 'sermon', id, `AI 요약 실패 (시도 ${attempts}회): ${e instanceof Error ? e.message.slice(0, 150) : String(e).slice(0, 150)}`)
+    await log(
+      'error',
+      'sermon',
+      id,
+      `AI 요약 실패 (시도 ${attempts}회): ${e instanceof Error ? e.message.slice(0, 150) : String(e).slice(0, 150)}`,
+    )
     await db
       .update(sermonSummaries)
       .set({

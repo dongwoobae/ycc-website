@@ -16,8 +16,7 @@ const posts: Post[] = [
     category: '공지',
     isPinned: true,
     publishedAt: '2026-06-07',
-    content:
-      '피택자 교육이 오후 3시부터 5시까지 교육관 2층에서 진행됩니다. 한 분도 빠짐없이 참여해 주세요.',
+    content: '피택자 교육이 오후 3시부터 5시까지 교육관 2층에서 진행됩니다. 한 분도 빠짐없이 참여해 주세요.',
   },
   {
     id: 'june-events-2026',
@@ -34,8 +33,7 @@ const posts: Post[] = [
     category: '행사',
     isPinned: false,
     publishedAt: '2026-05-31',
-    content:
-      '가족의 달을 맞아 롯데시네마에서 영화 부흥을 함께 관람했습니다. 함께 기도하고 교제하는 시간이 되었습니다.',
+    content: '가족의 달을 맞아 롯데시네마에서 영화 부흥을 함께 관람했습니다. 함께 기도하고 교제하는 시간이 되었습니다.',
   },
   {
     id: 'friday-prayer-june',
@@ -49,7 +47,9 @@ const posts: Post[] = [
 ]
 
 export async function getPosts(): Promise<Post[]> {
-  return [...posts].sort((a, b) => Number(b.isPinned) - Number(a.isPinned) || b.publishedAt.localeCompare(a.publishedAt))
+  return [...posts].sort(
+    (a, b) => Number(b.isPinned) - Number(a.isPinned) || b.publishedAt.localeCompare(a.publishedAt),
+  )
 }
 
 export async function getPostById(id: string): Promise<Post | undefined> {

@@ -10,9 +10,6 @@ export const maxBulletinPages = 12
 
 /** 면·PDF URL에서 우리 R2의 bulletins/ 키만 뽑는다. 교체 시 정리 대상 목록이 된다. */
 export function bulletinAssetKeys(pages: BulletinPage[], pdfUrl: string | undefined): string[] {
-  const urls = [
-    ...pages.flatMap((page) => [page.fullUrl, page.previewUrl, page.thumbUrl]),
-    ...(pdfUrl ? [pdfUrl] : []),
-  ]
+  const urls = [...pages.flatMap((page) => [page.fullUrl, page.previewUrl, page.thumbUrl]), ...(pdfUrl ? [pdfUrl] : [])]
   return urls.map(keyFromUrl).filter((key) => key.startsWith('bulletins/'))
 }

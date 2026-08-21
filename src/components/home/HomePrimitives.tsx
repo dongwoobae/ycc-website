@@ -28,7 +28,9 @@ export function HomeButton({
 }
 
 export function Eyebrow({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <p className={`text-[13.5px] font-extrabold uppercase tracking-[0.28em] text-gold-deep ${className}`}>{children}</p>
+  return (
+    <p className={`text-[13.5px] font-extrabold uppercase tracking-[0.28em] text-gold-deep ${className}`}>{children}</p>
+  )
 }
 
 export function ImagePlaceholder({ label, className = '' }: { label: string; className?: string }) {

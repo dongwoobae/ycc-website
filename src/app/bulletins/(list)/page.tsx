@@ -87,7 +87,15 @@ function FeaturedBulletin({ bulletin }: { bulletin: Bulletin }) {
           />
         ) : (
           <div className="flex aspect-[1/1.414] items-center justify-center text-line-strong">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
+            <svg
+              width="34"
+              height="34"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden
+            >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <path d="M14 2v6h6" />
             </svg>
@@ -104,9 +112,7 @@ function FeaturedBulletin({ bulletin }: { bulletin: Bulletin }) {
         <p className="mt-2.5 text-sm text-[#B9C4DE]">
           {[formatBulletinDate(bulletin.bulletinDate), issueLabel, bulletin.scripture].filter(Boolean).join(' · ')}
         </p>
-        <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-extrabold text-gold-soft">
-          주보 보기 →
-        </span>
+        <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-extrabold text-gold-soft">주보 보기 →</span>
       </div>
     </Link>
   )

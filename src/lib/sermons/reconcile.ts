@@ -31,14 +31,24 @@ export async function reconcileSermons(): Promise<{ checked: number; inserted: n
     inserted++
     revalidateSermonPaths(sermonId)
     console.warn(`[reconcile] WebSub 누락분 보정 등록 videoId=${video.videoId} "${video.title}"`)
-    await log('error', 'sermon', sermonId, `[reconcile] WebSub 알림 소실 감지 — 보정 등록됨(푸시 경로 점검 필요): ${video.title}`)
+    await log(
+      'error',
+      'sermon',
+      sermonId,
+      `[reconcile] WebSub 알림 소실 감지 — 보정 등록됨(푸시 경로 점검 필요): ${video.title}`,
+    )
 
     if (!expectsAutoSummary(worshipType)) continue
     try {
       await publishJob('fetch-transcript', { sermonId, videoId: video.videoId, attempt: 0 })
     } catch (e) {
       console.error(`[reconcile] fetch-transcript 발행 실패 videoId=${video.videoId}`, e)
-      await log('error', 'sermon', sermonId, `[reconcile] fetch-transcript 발행 실패 — 자막·요약 미진행: videoId=${video.videoId}`)
+      await log(
+        'error',
+        'sermon',
+        sermonId,
+        `[reconcile] fetch-transcript 발행 실패 — 자막·요약 미진행: videoId=${video.videoId}`,
+      )
     }
   }
   return { checked: videos.length, inserted }

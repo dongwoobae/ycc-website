@@ -236,7 +236,9 @@ export default function GalleryGrid({ images, albumTitle }: Props) {
                   }`}
                 >
                   {image.mediaType === 'video' && !image.posterUrl ? (
-                    <span className="flex h-full w-full items-center justify-center bg-ink text-[10px] text-white">▶</span>
+                    <span className="flex h-full w-full items-center justify-center bg-ink text-[10px] text-white">
+                      ▶
+                    </span>
                   ) : (
                     <Image
                       src={image.mediaType === 'video' ? image.posterUrl! : image.imageUrl}

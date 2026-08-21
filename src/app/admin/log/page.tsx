@@ -149,9 +149,7 @@ export default async function AdminLogPage({
                 const href = row.entityId ? ENTITY_HREF[row.entityType]?.(row.entityId) : undefined
                 return (
                   <tr key={row.id} className="border-t border-line">
-                    <td className="whitespace-nowrap px-4 py-3 text-ink-muted">
-                      {formatKstDateTime(row.createdAt)}
-                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{formatKstDateTime(row.createdAt)}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <span
                         className={`rounded px-2 py-0.5 text-xs font-medium ${

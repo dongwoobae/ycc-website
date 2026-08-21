@@ -1,23 +1,23 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import Container from "@/components/layout/Container";
-import PageHero from "@/components/layout/PageHero";
-import AboutSubnav from "@/components/about/AboutSubnav";
-import Reveal from "@/components/ui/Reveal";
-import { churchInfo } from "@/lib/church";
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import Container from '@/components/layout/Container'
+import PageHero from '@/components/layout/PageHero'
+import AboutSubnav from '@/components/about/AboutSubnav'
+import Reveal from '@/components/ui/Reveal'
+import { churchInfo } from '@/lib/church'
 
 export const metadata: Metadata = {
-  title: "교회소개",
+  title: '교회소개',
   description: `${churchInfo.name}의 비전과 사명, 걸어온 발자취를 소개합니다.`,
   alternates: {
-    canonical: "/about",
+    canonical: '/about',
   },
-};
+}
 
 const visions = [
   {
-    title: "말씀과 예배",
-    body: "예배 안에서 하나님을 만나고, 삶에 적용되는 말씀으로 한 주를 살아갑니다.",
+    title: '말씀과 예배',
+    body: '예배 안에서 하나님을 만나고, 삶에 적용되는 말씀으로 한 주를 살아갑니다.',
     icon: (
       <>
         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
@@ -26,8 +26,8 @@ const visions = [
     ),
   },
   {
-    title: "구역과 다음세대",
-    body: "작은 모임이 살아나고, 다음세대가 신앙 안에서 자라도록 함께 세웁니다.",
+    title: '구역과 다음세대',
+    body: '작은 모임이 살아나고, 다음세대가 신앙 안에서 자라도록 함께 세웁니다.',
     icon: (
       <>
         <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
@@ -38,8 +38,8 @@ const visions = [
     ),
   },
   {
-    title: "지역을 섬김",
-    body: "이웃 곁으로 다가가 복음의 소망을 나누고 선교의 자리를 넓혀갑니다.",
+    title: '지역을 섬김',
+    body: '이웃 곁으로 다가가 복음의 소망을 나누고 선교의 자리를 넓혀갑니다.',
     icon: (
       <>
         <path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z" />
@@ -47,14 +47,14 @@ const visions = [
       </>
     ),
   },
-];
+]
 
 const stats = [
-  { n: "1956", unit: null, label: "창립 연도" },
-  { n: "70", unit: "년", label: "함께 걸어온 시간" },
-  { n: "4", unit: "개", label: "교회학교 부서" },
-  { n: "4", unit: "곳", label: "국내외 선교지" },
-];
+  { n: '1956', unit: null, label: '창립 연도' },
+  { n: '70', unit: '년', label: '함께 걸어온 시간' },
+  { n: '4', unit: '개', label: '교회학교 부서' },
+  { n: '4', unit: '곳', label: '국내외 선교지' },
+]
 
 export default function AboutPage() {
   return (
@@ -82,8 +82,9 @@ export default function AboutPage() {
             <Reveal variant="fade" delay={200}>
               <div className="mt-7 space-y-5 text-[17.5px] leading-9 text-ink-muted">
                 <p>
-                  {churchInfo.name}의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다. 대구·경북에 닿은
-                  복음의 흐름은 영천제일교회를 거쳐 주남기도처로 이어졌고, 마침내 오늘의 {churchInfo.name}로 자라났습니다.
+                  {churchInfo.name}의 시작은 사람의 계획보다 앞서 일하신 하나님의 은혜에서 비롯되었습니다. 대구·경북에
+                  닿은 복음의 흐름은 영천제일교회를 거쳐 주남기도처로 이어졌고, 마침내 오늘의 {churchInfo.name}로
+                  자라났습니다.
                 </p>
                 <p>
                   작은 기도의 자리에서 시작된 교회는 오랜 세월 예배와 말씀, 섬김의 발걸음을 이어 오며 이 지역 가운데
@@ -168,5 +169,5 @@ export default function AboutPage() {
         </Container>
       </section>
     </>
-  );
+  )
 }

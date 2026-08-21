@@ -45,9 +45,7 @@ export default async function GalleryDetailPage({ params }: GalleryDetailProps) 
           <time className="text-sm font-semibold text-accent-deep" dateTime={album.eventDate}>
             {album.eventDate}
           </time>
-          <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
-            {album.title}
-          </h1>
+          <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">{album.title}</h1>
           {album.description && <p className="mt-5 max-w-3xl leading-8 text-ink-muted">{album.description}</p>}
           <div className="mt-10">
             <GalleryGrid images={album.images} albumTitle={album.title} />

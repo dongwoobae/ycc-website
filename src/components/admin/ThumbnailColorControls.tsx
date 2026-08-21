@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import type { ThumbnailColors } from "@/lib/thumbnails/types";
+import type { ThumbnailColors } from '@/lib/thumbnails/types'
 
 interface Props {
-  value: ThumbnailColors;
-  onChange: (colors: ThumbnailColors) => void;
-  disabled?: boolean;
+  value: ThumbnailColors
+  onChange: (colors: ThumbnailColors) => void
+  disabled?: boolean
 }
 
 const SWATCH =
-  "h-7 w-9 cursor-pointer rounded border border-line bg-transparent disabled:cursor-default disabled:opacity-50";
+  'h-7 w-9 cursor-pointer rounded border border-line bg-transparent disabled:cursor-default disabled:opacity-50'
 
 export default function ThumbnailColorControls({ value, onChange, disabled }: Props) {
   return (
@@ -38,5 +38,5 @@ export default function ThumbnailColorControls({ value, onChange, disabled }: Pr
         </label>
       </div>
     </div>
-  );
+  )
 }

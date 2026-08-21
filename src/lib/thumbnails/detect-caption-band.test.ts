@@ -15,7 +15,9 @@ async function makeImage(fill: (y: number, x: number) => number): Promise<Buffer
       data[i] = data[i + 1] = data[i + 2] = v
     }
   }
-  return sharp(data, { raw: { width: W, height: H, channels: 3 } }).png().toBuffer()
+  return sharp(data, { raw: { width: W, height: H, channels: 3 } })
+    .png()
+    .toBuffer()
 }
 
 describe('cropAboveCaption', () => {

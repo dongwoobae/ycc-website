@@ -16,7 +16,7 @@ export async function makeTestDb(): Promise<{ db: TestDb; close: () => Promise<v
 /** sermons + (선택) sermon_summaries 기본 행을 만들고 sermon id를 반환한다. */
 export async function insertSermonFixture(
   db: TestDb,
-  opts: { withSummaryRow?: boolean; summaryStatus?: string; transcriptText?: string } = {}
+  opts: { withSummaryRow?: boolean; summaryStatus?: string; transcriptText?: string } = {},
 ): Promise<string> {
   const [s] = await db
     .insert(schema.sermons)

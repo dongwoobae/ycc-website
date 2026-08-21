@@ -1,9 +1,21 @@
 import type { WorshipType } from './types'
 
-export const autoSummaryTypes = ['주일예배', '주일찬양예배', '수요예배', '금요기도회'] as const satisfies readonly WorshipType[]
+export const autoSummaryTypes = [
+  '주일예배',
+  '주일찬양예배',
+  '수요예배',
+  '금요기도회',
+] as const satisfies readonly WorshipType[]
 
 export const worshipTypes = [
-  '주일예배', '주일찬양예배', '수요예배', '금요기도회', '시온찬양대', '특송', '특별행사', '기타',
+  '주일예배',
+  '주일찬양예배',
+  '수요예배',
+  '금요기도회',
+  '시온찬양대',
+  '특송',
+  '특별행사',
+  '기타',
 ] as const satisfies readonly WorshipType[]
 
 export type PublicWorshipType = (typeof worshipTypes)[number]

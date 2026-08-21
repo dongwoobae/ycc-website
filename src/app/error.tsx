@@ -4,13 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Container from '@/components/layout/Container'
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error(error)
   }, [error])
@@ -18,12 +12,8 @@ export default function Error({
   return (
     <div className="py-28 sm:py-36">
       <Container className="max-w-2xl text-center">
-        <h1 className="text-3xl font-extrabold text-ink sm:text-4xl">
-          문제가 발생했습니다
-        </h1>
-        <p className="mt-4 text-ink-muted">
-          잠시 후 다시 시도해 주세요. 문제가 계속되면 교회로 문의해 주세요.
-        </p>
+        <h1 className="text-3xl font-extrabold text-ink sm:text-4xl">문제가 발생했습니다</h1>
+        <p className="mt-4 text-ink-muted">잠시 후 다시 시도해 주세요. 문제가 계속되면 교회로 문의해 주세요.</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
             onClick={reset}

@@ -24,12 +24,19 @@ export async function POST(req: Request) {
   const video = await fetchVideoInfo(videoId)
   if (!video) {
     if (attempt < MAX_INGEST_RETRY) {
-      console.log(`[ingest-video] 영상 정보 조회 불가(라이브 진행 중/비공개), ${RETRY_DELAY_SECONDS / 60}분 후 재시도 videoId=${videoId} attempt=${attempt + 1}/${MAX_INGEST_RETRY}`)
+      console.log(
+        `[ingest-video] 영상 정보 조회 불가(라이브 진행 중/비공개), ${RETRY_DELAY_SECONDS / 60}분 후 재시도 videoId=${videoId} attempt=${attempt + 1}/${MAX_INGEST_RETRY}`,
+      )
       await publishJob('ingest-video', { videoId, attempt: attempt + 1 }, RETRY_DELAY_SECONDS)
       return Response.json({ ok: true, retry: attempt + 1 })
     }
     console.error(`[ingest-video] ${MAX_INGEST_RETRY}회 재시도 후 포기 videoId=${videoId}`)
-    await log('error', 'sermon', undefined, `[ingest] 영상 정보 조회 실패, ${MAX_INGEST_RETRY}회 재시도 후 포기: videoId=${videoId}`)
+    await log(
+      'error',
+      'sermon',
+      undefined,
+      `[ingest] 영상 정보 조회 실패, ${MAX_INGEST_RETRY}회 재시도 후 포기: videoId=${videoId}`,
+    )
     return Response.json({ ok: false, error: 'video not found' }, { status: 200 })
   }
 

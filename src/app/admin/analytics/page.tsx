@@ -138,11 +138,7 @@ export default async function AdminAnalyticsPage({
     loadSummary(7, today),
     loadSummary(30, today),
     loadSessions(period, page, today),
-    db
-      .select()
-      .from(dailyPageStats)
-      .where(gte(dailyPageStats.date, trendFrom))
-      .orderBy(asc(dailyPageStats.date)),
+    db.select().from(dailyPageStats).where(gte(dailyPageStats.date, trendFrom)).orderBy(asc(dailyPageStats.date)),
     db.execute(sql`
       SELECT
         ${today}::date AS "date",
@@ -165,7 +161,12 @@ export default async function AdminAnalyticsPage({
           durationSeconds: pageViews.durationSeconds,
         })
         .from(pageViews)
-        .where(inArray(pageViews.sessionId, sessions.map((row) => row.sessionId)))
+        .where(
+          inArray(
+            pageViews.sessionId,
+            sessions.map((row) => row.sessionId),
+          ),
+        )
         .orderBy(asc(pageViews.sessionId), asc(pageViews.createdAt))
     : []
 
@@ -195,7 +196,6 @@ export default async function AdminAnalyticsPage({
 
   return (
     <div>
-
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         {summaryCards.map(([label, row]) => (
           <section key={label} className="rounded-xl bg-paper p-4 shadow-sm">
@@ -211,9 +211,7 @@ export default async function AdminAnalyticsPage({
               </div>
               <div>
                 <dt className="text-ink-muted">근사 체류</dt>
-                <dd className="mt-1 text-xl font-bold text-ink">
-                  {formatDuration(row.averageSessionDurationSeconds)}
-                </dd>
+                <dd className="mt-1 text-xl font-bold text-ink">{formatDuration(row.averageSessionDurationSeconds)}</dd>
               </div>
             </dl>
           </section>
