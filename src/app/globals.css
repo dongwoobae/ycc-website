@@ -51,6 +51,7 @@
   --color-line-strong: rgb(var(--line-strong));
   --color-card-blue: rgb(var(--card-blue));
   --color-paper: rgb(var(--paper));
+  --font-pretendard: 'Pretendard';
   --font-sans: var(--font-pretendard), system-ui, sans-serif;
   --font-serif: var(--font-sans);
   --shadow-soft: 0 12px 32px rgb(var(--midnight) / 0.1);

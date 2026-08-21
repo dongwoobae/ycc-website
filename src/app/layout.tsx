@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
-import localFont from 'next/font/local'
 import Script from 'next/script'
 import './globals.css'
+// prebuild 의 copy-pretendard-subset.mjs 가 만드는 Pretendard 동적 서브셋 @font-face.
+import './pretendard-subset.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { Analytics } from '@vercel/analytics/next'
@@ -12,38 +13,6 @@ import Tracker from '@/components/analytics/Tracker'
 import { churchInfo } from '@/lib/church'
 
 const GOOGLE_ANALYTICS_ID = 'G-Y1121E1MQ9'
-
-const pretendard = localFont({
-  src: [
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Medium.woff2',
-      weight: '500',
-      style: 'normal',
-    },
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2',
-      weight: '600',
-      style: 'normal',
-    },
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2',
-      weight: '700',
-      style: 'normal',
-    },
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-ExtraBold.woff2',
-      weight: '800',
-      style: 'normal',
-    },
-  ],
-  variable: '--font-pretendard',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL(getCanonicalSiteOrigin()),
@@ -94,7 +63,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ko" className={pretendard.variable}>
+    <html lang="ko">
       <body className="flex min-h-screen flex-col bg-bg text-ink antialiased">
         <JsonLd data={buildChurchJsonLd()} />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-ink focus:shadow-subtle">

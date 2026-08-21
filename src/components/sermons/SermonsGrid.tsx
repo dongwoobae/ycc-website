@@ -6,11 +6,10 @@ import Reveal from '@/components/ui/Reveal'
 import SermonCard from '@/components/sermons/SermonCard'
 import SermonsPagination from '@/components/sermons/SermonsPagination'
 import SermonsToolbar, { type SortOrder } from '@/components/sermons/SermonsToolbar'
+import { SERMONS_PAGE_SIZE } from '@/components/sermons/SermonsGridSkeleton'
 import { sermonListTitle } from '@/lib/sermons/list-title'
 import { eventSectionScope, isPublicWorshipType, praiseSectionScope, sermonSectionScope, type WorshipFilterValue } from '@/lib/worship'
 import type { Sermon } from '@/lib/types'
-
-const PAGE_SIZE = 12
 
 // scope 객체는 함수(includes)를 담고 있어 서버→클라이언트 prop으로 넘길 수 없다.
 // 직렬화 가능한 variant만 받아 클라이언트에서 스코프를 결정한다.
@@ -47,14 +46,14 @@ export default function SermonsGrid({
     )
   }, [scoped, selected, query, sort])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / SERMONS_PAGE_SIZE))
   const pageKey = `${selected ?? ''}|${query}|${sort}`
   const page = pageState.key === pageKey ? Math.min(pageState.page, totalPages) : 1
   const setPage = (nextPage: number) => {
     setPageState({ key: pageKey, page: nextPage })
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const pageItems = filtered.slice((page - 1) * SERMONS_PAGE_SIZE, page * SERMONS_PAGE_SIZE)
 
   return (
     <>
