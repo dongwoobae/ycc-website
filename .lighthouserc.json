@@ -1,6 +1,8 @@
 {
   "ci": {
     "collect": {
+      "startServerCommand": "npm start",
+      "startServerReadyPattern": "Ready in",
       "url": [
         "http://localhost:3000",
         "http://localhost:3000/news",
@@ -8,6 +10,10 @@
         "http://localhost:3000/about"
       ],
       "numberOfRuns": 1
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci/reports"
     },
     "assert": {
       "assertions": {

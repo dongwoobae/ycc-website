@@ -580,6 +580,9 @@ npm run test:e2e
 
 # 프로덕션 빌드
 npm run build
+
+# Lighthouse (빌드 산출물을 npm start 로 띄워서 측정)
+npm run lighthouse
 ```
 
 ---
@@ -688,6 +691,29 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 | 방문 분석 | `analytics/bots`, `analytics/datacenter`, `analytics/ip`, `analytics/paths`, `analytics/region-ko`, `analytics/server` | 봇·데이터센터 판별, IP 마스킹·해시, 지역 한글화, 수집 경로 필터, 체류시간 집계 |
 | 기타 유틸 | `worship`, `date`, `sse`, `db/schema`, `data/sermons`, `data/posts` | 예배 유형/필터, 날짜 유틸, SSE 파싱, 스키마 정합성, 설교 조회, 예약 게시 판별 |
 | 브라우저 E2E | `gallery-upload`, `gallery-video`, `subnav-scroll`, `bulletins`, `page-chrome` | 관리자 갤러리 업로드 흐름, 영상 폼 검증, 서브내비 라우트 스크롤 회귀, 주보 목록→상세→라이트박스(썸네일 선택과 라이트박스 진입 분리, 한 면 표시, 드래그로 면이 넘어가지 않음, Escape 복귀), 페이지 크롬(히어로 리마운트 방지) 회귀 |
+
+---
+
+## 🤖 CI (GitHub Actions)
+
+`main` 대상 push·PR에서 네 job이 병렬로 돕니다.
+
+| Job | 하는 일 |
+|---|---|
+| Lint | `eslint` |
+| Typecheck | `tsc --noEmit` |
+| Test (unit) | `vitest run` — PGlite 인메모리 Postgres라 외부 의존성이 없습니다 |
+| Build & Lighthouse | 마이그레이션 검증·적용 → 시드 → `next build` → `lhci autorun` |
+
+Build job은 Postgres 서비스 컨테이너와 Neon HTTP 프록시(`ghcr.io/timowilhelm/local-neon-http-proxy`)를 띄웁니다.
+`src/lib/db/index.ts`가 모듈 최상위에서 접속을 만들고 상세 라우트 4개가 `generateStaticParams`에서 DB를 읽기 때문에,
+**빌드 자체가 살아 있는 DB를 요구**합니다. 앱은 neon-http로 말하므로 프록시가 그 HTTP 요청을 Postgres로 옮기고,
+드라이버 종점은 `NEON_HTTP_PROXY` 환경변수로만 갈아끼웁니다 — 이 변수가 없으면 평소대로 Neon 클라우드로 붙습니다.
+
+Lighthouse 임계값은 `.lighthouserc.json`에 있고 **접근성 0.9 미만이면 CI가 실패**합니다(성능·모범사례·SEO는 경고).
+리포트는 실패 여부와 무관하게 `lighthouse-reports` 아티팩트로 올라갑니다.
+
+Playwright e2e는 실제 DB/R2 크리덴셜이 필요해 CI에서 제외하고 로컬에서 돌립니다.
 
 ---
 
@@ -806,7 +832,6 @@ https://공식-도메인/sitemap.xml
 - [ ] 주보 변환 실패 시 재시도 UX 및 고아 객체 자동 회수
 - [ ] 이미지 업로드 진행률/실패 재시도 UX 개선
 - [ ] 관리자 작업 로그 필터링 강화
-- [ ] 접근성 점검 결과 문서화
 
 ---
 
