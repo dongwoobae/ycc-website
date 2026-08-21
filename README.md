@@ -579,8 +579,11 @@ npm run typecheck
 # Vitest 테스트
 npm run test
 
-# Playwright E2E (로컬 개발 서버를 자동 실행)
+# Playwright E2E 전체 (로컬 개발 서버를 자동 실행, 관리자 계정·R2 필요)
 npm run test:e2e
+
+# Playwright E2E 중 자격 증명이 필요 없는 것만 (CI가 도는 것과 같음)
+npm run test:e2e:ci
 
 # 프로덕션 빌드
 npm run build
@@ -700,14 +703,15 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 
 ## 🤖 CI (GitHub Actions)
 
-`main` 대상 push·PR에서 네 job이 병렬로 돕니다.
+`main` 대상 push·PR에서 네 job이 병렬로 돕니다. 러너는 Node 24이고, 번들된 npm 11이 로컬과 같은 메이저라
+락파일 해석이 어긋나지 않습니다.
 
-| Job                | 하는 일                                                          |
-| ------------------ | ---------------------------------------------------------------- |
-| Lint               | `eslint` + `prettier --check`                                    |
-| Typecheck          | `tsc --noEmit`                                                   |
-| Test (unit)        | `vitest run` — PGlite 인메모리 Postgres라 외부 의존성이 없습니다 |
-| Build & Lighthouse | 마이그레이션 검증·적용 → 시드 → `next build` → `lhci autorun`    |
+| Job                     | 하는 일                                                                  |
+| ----------------------- | ------------------------------------------------------------------------ |
+| Lint                    | `eslint` + `prettier --check`                                            |
+| Typecheck               | `tsc --noEmit`                                                           |
+| Test (unit)             | `vitest run` — PGlite 인메모리 Postgres라 외부 의존성이 없습니다         |
+| Build, E2E & Lighthouse | 마이그레이션 검증·적용 → 시드 → `next build` → e2e 일부 → `lhci autorun` |
 
 Build job은 Postgres 서비스 컨테이너와 Neon HTTP 프록시(`ghcr.io/timowilhelm/local-neon-http-proxy`)를 띄웁니다.
 `src/lib/db/index.ts`가 모듈 최상위에서 접속을 만들고 상세 라우트 4개가 `generateStaticParams`에서 DB를 읽기 때문에,
@@ -720,7 +724,10 @@ Build job은 Postgres 서비스 컨테이너와 Neon HTTP 프록시(`ghcr.io/tim
 Lighthouse 임계값은 `.lighthouserc.json`에 있고 **접근성 0.9 미만이면 CI가 실패**합니다(성능·모범사례·SEO는 경고).
 리포트는 실패 여부와 무관하게 `lighthouse-reports` 아티팩트로 올라갑니다.
 
-Playwright e2e는 실제 DB/R2 크리덴셜이 필요해 CI에서 제외하고 로컬에서 돌립니다.
+Playwright e2e는 `playwright.config.ts`의 프로젝트 둘로 갈라져 있습니다. CI는 `ci` 프로젝트(공개 화면만 읽는
+`page-chrome`·`subnav-scroll`)만 빌드 산출물 위에서 돌리고, 관리자 로그인과 실 R2 쓰기가 필요한 `local`
+프로젝트는 로컬 전용입니다. **새로 만든 스펙은 자동으로 `local`에 속하므로**, CI에서 돌리려면
+`playwright.config.ts`의 `CREDENTIAL_FREE`에 올려야 합니다. 실패 시 `playwright-report` 아티팩트가 올라갑니다.
 
 ---
 
