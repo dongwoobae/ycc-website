@@ -13,30 +13,32 @@ import { churchInfo } from '@/lib/church'
 
 const GOOGLE_ANALYTICS_ID = 'G-Y1121E1MQ9'
 
+// 풀셋 5종은 3.8MB로 콜드 로드 전송량의 대부분이었다 — 서브셋판은 각 262KB다.
+// 대신 서브셋 범위 밖 글자(희귀 한자 등)는 대체 글꼴로 떨어진다.
 const pretendard = localFont({
   src: [
     {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2',
+      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-Regular.subset.woff2',
       weight: '400',
       style: 'normal',
     },
     {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Medium.woff2',
+      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-Medium.subset.woff2',
       weight: '500',
       style: 'normal',
     },
     {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2',
+      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-SemiBold.subset.woff2',
       weight: '600',
       style: 'normal',
     },
     {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2',
+      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-Bold.subset.woff2',
       weight: '700',
       style: 'normal',
     },
     {
-      path: '../../node_modules/pretendard/dist/web/static/woff2/Pretendard-ExtraBold.woff2',
+      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-ExtraBold.subset.woff2',
       weight: '800',
       style: 'normal',
     },
