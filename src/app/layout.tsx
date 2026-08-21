@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
-import localFont from 'next/font/local'
 import Script from 'next/script'
 import './globals.css'
+// prebuild 의 copy-pretendard-subset.mjs 가 만드는 Pretendard 동적 서브셋 @font-face.
+import './pretendard-subset.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { Analytics } from '@vercel/analytics/next'
@@ -12,40 +13,6 @@ import Tracker from '@/components/analytics/Tracker'
 import { churchInfo } from '@/lib/church'
 
 const GOOGLE_ANALYTICS_ID = 'G-Y1121E1MQ9'
-
-// 풀셋 5종은 3.8MB로 콜드 로드 전송량의 대부분이었다 — 서브셋판은 각 262KB다.
-// 대신 서브셋 범위 밖 글자(희귀 한자 등)는 대체 글꼴로 떨어진다.
-const pretendard = localFont({
-  src: [
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-Regular.subset.woff2',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-Medium.subset.woff2',
-      weight: '500',
-      style: 'normal',
-    },
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-SemiBold.subset.woff2',
-      weight: '600',
-      style: 'normal',
-    },
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-Bold.subset.woff2',
-      weight: '700',
-      style: 'normal',
-    },
-    {
-      path: '../../node_modules/pretendard/dist/web/static/woff2-subset/Pretendard-ExtraBold.subset.woff2',
-      weight: '800',
-      style: 'normal',
-    },
-  ],
-  variable: '--font-pretendard',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL(getCanonicalSiteOrigin()),
@@ -96,7 +63,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ko" className={pretendard.variable}>
+    <html lang="ko">
       <body className="flex min-h-screen flex-col bg-bg text-ink antialiased">
         <JsonLd data={buildChurchJsonLd()} />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-ink focus:shadow-subtle">
