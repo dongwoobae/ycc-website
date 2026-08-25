@@ -64,6 +64,9 @@ export async function transcribeFromAudio(videoId: string): Promise<TranscriptSe
           ],
         },
       ],
+      // 전역 dispatcher는 Node 내장 undici의 심볼 자리에 npm undici@8 Agent를 꽂는 구조라 두 버전 사이
+      // 상호운용에 기대고 있다 — 그게 깨지더라도 요청이 무한정 매달리지 않게 요청 단위 타임아웃을 병행한다.
+      config: { httpOptions: { timeout: 600_000 } },
     },
     [AUDIO_TRANSCRIPT_MODEL, AUDIO_TRANSCRIPT_MODEL_GA, DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL],
   )
