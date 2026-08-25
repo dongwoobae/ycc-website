@@ -14,6 +14,9 @@ vi.mock('@/lib/qstash', () => ({ publishJob: vi.fn(async () => undefined) }))
 vi.mock('@/lib/transcript/rapidapi', () => ({
   fetchTranscript: vi.fn(async () => [{ text: 'hello', start: 0, dur: 1 }]),
 }))
+vi.mock('@/lib/ai/audio-transcript', () => ({
+  transcribeFromAudio: vi.fn(async () => [{ startSeconds: 0, text: 'audio fallback text' }]),
+}))
 // generateSermonSummary는 Gemini 외부호출 — summarizeClaimed 위성 갱신만 검증
 vi.mock('@/lib/ai/sermon-summary', async (orig) => ({
   ...(await orig<typeof import('@/lib/ai/sermon-summary')>()),
@@ -79,6 +82,23 @@ describe('fetchAndStoreTranscript upsert (integration)', () => {
     await fetchAndStoreTranscript(id, 'vid1')
     const all = await h.db.select().from(sermonTranscripts).where(eq(sermonTranscripts.sermonId, id))
     expect(all).toHaveLength(1)
+  })
+
+  it('falls back to audio transcription when RapidAPI returns no segments', async () => {
+    const { fetchTranscript } = await import('@/lib/transcript/rapidapi')
+    vi.mocked(fetchTranscript).mockResolvedValueOnce([])
+    const id = await insertSermonFixture(h.db)
+    const text = await fetchAndStoreTranscript(id, 'vid-no-captions')
+    expect(text).toContain('audio fallback text')
+  })
+
+  it('throws when both RapidAPI and audio transcription come back empty', async () => {
+    const { fetchTranscript } = await import('@/lib/transcript/rapidapi')
+    const { transcribeFromAudio } = await import('@/lib/ai/audio-transcript')
+    vi.mocked(fetchTranscript).mockResolvedValueOnce([])
+    vi.mocked(transcribeFromAudio).mockResolvedValueOnce([])
+    const id = await insertSermonFixture(h.db)
+    await expect(fetchAndStoreTranscript(id, 'vid-no-captions-anywhere')).rejects.toThrow('자막 미준비')
   })
 })
 

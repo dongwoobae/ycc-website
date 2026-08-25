@@ -5,6 +5,7 @@ import { log } from '@/lib/logger'
 import { generateSermonSummary, DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
 import { publishJob } from '@/lib/qstash'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
+import { transcribeFromAudio } from '@/lib/ai/audio-transcript'
 import { buildTranscriptText, type TranscriptSegment } from '@/lib/transcript/prompt'
 import { autoSummaryTypes } from '@/lib/worship'
 
@@ -118,8 +119,11 @@ export async function storeTranscript(sermonId: string, segments: TranscriptSegm
 
 export async function fetchAndStoreTranscript(sermonId: string, videoId: string): Promise<string> {
   const segments = await fetchTranscript(videoId)
-  if (segments.length === 0) throw new Error('자막 미준비')
-  return storeTranscript(sermonId, segments)
+  if (segments.length > 0) return storeTranscript(sermonId, segments)
+
+  const audioSegments = await transcribeFromAudio(videoId)
+  if (audioSegments.length === 0) throw new Error('자막 미준비')
+  return storeTranscript(sermonId, audioSegments)
 }
 
 /** 자막을 저장하고 summarize job을 발행한다. 발행 자체가 실패하면(자막은 이미 캐시됨) failed로 마킹해 매시간 스위퍼가 재시도하게 한다. */
