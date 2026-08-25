@@ -4,6 +4,7 @@ import { getCanonicalSiteOrigin } from './site-origin'
 export type JobName =
   | 'ingest-video'
   | 'fetch-transcript'
+  | 'fetch-audio-transcript'
   | 'summarize'
   | 'websub-renew'
   | 'retry-summaries'

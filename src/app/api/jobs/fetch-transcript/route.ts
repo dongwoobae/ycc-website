@@ -1,14 +1,11 @@
-import { eq } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { sermonSummaries } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { publishJob, RETRY_DELAY_SECONDS, verifyQStash } from '@/lib/qstash'
-import { storeTranscript } from '@/lib/sermons/summarize'
+import { publishSummarizeOrMarkFailed } from '@/lib/sermons/summarize'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 
 export const maxDuration = 60
 
-const MAX_TRANSCRIPT_RETRY = 12
+const MAX_TRANSCRIPT_RETRY = 6
 
 export async function POST(req: Request) {
   const raw = await req.text()
@@ -34,30 +31,19 @@ export async function POST(req: Request) {
       await publishJob('fetch-transcript', { sermonId, videoId, attempt: attempt + 1 }, RETRY_DELAY_SECONDS)
       return Response.json({ ok: true, retry: attempt + 1 })
     }
-    // 유튜브가 자막을 끝내 만들지 않은 경우 — 재시도해도 달라지지 않으므로 failed가 아닌 종결 상태로 남긴다.
-    console.error(`[fetch-transcript] ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기(자막 없음) videoId=${videoId}`)
+    // 유튜브가 자막을 끝내 만들지 않은 경우 — 재시도 대신 오디오 변환 폴백으로 넘긴다.
+    console.error(`[fetch-transcript] ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기(자막 없음), 오디오 변환 시도 videoId=${videoId}`)
     await log(
       'error',
       'sermon',
       sermonId,
-      `자막 없음 — ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기, 요약 미진행: videoId=${videoId}`,
+      `자막 없음 — ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기, 오디오 변환 시도: videoId=${videoId}`,
     )
-    await db
-      .update(sermonSummaries)
-      .set({ summaryStatus: 'no_transcript' })
-      .where(eq(sermonSummaries.sermonId, sermonId))
-    return Response.json({ ok: true, gaveUp: true })
+    await publishJob('fetch-audio-transcript', { sermonId, videoId })
+    return Response.json({ ok: true, gaveUp: true, audioFallback: true })
   }
 
-  await storeTranscript(sermonId, segments)
+  await publishSummarizeOrMarkFailed(sermonId, segments, videoId)
   console.log(`[fetch-transcript] 자막 저장 완료 videoId=${videoId} segments=${segments.length}`)
-  try {
-    await publishJob('summarize', { sermonId })
-  } catch (e) {
-    // 자막은 이미 캐시됐으므로 failed로 마킹해 매시간 스위퍼(retry-summaries)가 요약을 재투입하게 한다.
-    console.error(`[fetch-transcript] summarize 발행 실패 — 스위퍼 재시도로 인계 videoId=${videoId}`, e)
-    await log('error', 'sermon', sermonId, `summarize 발행 실패 — 매시간 스위퍼가 재시도: videoId=${videoId}`)
-    await db.update(sermonSummaries).set({ summaryStatus: 'failed' }).where(eq(sermonSummaries.sermonId, sermonId))
-  }
   return Response.json({ ok: true, segments: segments.length })
 }

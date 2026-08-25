@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { generateSermonSummary, DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
+import { publishJob } from '@/lib/qstash'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 import { buildTranscriptText, type TranscriptSegment } from '@/lib/transcript/prompt'
 import { autoSummaryTypes } from '@/lib/worship'
@@ -119,6 +120,22 @@ export async function fetchAndStoreTranscript(sermonId: string, videoId: string)
   const segments = await fetchTranscript(videoId)
   if (segments.length === 0) throw new Error('자막 미준비')
   return storeTranscript(sermonId, segments)
+}
+
+/** 자막을 저장하고 summarize job을 발행한다. 발행 자체가 실패하면(자막은 이미 캐시됨) failed로 마킹해 매시간 스위퍼가 재시도하게 한다. */
+export async function publishSummarizeOrMarkFailed(
+  sermonId: string,
+  segments: TranscriptSegment[],
+  videoId: string,
+): Promise<void> {
+  await storeTranscript(sermonId, segments)
+  try {
+    await publishJob('summarize', { sermonId })
+  } catch (e) {
+    console.error(`[transcript] summarize 발행 실패 — 스위퍼 재시도로 인계 videoId=${videoId}`, e)
+    await log('error', 'sermon', sermonId, `summarize 발행 실패 — 매시간 스위퍼가 재시도: videoId=${videoId}`)
+    await db.update(sermonSummaries).set({ summaryStatus: 'failed' }).where(eq(sermonSummaries.sermonId, sermonId))
+  }
 }
 
 export async function summarizeClaimed(

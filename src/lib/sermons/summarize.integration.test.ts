@@ -9,6 +9,7 @@ vi.mock('@/lib/db', () => ({
     return h.db
   },
 }))
+vi.mock('@/lib/qstash', () => ({ publishJob: vi.fn(async () => undefined) }))
 // fetchTranscript는 외부호출이므로 모킹 — buildTranscriptText 경유 결과만 검증
 vi.mock('@/lib/transcript/rapidapi', () => ({
   fetchTranscript: vi.fn(async () => [{ text: 'hello', start: 0, dur: 1 }]),
@@ -34,7 +35,8 @@ afterAll(async () => {
 })
 
 // 모듈은 mock 설정 이후 import (동적 import로 보장)
-const { claimSermonById, selectRetryTargets, fetchAndStoreTranscript, summarizeClaimed } = await import('./summarize')
+const { claimSermonById, selectRetryTargets, fetchAndStoreTranscript, summarizeClaimed, publishSummarizeOrMarkFailed } =
+  await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
   it('claims a none-status sermon by updating sermon_summaries, then blocks double-claim', async () => {
@@ -88,5 +90,25 @@ describe('summarizeClaimed (integration)', () => {
     const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
     expect(row.summaryStatus).toBe('ready')
     expect(row.summary).toBe('요약본')
+  })
+})
+
+describe('publishSummarizeOrMarkFailed (integration)', () => {
+  it('stores the transcript and publishes a summarize job', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    const id = await insertSermonFixture(h.db)
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid1')
+    const [row] = await h.db.select().from(sermonTranscripts).where(eq(sermonTranscripts.sermonId, id))
+    expect(row.transcriptText).toContain('hi')
+    expect(publishJob).toHaveBeenCalledWith('summarize', { sermonId: id })
+  })
+
+  it('marks the sermon failed when publishing the summarize job throws', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockRejectedValueOnce(new Error('qstash down'))
+    const id = await insertSermonFixture(h.db)
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid1')
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('failed')
   })
 })
