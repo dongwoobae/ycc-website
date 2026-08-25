@@ -18,12 +18,27 @@ function baseUrl(): string {
 
 const client = () => new Client({ token: process.env.QSTASH_TOKEN! })
 
+/** 생략한 항목은 QStash 계정/플랜 기본값을 따른다. */
+export interface JobPublishOptions {
+  /** 2xx 밖 응답·미응답 시 QStash가 재전달하는 횟수 상한. */
+  retries?: number
+  /** QStash가 대상 함수의 응답을 기다리는 시간(초). 함수의 maxDuration보다 짧으면 정상 처리 중인 호출도 실패로 보고 재전달한다. */
+  timeoutSeconds?: number
+}
+
 /** QStash 작업 발행. SDK 숫자 delay는 초 단위로 Upstash-Delay 헤더에 변환된다. */
-export async function publishJob(job: JobName, body: unknown, delaySeconds = 0): Promise<void> {
+export async function publishJob(
+  job: JobName,
+  body: unknown,
+  delaySeconds = 0,
+  options: JobPublishOptions = {},
+): Promise<void> {
   await client().publishJSON({
     url: `${baseUrl()}/api/jobs/${job}`,
     body,
     ...(delaySeconds > 0 ? { delay: delaySeconds } : {}),
+    ...(options.retries != null ? { retries: options.retries } : {}),
+    ...(options.timeoutSeconds != null ? { timeout: options.timeoutSeconds } : {}),
   })
 }
 

@@ -1,3 +1,6 @@
+import { eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { sermonSummaries } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { publishJob, RETRY_DELAY_SECONDS, verifyQStash } from '@/lib/qstash'
 import { publishSummarizeOrMarkFailed } from '@/lib/sermons/summarize'
@@ -6,6 +9,9 @@ import { fetchTranscript } from '@/lib/transcript/rapidapi'
 export const maxDuration = 60
 
 const MAX_TRANSCRIPT_RETRY = 6
+
+/** fetch-audio-transcript 라우트의 maxDuration과 맞춘 값. */
+const AUDIO_TRANSCRIPT_TIMEOUT_SECONDS = 300
 
 export async function POST(req: Request) {
   const raw = await req.text()
@@ -39,7 +45,21 @@ export async function POST(req: Request) {
       sermonId,
       `자막 없음 — ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기, 오디오 변환 시도: videoId=${videoId}`,
     )
-    await publishJob('fetch-audio-transcript', { sermonId, videoId })
+    try {
+      await publishJob('fetch-audio-transcript', { sermonId, videoId }, 0, {
+        // 재전달 한 번마다 4~5분짜리 Gemini 오디오 호출이 통째로 다시 돈다.
+        retries: 1,
+        timeoutSeconds: AUDIO_TRANSCRIPT_TIMEOUT_SECONDS,
+      })
+    } catch (e) {
+      console.error(`[fetch-transcript] 오디오 변환 발행 실패, 최종 포기 videoId=${videoId}`, e)
+      await log('error', 'sermon', sermonId, `오디오 변환 발행 실패 — 최종 포기: videoId=${videoId}`)
+      await db
+        .update(sermonSummaries)
+        .set({ summaryStatus: 'no_transcript' })
+        .where(eq(sermonSummaries.sermonId, sermonId))
+      return Response.json({ ok: true, gaveUp: true })
+    }
     return Response.json({ ok: true, gaveUp: true, audioFallback: true })
   }
 
