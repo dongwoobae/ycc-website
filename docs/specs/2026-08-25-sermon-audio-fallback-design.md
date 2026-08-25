@@ -15,7 +15,7 @@
 | 재시도 축소 | `MAX_TRANSCRIPT_RETRY` 12 → **6**(3시간). 폴백이 이어받으므로 총 대기시간만 3시간 단축, 손해 없음 |
 | 오디오 확보 방법 | **자체 오디오 추출 없음.** Gemini `generateContent`에 유튜브 워치 URL을 `fileData.fileUri`로 직접 전달(영상 다운로드는 구글 서버가 수행) |
 | 트리거 조건 | `fetch-transcript`가 6회 소진되는 시점 = 기존에 `no_transcript`를 세팅하던 바로 그 지점. 찬양 계열은 애초에 `expectsAutoSummary`가 걸러 이 경로에 들어오지 않으므로 별도 필터 불필요 |
-| 받아쓰기 모델 | `gemini-3.1-pro-preview`(1차) → 일시 오류 시 `gemini-3.5-flash`(폴백). `gemini-2.5-pro`는 신규 사용자 대상 서비스 종료(404) 확인되어 후보에서 제외 |
+| 받아쓰기 모델 | `gemini-3.1-pro-preview` → `gemini-3.1-pro`(preview 단종 시 정식 출시명) → `gemini-3.5-flash` → `gemini-2.5-flash`, 4단 순차 폴백. `generateContentWithFallback`은 503 등 일시 오류뿐 아니라 404(모델 단종)도 다음 모델로 넘기도록 판별을 넓힌다. `gemini-2.5-pro`는 신규 사용자 대상 서비스 종료(404) 확인되어 후보에서 제외 |
 | 받아쓰기 출력 형식 | Gemini에는 `"[MM:SS] 발화"` 줄 단위로 요청하지만, 1시간을 넘는 설교에서 모델이 `[H:MM:SS]`로 바꿔 쓰는 경우를 실측으로 확인함. 그대로 문자열 결합하지 않고 `TranscriptSegment[]`(`{startSeconds, text}`)로 파싱해 `fetchTranscript`와 동일한 반환 타입을 맞추고, 기존 `storeTranscript`/`buildTranscriptText`로 재직렬화해 항상 정규화된 `MM:SS`(총분:초) 형식으로 저장한다 |
 | 요약 프롬프트 개선 | 전체 길이(`durationSeconds`)와 기대 챕터 수를 프롬프트에 명시하고 "챕터당 900초 초과 금지"를 강제 지시로 추가. 오디오 폴백 여부와 무관하게 **전체 파이프라인**에 적용 |
 | HTTP 타임아웃 | Node 기본 undici `headersTimeout`(5분)이 긴 오디오 처리(4~5분)와 맞물려 간헐적으로 `fetch failed`를 유발함을 확인. 오디오 변환 호출 경로에 `headersTimeout`/`bodyTimeout`을 10분으로 올린 커스텀 dispatcher 적용 |
@@ -47,7 +47,7 @@
    a. sermons에서 durationSeconds 조회
    b. Gemini generateContent({ fileData: { fileUri: `https://www.youtube.com/watch?v=${videoId}` } })
       + "[MM:SS] 발화" 형식 강제 프롬프트
-      → gemini-3.1-pro-preview 1차, 일시 오류 시 gemini-3.5-flash 폴백
+      → gemini-3.1-pro-preview → gemini-3.1-pro → gemini-3.5-flash → gemini-2.5-flash, 순서대로 폴백
    c. 성공 → storeTranscript(sermonId, 결과 텍스트) → 기존 ④ summarize 그대로 발행
       실패(비일시 오류, 혹은 폴백까지 소진) → summary_status='no_transcript' (기존과 동일한 최종 상태)
         │
@@ -72,7 +72,7 @@
 
 - `src/app/api/jobs/fetch-transcript/route.ts` — `MAX_TRANSCRIPT_RETRY` 12→6, give-up 분기에서 `no_transcript` 직접 세팅 대신 `fetch-audio-transcript` job 발행.
 - `src/lib/qstash.ts` — `JobName` 유니온에 `'fetch-audio-transcript'` 추가.
-- `src/lib/ai/gemini.ts` — `generateContentWithFallback`을 모델 배열(`[gemini-3.1-pro-preview, gemini-3.5-flash]`) 순차 시도로 일반화. 기존 텍스트 요약 호출(`[3.5-flash, 2.5-flash]`)도 같은 함수로 통합.
+- `src/lib/ai/gemini.ts` — `generateContentWithFallback`을 모델 배열 순차 시도로 일반화하고, 503 등 일시 오류 외에 404(모델 단종)도 다음 모델로 넘어가도록 판별을 넓힌다(`isModelUnavailableError` 신규). 오디오 경로는 `[gemini-3.1-pro-preview, gemini-3.1-pro, gemini-3.5-flash, gemini-2.5-flash]` 4단, 기존 텍스트 요약 호출(`[3.5-flash, 2.5-flash]`)도 같은 함수로 통합.
 - `src/lib/ai/sermon-summary.ts` — `PROMPT`에 `durationSeconds`·기대 챕터 수(`Math.round(durationSeconds/600)`)를 보간하고 "챕터 900초 초과 금지, 초과 시 반드시 분할" 지시 추가.
 - `src/lib/sermons/summarize.ts` — `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 이 함수는 자동 job(`fetch-audio-transcript`)과 수동 `manualSummarize` 양쪽에서 재사용된다.
 - `src/app/admin/sermons/[id]/edit` 라우트(또는 서버 액션 파일) — 오디오 변환이 최대 4~5분 걸릴 수 있으므로 `maxDuration`을 300으로 상향.
@@ -85,7 +85,7 @@
 ## 에러 처리
 
 - **오디오 변환 자체 오류(비일시)**: 재시도 없이 즉시 `no_transcript`로 종결(기존 정책 유지 — "재시도해도 소용없는 종결 상태").
-- **일시 오류(503 등)**: `gemini-3.1-pro-preview` → `gemini-3.5-flash` 1회 폴백. 그래도 실패하면 `no_transcript`.
+- **일시 오류(503 등) 또는 모델 단종(404)**: `gemini-3.1-pro-preview` → `gemini-3.1-pro` → `gemini-3.5-flash` → `gemini-2.5-flash` 순서로 폴백. 넷 다 실패하면 `no_transcript`.
 - **`headersTimeout`으로 인한 `fetch failed`**: 커스텀 dispatcher로 완화하되, 완전히 배제되지는 않으므로 모델 폴백 루프가 이 경우도 함께 흡수한다(재현 시 로그로 빈도 확인 필요 — 미결 사항 참고).
 
 ## 비용 (참고)
@@ -96,7 +96,7 @@
 ## 테스트
 
 - `fetch-transcript`: `MAX_TRANSCRIPT_RETRY=6` 경계값, 소진 시 `fetch-audio-transcript` 발행(기존 `no_transcript` 직접 세팅 대신).
-- `generateContentWithFallback`: 모델 배열 일반화 후 기존 텍스트 요약 폴백 동작 회귀 테스트.
+- `generateContentWithFallback`: 모델 배열 일반화 후 기존 텍스트 요약 폴백 동작 회귀 테스트, 404(모델 단종) 시 다음 모델로 전환되는지.
 - `audio-transcript`: `"[MM:SS] 발화"` 파싱, 일시 오류 시 폴백 모델 전환.
 - `sermon-summary` 프롬프트: `durationSeconds` 보간 값 검증, 챕터 900초 초과 시 실패하는 회귀 케이스(가능하면 스냅샷보다는 프롬프트 문자열 포함 여부 검증).
 - `fetchAndStoreTranscript`: RapidAPI 실패 시 오디오 변환 함수 호출로 폴백, 오디오 변환도 실패하면 기존과 동일하게 에러 throw(관리자 화면에 메시지 노출).
@@ -116,7 +116,7 @@
 
 ## 미결 사항
 
-1. `gemini-3.1-pro-preview`가 실제 서비스 시점에도 유튜브 URL 직접 입력을 지원하는지 — 현재 "preview" 태그이므로 정식 버전 전환/모델 교체 가능성을 배포 전 재확인.
+1. `gemini-3.1-pro-preview`가 실제 서비스 시점에도 유튜브 URL 직접 입력을 지원하는지 — preview 단종(404) 자체는 `gemini-3.1-pro` 자동 폴백으로 대비했지만, `gemini-3.1-pro`라는 정식 이름이 실제로 그대로 쓰이는지는 출시 전에는 확인 불가. 이름이 다르게 나올 경우 상수만 갱신하면 된다.
 2. Gemini의 유튜브 URL 직접 입력 기능 자체가 아직 프리뷰(무료) 상태 — 정식화 시 과금 정책이 붙을 수 있어 유지보수 시 확인 필요.
 3. `fetch-audio-transcript`의 `maxDuration=300`이 실제 최장 설교(설교 길이 상한 확인 필요, 현재 최대 확인된 사례는 약 70분)에서도 여유 있게 처리되는지 프로덕션 배포 후 1건은 실측 확인.
 4. `headersTimeout` 관련 "fetch failed"가 프로덕션(Vercel Node 런타임)에서도 동일하게 재현되는지 — 로컬에서는 undici 전역 dispatcher로 완화했으나 Vercel 런타임에서 같은 설정이 유효한지 미확인.
