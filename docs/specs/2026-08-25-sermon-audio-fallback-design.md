@@ -16,7 +16,7 @@
 | 오디오 확보 방법 | **자체 오디오 추출 없음.** Gemini `generateContent`에 유튜브 워치 URL을 `fileData.fileUri`로 직접 전달(영상 다운로드는 구글 서버가 수행) |
 | 트리거 조건 | `fetch-transcript`가 6회 소진되는 시점 = 기존에 `no_transcript`를 세팅하던 바로 그 지점. 찬양 계열은 애초에 `expectsAutoSummary`가 걸러 이 경로에 들어오지 않으므로 별도 필터 불필요 |
 | 받아쓰기 모델 | `gemini-3.1-pro-preview`(1차) → 일시 오류 시 `gemini-3.5-flash`(폴백). `gemini-2.5-pro`는 신규 사용자 대상 서비스 종료(404) 확인되어 후보에서 제외 |
-| 받아쓰기 출력 형식 | `"[MM:SS] 발화"` 줄 단위 — 기존 자막 원고와 동일 형식으로 맞춰 `generateSermonSummary`를 그대로 재사용 |
+| 받아쓰기 출력 형식 | Gemini에는 `"[MM:SS] 발화"` 줄 단위로 요청하지만, 1시간을 넘는 설교에서 모델이 `[H:MM:SS]`로 바꿔 쓰는 경우를 실측으로 확인함. 그대로 문자열 결합하지 않고 `TranscriptSegment[]`(`{startSeconds, text}`)로 파싱해 `fetchTranscript`와 동일한 반환 타입을 맞추고, 기존 `storeTranscript`/`buildTranscriptText`로 재직렬화해 항상 정규화된 `MM:SS`(총분:초) 형식으로 저장한다 |
 | 요약 프롬프트 개선 | 전체 길이(`durationSeconds`)와 기대 챕터 수를 프롬프트에 명시하고 "챕터당 900초 초과 금지"를 강제 지시로 추가. 오디오 폴백 여부와 무관하게 **전체 파이프라인**에 적용 |
 | HTTP 타임아웃 | Node 기본 undici `headersTimeout`(5분)이 긴 오디오 처리(4~5분)와 맞물려 간헐적으로 `fetch failed`를 유발함을 확인. 오디오 변환 호출 경로에 `headersTimeout`/`bodyTimeout`을 10분으로 올린 커스텀 dispatcher 적용 |
 | 인프라 | **Vercel Hobby 유지, Python 런타임 불필요.** 오디오 다운로드 자체가 없어졌으므로 새 job(`fetch-audio-transcript`)의 `maxDuration`만 Hobby 상한(300초)으로 올리면 충분 |
@@ -80,7 +80,7 @@
 ### 신규
 
 - `src/app/api/jobs/fetch-audio-transcript/route.ts` — 위 아키텍처의 ③-b. QStash 서명검증 필수(기존 워커 패턴과 동일). 실제 오디오 변환은 아래 공용 함수를 호출하기만 한다.
-- `src/lib/ai/audio-transcript.ts`(가칭) — 유튜브 URL 기반 오디오 받아쓰기 프롬프트·모델 폴백·`"[MM:SS] 발화"` 파싱을 담은 **공용 함수**(자동 job·수동 재생성 버튼 공통 사용). 커스텀 undici dispatcher(`headersTimeout`/`bodyTimeout` 10분) 적용.
+- `src/lib/ai/audio-transcript.ts`(가칭) — `transcribeFromAudio(videoId: string): Promise<TranscriptSegment[]>`. 유튜브 URL 기반 오디오 받아쓰기 프롬프트·모델 폴백 호출 후 `[MM:SS]`/`[H:MM:SS]` 양쪽을 다 받는 정규식으로 `TranscriptSegment[]`로 파싱하는 **공용 함수**(자동 job·수동 재생성 버튼 공통 사용, `fetchTranscript`와 동일한 반환 타입이라 `storeTranscript`에 그대로 넘길 수 있음). 커스텀 undici dispatcher(`headersTimeout`/`bodyTimeout` 10분) 적용.
 
 ## 에러 처리
 
