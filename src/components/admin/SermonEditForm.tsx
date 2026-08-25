@@ -153,8 +153,8 @@ export default function SermonEditForm({
         </p>
         {summaryStatus === 'no_transcript' && (
           <p className="mt-1 text-xs text-ink-muted">
-            유튜브에 자막이 생성되지 않아 자동 요약을 건너뛴 건입니다. 자막이 뒤늦게 생겼다면 &lsquo;요약
-            재생성&rsquo;으로 다시 시도할 수 있어요.
+            유튜브 자막도, 오디오 변환도 모두 실패해 자동 요약을 건너뛴 건입니다. &lsquo;요약 재생성&rsquo;을 누르면
+            오디오 변환으로 다시 시도해요 — 최대 5분 정도 걸리니 완료될 때까지 페이지에서 기다려 주세요.
           </p>
         )}
         {quickSummary.length > 0 && (
