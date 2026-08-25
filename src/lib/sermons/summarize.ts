@@ -117,9 +117,19 @@ export async function storeTranscript(sermonId: string, segments: TranscriptSegm
   return transcriptText
 }
 
-export async function fetchAndStoreTranscript(sermonId: string, videoId: string): Promise<string> {
+/**
+ * audioFallback은 기본으로 꺼져 있다 — 켜면 자막이 아직 없는 영상 하나가 4~5분 블로킹하므로,
+ * 자막 부재가 정상인 경로(신규 영상 동기화)는 켜서는 안 된다.
+ * 근거와 켜도 되는 조건은 docs/specs/2026-08-25-sermon-audio-fallback-design.md 참고.
+ */
+export async function fetchAndStoreTranscript(
+  sermonId: string,
+  videoId: string,
+  options: { audioFallback?: boolean } = {},
+): Promise<string> {
   const segments = await fetchTranscript(videoId)
   if (segments.length > 0) return storeTranscript(sermonId, segments)
+  if (!options.audioFallback) throw new Error('자막 미준비')
 
   const audioSegments = await transcribeFromAudio(videoId)
   if (audioSegments.length === 0) throw new Error('자막 미준비')
@@ -199,7 +209,8 @@ export async function manualSummarize(id: string): Promise<'ready' | 'failed'> {
     .limit(1)
   if (!row || !row.youtubeVideoId) throw new Error('sermon not found or has no YouTube video id')
 
-  const transcriptText = row.transcriptText?.trim() || (await fetchAndStoreTranscript(row.id, row.youtubeVideoId))
+  const transcriptText =
+    row.transcriptText?.trim() || (await fetchAndStoreTranscript(row.id, row.youtubeVideoId, { audioFallback: true }))
 
   const claimed = await forceClaimSermonById(row.id)
   if (!claimed) throw new Error('summary is not claimable')

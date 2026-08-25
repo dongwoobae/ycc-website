@@ -84,11 +84,21 @@ describe('fetchAndStoreTranscript upsert (integration)', () => {
     expect(all).toHaveLength(1)
   })
 
+  it('does not touch audio transcription unless the caller opts in', async () => {
+    const { fetchTranscript } = await import('@/lib/transcript/rapidapi')
+    const { transcribeFromAudio } = await import('@/lib/ai/audio-transcript')
+    vi.mocked(fetchTranscript).mockResolvedValueOnce([])
+    vi.mocked(transcribeFromAudio).mockClear()
+    const id = await insertSermonFixture(h.db)
+    await expect(fetchAndStoreTranscript(id, 'vid-no-captions-default')).rejects.toThrow('자막 미준비')
+    expect(transcribeFromAudio).not.toHaveBeenCalled()
+  })
+
   it('falls back to audio transcription when RapidAPI returns no segments', async () => {
     const { fetchTranscript } = await import('@/lib/transcript/rapidapi')
     vi.mocked(fetchTranscript).mockResolvedValueOnce([])
     const id = await insertSermonFixture(h.db)
-    const text = await fetchAndStoreTranscript(id, 'vid-no-captions')
+    const text = await fetchAndStoreTranscript(id, 'vid-no-captions', { audioFallback: true })
     expect(text).toContain('audio fallback text')
   })
 
@@ -98,7 +108,9 @@ describe('fetchAndStoreTranscript upsert (integration)', () => {
     vi.mocked(fetchTranscript).mockResolvedValueOnce([])
     vi.mocked(transcribeFromAudio).mockResolvedValueOnce([])
     const id = await insertSermonFixture(h.db)
-    await expect(fetchAndStoreTranscript(id, 'vid-no-captions-anywhere')).rejects.toThrow('자막 미준비')
+    await expect(fetchAndStoreTranscript(id, 'vid-no-captions-anywhere', { audioFallback: true })).rejects.toThrow(
+      '자막 미준비',
+    )
   })
 })
 
