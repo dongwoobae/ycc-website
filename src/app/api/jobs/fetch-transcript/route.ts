@@ -38,7 +38,9 @@ export async function POST(req: Request) {
       return Response.json({ ok: true, retry: attempt + 1 })
     }
     // 유튜브가 자막을 끝내 만들지 않은 경우 — 재시도 대신 오디오 변환 폴백으로 넘긴다.
-    console.error(`[fetch-transcript] ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기(자막 없음), 오디오 변환 시도 videoId=${videoId}`)
+    console.error(
+      `[fetch-transcript] ${MAX_TRANSCRIPT_RETRY}회 재시도 후 포기(자막 없음), 오디오 변환 시도 videoId=${videoId}`,
+    )
     await log(
       'error',
       'sermon',
