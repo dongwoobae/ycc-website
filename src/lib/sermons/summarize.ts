@@ -118,9 +118,8 @@ export async function storeTranscript(sermonId: string, segments: TranscriptSegm
 }
 
 /**
- * audioFallback은 기본으로 꺼져 있다 — 켜면 자막이 아직 없는 영상 하나가 4~5분 블로킹하므로,
- * 자막 부재가 정상인 경로(신규 영상 동기화)는 켜서는 안 된다.
- * 근거와 켜도 되는 조건은 docs/specs/2026-08-25-sermon-audio-fallback-design.md 참고.
+ * audioFallback을 켜면 이 호출은 4~5분 블로킹한다 — 실행시간 예산이 있는 경로에서는 켜지 마라.
+ * 근거는 docs/specs/2026-08-25-sermon-audio-fallback-design.md 참고.
  */
 export async function fetchAndStoreTranscript(
   sermonId: string,
