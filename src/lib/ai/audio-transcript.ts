@@ -2,7 +2,7 @@ import type { TranscriptSegment } from '@/lib/transcript/prompt'
 
 const TIMESTAMP_LINE = /^\[(\d{1,3}(?::\d{2}){1,2})\]\s*(.*)$/
 
-/** "[MM:SS] 발화" 또는 "[H:MM:SS] 발화" 줄들을 TranscriptSegment[]로 파싱한다. */
+/** 1시간을 넘는 설교에서 Gemini가 타임스탬프를 [MM:SS] 대신 [H:MM:SS]로 바꿔 쓰는 경우가 실측으로 확인됐다. */
 export function parseTimestampedTranscript(raw: string): TranscriptSegment[] {
   const segments: TranscriptSegment[] = []
   for (const line of raw.split('\n')) {
