@@ -70,8 +70,8 @@
 
 ### 변경
 
-- `src/app/api/jobs/fetch-transcript/route.ts` — `MAX_TRANSCRIPT_RETRY` 12→6, give-up 분기에서 `no_transcript` 직접 세팅 대신 `fetch-audio-transcript` job 발행.
-- `src/lib/qstash.ts` — `JobName` 유니온에 `'fetch-audio-transcript'` 추가.
+- `src/app/api/jobs/fetch-transcript/route.ts` — `MAX_TRANSCRIPT_RETRY` 12→6, give-up 분기에서 `no_transcript` 직접 세팅 대신 `fetch-audio-transcript` job 발행. 이 발행 자체를 try/catch로 감싸, 발행이 실패하면(QStash 장애 등) 그 자리에서 `no_transcript`로 종결한다 — 실패 시 어떤 job도 이어받지 않아 종결 상태가 안 남는 것을 막기 위함.
+- `src/lib/qstash.ts` — `JobName` 유니온에 `'fetch-audio-transcript'` 추가. `publishJob`이 4번째 인자로 `JobPublishOptions`(`retries`·`timeoutSeconds`)를 받도록 확장돼, `fetch-audio-transcript` 발행 시 재전달 상한과 QStash HTTP 타임아웃을 job별로 지정할 수 있다.
 - `src/lib/ai/gemini.ts` — `generateContentWithFallback`을 모델 배열 순차 시도로 일반화하고, 503 등 일시 오류 외에 404(모델 단종)도 다음 모델로 넘어가도록 판별을 넓힌다(`isModelUnavailableError` 신규). 오디오 경로는 `[gemini-3.1-pro-preview, gemini-3.1-pro, gemini-3.5-flash, gemini-2.5-flash]` 4단, 기존 텍스트 요약 호출(`[3.5-flash, 2.5-flash]`)도 같은 함수로 통합.
 - `src/lib/ai/sermon-summary.ts` — `PROMPT`에 `durationSeconds`·기대 챕터 수(`Math.round(durationSeconds/600)`)를 보간하고 "챕터 900초 초과 금지, 초과 시 반드시 분할" 지시 추가.
 - `src/lib/sermons/summarize.ts` — `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, `options.audioFallback`이 켜져 있으면 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 폴백은 기본 꺼짐(옵트인)이다 — 자막이 아직 없는 것이 정상인 채널 동기화 경로(`resyncAllSermons`)까지 영상 한 건당 4~5분 블로킹하면 안 되고(SSE 스트림의 300초 예산을 한 건이 먹는다), 30분 뒤면 무료로 잡힐 자막을 두고 3시간 게이트를 우회하게 되기 때문이다. `manualSummarize`만 명시적으로 켠다. 이 함수는 자동 job(`fetch-audio-transcript`)과 수동 `manualSummarize` 양쪽에서 재사용된다.
@@ -84,7 +84,7 @@
 
 ## 에러 처리
 
-- **오디오 변환 자체 오류(비일시)**: 재시도 없이 즉시 `no_transcript`로 종결(기존 정책 유지 — "재시도해도 소용없는 종결 상태").
+- **오디오 변환 자체 오류(비일시)**: 재시도 없이 즉시 `no_transcript`로 종결한다 — 자막 조회 실패 시와 동일한 기존 정책을 그대로 유지한다.
 - **일시 오류(503 등) 또는 모델 단종(404)**: `gemini-3.1-pro-preview` → `gemini-3.1-pro` → `gemini-3.5-flash` → `gemini-2.5-flash` 순서로 폴백. 넷 다 실패하면 `no_transcript`.
 - **`headersTimeout`으로 인한 `fetch failed`**: 커스텀 dispatcher로 완화하되, 완전히 배제되지는 않으므로 모델 폴백 루프가 이 경우도 함께 흡수한다(재현 시 로그로 빈도 확인 필요 — 미결 사항 참고).
 
@@ -99,7 +99,7 @@
 - `generateContentWithFallback`: 모델 배열 일반화 후 기존 텍스트 요약 폴백 동작 회귀 테스트, 404(모델 단종) 시 다음 모델로 전환되는지.
 - `audio-transcript`: `"[MM:SS] 발화"` 파싱, 일시 오류 시 폴백 모델 전환.
 - `sermon-summary` 프롬프트: `durationSeconds` 보간 값 검증, 챕터 900초 초과 시 실패하는 회귀 케이스(가능하면 스냅샷보다는 프롬프트 문자열 포함 여부 검증).
-- `fetchAndStoreTranscript`: RapidAPI 실패 시 오디오 변환 함수 호출로 폴백, 오디오 변환도 실패하면 기존과 동일하게 에러 throw(관리자 화면에 메시지 노출).
+- `fetchAndStoreTranscript`: RapidAPI 실패 시 오디오 변환 함수 호출로 폴백, 오디오 변환도 실패하면 기존과 동일하게 에러 throw(관리자 화면에 메시지 노출). 회귀 방지: 폴백을 켜지 않은 기본 호출은 `transcribeFromAudio`를 호출하지 않고 바로 `자막 미준비`를 throw한다(`summarize.integration.test.ts`).
 
 ## 실측 검증 기록 (참고용 원자료)
 
