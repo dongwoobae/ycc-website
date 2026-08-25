@@ -21,6 +21,8 @@
 | HTTP 타임아웃 | Node 기본 undici `headersTimeout`(5분)이 긴 오디오 처리(4~5분)와 맞물려 간헐적으로 `fetch failed`를 유발함을 확인. 오디오 변환 호출 경로에 `headersTimeout`/`bodyTimeout`을 10분으로 올린 커스텀 dispatcher 적용 |
 | 인프라 | **Vercel Hobby 유지, Python 런타임 불필요.** 오디오 다운로드 자체가 없어졌으므로 새 job(`fetch-audio-transcript`)의 `maxDuration`만 Hobby 상한(300초)으로 올리면 충분 |
 | 최종 실패 시 | 폴백까지 실패하면 기존과 동일하게 `no_transcript`로 종결 |
+| 수동 재생성 경로 | 관리자 "요약 재생성" 버튼(`fetchAndStoreTranscript`)의 RapidAPI 실패 분기에도 같은 오디오 변환 로직을 태운다 — 자동 경로(잡 체인)와 수동 경로가 오디오 변환 함수를 공유 |
+| 기존 `no_transcript` 3건 | 별도 백필 스크립트 없이, 배포 후 관리자가 해당 3건에서 "요약 재생성" 버튼을 눌러 수동으로 해소 |
 
 ## 검토했지만 기각한 대안
 
@@ -52,12 +54,17 @@
         ▼
 ④ QStash 워커  /api/jobs/summarize   (변경 없음, 프롬프트만 개선)
    - PROMPT에 durationSeconds·기대 챕터 수 명시, "챕터 900초 초과 금지" 강제 지시 추가
+
+[별도] 관리자 "요약 재생성" 버튼 → generateSummaryAction → manualSummarize
+   → fetchAndStoreTranscript: RapidAPI 1회 시도 실패 시 (신규) 같은 오디오 변환 함수 호출
+   → 기존 no_transcript 3건은 이 버튼으로 수동 해소(백필 스크립트 불필요)
 ```
 
 ### 핵심 원칙
 
 - 오디오 폴백은 **별도 job으로 분리**한다 — `fetch-transcript`는 지금처럼 가볍게 유지하고, 4~5분 걸리는 Gemini 오디오 호출만 별도 함수(`maxDuration=300`)로 격리해 기존 `fetch-transcript`의 60초 예산에 영향을 주지 않는다.
 - 오디오 폴백의 출력 계약은 기존 `transcriptText`와 **동일**하다 — `summarize` job은 자막 출처가 RapidAPI인지 Gemini 오디오 변환인지 구분하지 않는다.
+- 오디오 변환 로직은 **자동 job과 수동 재생성 버튼이 같은 함수를 공유**한다 — 트리거 경로만 다르고 구현은 하나.
 
 ## 컴포넌트 (변경 / 신규)
 
@@ -67,11 +74,13 @@
 - `src/lib/qstash.ts` — `JobName` 유니온에 `'fetch-audio-transcript'` 추가.
 - `src/lib/ai/gemini.ts` — `generateContentWithFallback`을 모델 배열(`[gemini-3.1-pro-preview, gemini-3.5-flash]`) 순차 시도로 일반화. 기존 텍스트 요약 호출(`[3.5-flash, 2.5-flash]`)도 같은 함수로 통합.
 - `src/lib/ai/sermon-summary.ts` — `PROMPT`에 `durationSeconds`·기대 챕터 수(`Math.round(durationSeconds/600)`)를 보간하고 "챕터 900초 초과 금지, 초과 시 반드시 분할" 지시 추가.
+- `src/lib/sermons/summarize.ts` — `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 이 함수는 자동 job(`fetch-audio-transcript`)과 수동 `manualSummarize` 양쪽에서 재사용된다.
+- `src/app/admin/sermons/[id]/edit` 라우트(또는 서버 액션 파일) — 오디오 변환이 최대 4~5분 걸릴 수 있으므로 `maxDuration`을 300으로 상향.
 
 ### 신규
 
-- `src/app/api/jobs/fetch-audio-transcript/route.ts` — 위 아키텍처의 ③-b. QStash 서명검증 필수(기존 워커 패턴과 동일).
-- `src/lib/ai/audio-transcript.ts`(가칭) — 유튜브 URL 기반 오디오 받아쓰기 프롬프트·모델 폴백·`"[MM:SS] 발화"` 파싱. 커스텀 undici dispatcher(`headersTimeout`/`bodyTimeout` 10분) 적용.
+- `src/app/api/jobs/fetch-audio-transcript/route.ts` — 위 아키텍처의 ③-b. QStash 서명검증 필수(기존 워커 패턴과 동일). 실제 오디오 변환은 아래 공용 함수를 호출하기만 한다.
+- `src/lib/ai/audio-transcript.ts`(가칭) — 유튜브 URL 기반 오디오 받아쓰기 프롬프트·모델 폴백·`"[MM:SS] 발화"` 파싱을 담은 **공용 함수**(자동 job·수동 재생성 버튼 공통 사용). 커스텀 undici dispatcher(`headersTimeout`/`bodyTimeout` 10분) 적용.
 
 ## 에러 처리
 
@@ -90,6 +99,7 @@
 - `generateContentWithFallback`: 모델 배열 일반화 후 기존 텍스트 요약 폴백 동작 회귀 테스트.
 - `audio-transcript`: `"[MM:SS] 발화"` 파싱, 일시 오류 시 폴백 모델 전환.
 - `sermon-summary` 프롬프트: `durationSeconds` 보간 값 검증, 챕터 900초 초과 시 실패하는 회귀 케이스(가능하면 스냅샷보다는 프롬프트 문자열 포함 여부 검증).
+- `fetchAndStoreTranscript`: RapidAPI 실패 시 오디오 변환 함수 호출로 폴백, 오디오 변환도 실패하면 기존과 동일하게 에러 throw(관리자 화면에 메시지 노출).
 
 ## 실측 검증 기록 (참고용 원자료)
 
