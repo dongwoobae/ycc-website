@@ -1,6 +1,6 @@
 import type { TranscriptSegment } from '@/lib/transcript/prompt'
 import { Agent, setGlobalDispatcher } from 'undici'
-import { GoogleGenAI } from '@google/genai'
+import { FinishReason, GoogleGenAI } from '@google/genai'
 import {
   AUDIO_TRANSCRIPT_MODEL,
   AUDIO_TRANSCRIPT_MODEL_GA,
@@ -67,6 +67,13 @@ export async function transcribeFromAudio(videoId: string): Promise<TranscriptSe
     },
     [AUDIO_TRANSCRIPT_MODEL, AUDIO_TRANSCRIPT_MODEL_GA, DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL],
   )
+
+  // 출력 한도에 걸려 중간에서 끊긴 받아쓰기도 파서는 정상 세그먼트로 만들어 내므로,
+  // 여기서 막지 않으면 뒷부분이 통째로 빠진 원고가 정상 요약으로 저장된다.
+  const finishReason = res.candidates?.[0]?.finishReason
+  if (finishReason != null && finishReason !== FinishReason.STOP) {
+    throw new Error(`gemini audio transcript did not finish normally: finishReason=${finishReason}`)
+  }
 
   const text = res.text
   if (!text) throw new Error('gemini returned empty audio transcript')
