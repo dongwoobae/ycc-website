@@ -49,6 +49,10 @@ const {
   MAX_AUDIO_TRANSCRIPT_RETRY,
   publishAudioTranscript,
   retryAudioTranscriptOrGiveUp,
+  markAudioTranscriptInFlight,
+  reclaimStaleAudioTranscripts,
+  AUDIO_TRANSCRIPT_STALE_MS,
+  MAX_SUMMARY_ATTEMPTS,
 } = await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
@@ -266,5 +270,149 @@ describe('publishAudioTranscript (integration)', () => {
       0,
       { retries: 1, timeoutSeconds: 300 },
     )
+  })
+})
+
+// 오디오 변환은 Vercel 함수 예산(300초)에 걸려 강제 종료될 수 있다. 그러면 라우트의
+// catch가 실행되지 않아 어떤 종결 처리도 일어나지 않는다 — 진입 시 남긴 표시가
+// 그 잔류를 스위퍼에게 보이게 하는 유일한 흔적이다.
+describe('markAudioTranscriptInFlight (integration)', () => {
+  it('marks the row pending with an expiry so a killed run leaves a trace', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'none' })
+    const now = new Date('2026-08-27T04:00:00Z')
+
+    await markAudioTranscriptInFlight(id, now)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('pending')
+    expect(row.summaryNextRetryAt?.getTime()).toBe(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS)
+    expect(row.summaryAttempts).toBe(0)
+  })
+})
+
+describe('publishSummarizeOrMarkFailed — 진행 표시 해제 (integration)', () => {
+  // 표시를 남겨 두면 claimSermonById의 두 분기가 모두 막혀 summarize가 조용히 아무 일도 안 한다.
+  it('clears the audio in-flight marker so summarize can claim the row', async () => {
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-flight' })
+    await markAudioTranscriptInFlight(id, new Date())
+
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid-flight')
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('none')
+    expect(row.summaryNextRetryAt).toBeNull()
+    expect(await claimSermonById(id)).not.toBeNull()
+  })
+
+  // claimSermonById가 찍는 pending은 next_retry_at이 비어 있다 — 그쪽 선점은 건드리지 않는다.
+  it('leaves a summarize claim (pending without expiry) untouched', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'pending', youtubeVideoId: 'vid-claimed' })
+
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid-claimed')
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('pending')
+  })
+})
+
+describe('reclaimStaleAudioTranscripts (integration)', () => {
+  const stale = (now: Date) => new Date(now.getTime() - 1000)
+
+  it('republishes the audio job and consumes an attempt for an expired marker', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: stale(now),
+      youtubeVideoId: 'vid-stale',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).toEqual([id])
+    expect(publishJob).toHaveBeenCalledWith(
+      'fetch-audio-transcript',
+      { sermonId: id, videoId: 'vid-stale', attempt: 0 },
+      0,
+      expect.objectContaining({ retries: expect.any(Number) }),
+    )
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryAttempts).toBe(1)
+    expect(row.summaryNextRetryAt?.getTime()).toBe(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS)
+  })
+
+  it('leaves a marker that has not expired alone', async () => {
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: new Date(now.getTime() + 60_000),
+      youtubeVideoId: 'vid-fresh',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).not.toContain(id)
+    expect(result.gaveUp).not.toContain(id)
+  })
+
+  it('leaves a summarize claim (pending without expiry) alone', async () => {
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'pending', youtubeVideoId: 'vid-summarizing' })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).not.toContain(id)
+    expect(result.gaveUp).not.toContain(id)
+  })
+
+  // 자막이 이미 있으면 오디오 변환은 끝난 것이다 — 그 뒤는 요약 재시도 경로 소관이다.
+  it('skips rows that already have a transcript', async () => {
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: stale(now),
+      transcriptText: 'already here',
+      youtubeVideoId: 'vid-has-text',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).not.toContain(id)
+  })
+
+  it('skips worship types that are not auto-summarized', async () => {
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      worshipType: '시온찬양대',
+      summaryStatus: 'pending',
+      summaryNextRetryAt: stale(now),
+      youtubeVideoId: 'vid-choir',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).not.toContain(id)
+  })
+
+  // 강제 종료가 반복되면 회수 → 또 종료 → 또 회수로 끝없이 돈다. 횟수를 DB에 세야 끊긴다.
+  it('gives up once the attempts are spent, clearing the marker', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: stale(now),
+      summaryAttempts: MAX_SUMMARY_ATTEMPTS,
+      youtubeVideoId: 'vid-spent',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.gaveUp).toEqual([id])
+    expect(publishJob).not.toHaveBeenCalled()
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('no_transcript')
+    expect(row.summaryNextRetryAt).toBeNull()
   })
 })

@@ -23,13 +23,14 @@ export async function insertSermonFixture(
     summaryNextRetryAt?: Date
     transcriptText?: string
     youtubeVideoId?: string
+    worshipType?: string
   } = {},
 ): Promise<string> {
   const [s] = await db
     .insert(schema.sermons)
     .values({
       title: 't',
-      worshipType: '주일예배',
+      worshipType: opts.worshipType ?? '주일예배',
       sermonDate: '2026-01-01',
       isPublished: true,
       youtubeVideoId: opts.youtubeVideoId,

@@ -4,7 +4,11 @@ import { sermons } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { verifyQStash } from '@/lib/qstash'
 import { transcribeFromAudio } from '@/lib/ai/audio-transcript'
-import { publishSummarizeOrMarkFailed, retryAudioTranscriptOrGiveUp } from '@/lib/sermons/summarize'
+import {
+  markAudioTranscriptInFlight,
+  publishSummarizeOrMarkFailed,
+  retryAudioTranscriptOrGiveUp,
+} from '@/lib/sermons/summarize'
 
 export const maxDuration = 300
 
@@ -20,6 +24,10 @@ export async function POST(req: Request) {
     .from(sermons)
     .where(eq(sermons.id, sermonId))
     .limit(1)
+
+  // Vercel이 maxDuration에서 함수를 끊으면 아래 catch가 실행되지 않는다. 그 전에 진행 표시를
+  // 남겨 두어야 retry-summaries가 잔류를 보고 회수할 수 있다.
+  await markAudioTranscriptInFlight(sermonId)
 
   let segments
   try {
