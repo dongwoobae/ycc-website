@@ -36,7 +36,10 @@
 
 - **`thinkingConfig`로 thinking 토큰 억제**: 받아쓰기에 추론이 불필요해 보여 검토했으나 2026-08-27 실측으로 기각했다. `gemini-3.1-pro-preview`는 `thinkingBudget: 0`을 거부하고(`This model only works in thinking mode`), 2000으로 낮추면 57분 설교를 **7분 37초까지만 받아쓰고 `finishReason=STOP`으로 정상 종료**했다. 4096은 아예 무시되고 18,274 토큰을 썼다. thinking이 긴 오디오를 끝까지 밀고 가는 동력이라 억제하면 조용한 절단을 산다. `maxOutputTokens` 상향(65536)도 기각 — thinking이 그 공간을 채워 26,532 토큰까지 늘고 생성이 389초로 길어져 함수 예산 300초를 넘겼다.
 
-- **강제 종료 회수를 위해 컬럼이나 상태값을 새로 추가**: `summary_started_at` 컬럼이나 `transcribing` 상태를 두면 의미는 더 또렷하지만, 전자는 마이그레이션이 붙고 후자는 상태 enum·정렬 순위·표시 문구·타입·테스트로 파급된다. `pending` + `summary_next_retry_at`이 각각 "누가 붙잡고 있다", "이 시각 전엔 건드리지 마라"라는 기존 의미 그대로 쓰이고 만료 시각의 유무만으로 요약 선점과 갈리므로, 얻는 것에 비해 값이 비쌌다. 관리자 화면에도 `pending`의 기존 표시(**대기**)가 그대로 뜬다.
+- **오디오 진행 표시에 `transcribing` 상태를 새로 추가**: 의미는 더 또렷하지만 상태 enum·정렬 순위·표시 문구·타입·테스트로 파급된다. `pending` + `summary_next_retry_at`이 기존 의미 그대로 쓰이므로 상태값을 늘리지 않았고, 관리자 화면에도 `pending`의 기존 표시(**대기**)가 그대로 뜬다.
+
+  단, **처음에 잡은 구분 기준은 틀렸다.** "만료 시각의 유무로 요약 선점과 갈린다"고 봤는데, 요약이 실패하면 `summary_next_retry_at`에 백오프가 남고 재선점해도 지워지지 않아 그 행도 `pending` + 지난 만료 시각이 된다. 두 표시의 값이 겹쳐 회수가 요약 중인 행을 가로챌 수 있었다. 실제 구분자는 `summary_claimed_at`의 유무다(아래 리스 항목).
+
 - **회수 주기를 매시간보다 짧게**: 별도 cron을 추가해야 하고, 실제 발생이 월 1~3건이라 1시간 지연이 문제가 되지 않는다. 기존 `retry-summaries` 스케줄에 얹어 새 인프라를 만들지 않았다.
 
 ## 아키텍처 / 데이터 흐름
@@ -78,7 +81,9 @@
 - 오디오 폴백은 **별도 job으로 분리**한다 — `fetch-transcript`는 지금처럼 가볍게 유지하고, 4~5분 걸리는 Gemini 오디오 호출만 별도 함수(`maxDuration=300`)로 격리해 기존 `fetch-transcript`의 60초 예산에 영향을 주지 않는다.
 - 오디오 폴백의 출력 계약은 기존 `transcriptText`와 **동일**하다 — `summarize` job은 자막 출처가 RapidAPI인지 Gemini 오디오 변환인지 구분하지 않는다.
 - 수동 재생성 버튼은 **자동 체인에 재투입할 뿐** 자체 실행 경로를 갖지 않는다 — 오디오 변환이 도는 곳은 `fetch-audio-transcript` 하나뿐이라 함수 예산도 한 곳에서만 관리된다.
-- 강제 종료는 **catch로 잡을 수 없으므로 진입 시점에 DB로 흔적을 남긴다.** `summary_status='pending'` + `summary_next_retry_at`(만료 시각) 조합이 그 흔적이고, 만료 시각이 **없는** `pending`은 `claimSermonById`가 잡고 있는 요약 선점이다. 두 표시는 만료 시각의 유무로 갈려 서로의 선점을 건드리지 않는다 — 이 구분이 무너지면 요약이 조용히 안 돌거나 중복으로 돈다.
+- 강제 종료는 **catch로 잡을 수 없으므로 진입 시점에 DB로 흔적을 남긴다.** `summary_status='pending'` + `summary_next_retry_at`(만료 시각)이 오디오 변환의 흔적이다.
+- **`pending`의 두 의미는 `summary_claimed_at`으로 가른다** — 값이 있으면 `claimSermonById`가 잡고 있는 요약 선점, 없으면 오디오 변환 진행이다. 이 구분이 무너지면 요약이 조용히 안 돌거나 중복으로 돈다.
+- **선점은 리스다.** `claimSermonById`가 `summary_claimed_at`에 시각을 적고, `STALE_PENDING_MS`(10분)가 지나면 죽은 워커로 보고 회수한다. 이 값을 기존 컬럼으로 대신할 수 없었던 이유는 "확정된 의사결정"의 리스 항목에 있다.
 
 ## 컴포넌트 (변경 / 신규)
 
@@ -88,7 +93,8 @@
 - `src/lib/qstash.ts` — `JobName` 유니온에 `'fetch-audio-transcript'` 추가. `publishJob`이 4번째 인자로 `JobPublishOptions`(`retries`·`timeoutSeconds`)를 받도록 확장돼, `fetch-audio-transcript` 발행 시 재전달 상한과 QStash HTTP 타임아웃을 job별로 지정할 수 있다.
 - `src/lib/ai/gemini.ts` — `generateContentWithFallback`을 모델 배열 순차 시도로 일반화하고, 503 등 일시 오류 외에 404(모델 단종)도 다음 모델로 넘어가도록 판별을 넓힌다(`isModelUnavailableError` 신규). 오디오 경로는 `[gemini-3.1-pro-preview, gemini-3.1-pro, gemini-3.5-flash, gemini-2.5-flash]` 4단, 기존 텍스트 요약 호출(`[3.5-flash, 2.5-flash]`)도 같은 함수로 통합.
 - `src/lib/ai/sermon-summary.ts` — `PROMPT`에 `durationSeconds`·기대 챕터 수(`Math.round(durationSeconds/600)`)를 보간하고 "챕터 900초 초과 금지, 초과 시 반드시 분할" 지시 추가.
-- `src/lib/sermons/summarize.ts` — `selectRetryTargets`가 `failed`뿐 아니라 `none`도 본다. `requestSummaryRegeneration`은 `summary_generated_at`도 지운다 — 남겨 두면 `claimSermonById`의 stale pending 분기가 `IS NULL`을 요구해 죽은 워커를 회수하지 못한다. 이하 `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, `options.audioFallback`이 켜져 있으면 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 폴백은 기본 꺼짐(옵트인)이다 — 자막이 아직 없는 것이 정상인 채널 동기화 경로(`resyncAllSermons`)까지 영상 한 건당 4~5분 블로킹하면 안 되고(SSE 스트림의 300초 예산을 한 건이 먹는다), 30분 뒤면 무료로 잡힐 자막을 두고 3시간 게이트를 우회하게 되기 때문이다. `manualSummarize`만 명시적으로 켠다 — 이 경로는 이제 로컬 백필 스크립트(`scripts/summarize-sermons.ts`) 전용이라 함수 실행시간 예산을 받지 않는다. 신규 `requestSummaryRegeneration`이 관리자 버튼의 진입점이고, `MAX_TRANSCRIPT_RETRY`도 여기서 export해 `fetch-transcript` 라우트와 공유한다.
+- `src/lib/db/schema.ts` + `drizzle/0020_*.sql` — `sermon_summaries.summary_claimed_at` 추가. 요약 워커의 선점 리스다. NULL은 결측이 아니라 "선점된 적 없음"이고, 오디오 변환 진행 표시가 그 상태다.
+- `src/lib/sermons/summarize.ts` — `claimSermonById`/`forceClaimSermonById`가 선점 시각을 적고, 죽은 워커 판정이 그 값 하나만 본다. `selectRetryTargets`가 `failed`뿐 아니라 `none`과 리스 만료된 `pending`도 본다. `requestSummaryRegeneration`은 `summary_generated_at`도 지운다 — 남겨 두면 `claimSermonById`의 stale pending 분기가 `IS NULL`을 요구해 죽은 워커를 회수하지 못한다. 이하 `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, `options.audioFallback`이 켜져 있으면 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 폴백은 기본 꺼짐(옵트인)이다 — 자막이 아직 없는 것이 정상인 채널 동기화 경로(`resyncAllSermons`)까지 영상 한 건당 4~5분 블로킹하면 안 되고(SSE 스트림의 300초 예산을 한 건이 먹는다), 30분 뒤면 무료로 잡힐 자막을 두고 3시간 게이트를 우회하게 되기 때문이다. `manualSummarize`만 명시적으로 켠다 — 이 경로는 이제 로컬 백필 스크립트(`scripts/summarize-sermons.ts`) 전용이라 함수 실행시간 예산을 받지 않는다. 신규 `requestSummaryRegeneration`이 관리자 버튼의 진입점이고, `MAX_TRANSCRIPT_RETRY`도 여기서 export해 `fetch-transcript` 라우트와 공유한다.
 - `src/app/admin/sermons/[id]/edit/page.tsx` — `maxDuration=300` 유지. 최초에는 인라인 오디오 변환 때문에 올린 값이지만, 버튼이 job 발행으로 바뀐 뒤로는 같은 페이지의 `suggestThumbnailTextAction`(Gemini 호출)이 이 예산을 쓴다. Server Action의 타임아웃은 그 액션을 호출한 **페이지**의 route segment config를 따른다(서버 액션 파일에 두면 무시된다).
 - `src/app/api/jobs/retry-summaries/route.ts` — `reclaimStaleAudioTranscripts`를 **먼저** 돌리고 요약 재투입을 나중에 돌린다(회수가 요약 재투입 대상을 만들어 내므로). 종결된 건은 `app_logs`에 남겨 관리자가 사후에 확인할 수 있게 한다.
 - `src/app/api/jobs/fetch-audio-transcript/route.ts` — 진입 시 자막이 이미 있으면 그대로 반환한다(중복 전달 방어). 그다음 `transcribeFromAudio` 호출 **전에** `markAudioTranscriptInFlight`로 진행 표시를 남긴다. 강제 종료는 catch를 실행시키지 않으므로 이 순서가 뒤집히면 흔적이 남지 않는다.
@@ -128,6 +134,7 @@
 - `retryAudioTranscriptOrGiveUp`: 재시도가 남으면 `attempt`를 올려 재발행하고 상태를 건드리지 않는지, 소진하면 `no_transcript`로 종결하며 만료 시각까지 지우는지, 재발행이 throw하면 그 자리에서 종결하는지. `publishAudioTranscript`: 재전달·타임아웃 옵션을 붙여 발행하는지.
 - `markAudioTranscriptInFlight`: `pending` + 만료 시각을 찍되 시도 횟수는 건드리지 않는지.
 - `reclaimStaleAudioTranscripts`: 만료된 표시를 재발행하며 시도를 소비하는지, 아직 만료되지 않은 표시·만료 시각이 없는 `pending`(요약 선점)·자막이 이미 있는 행·자동 요약 대상이 아닌 예배 유형을 각각 건너뛰는지, 시도를 소진하면 `no_transcript`로 종결하며 만료 시각을 지우는지.
+- 선점 리스: 선점 시각이 기록되는지, 위성 행이 낡았어도 리스가 살아 있으면 재선점이 막히는지, 백오프 시각이 남아 있어도 만료된 리스는 회수되는지, 오디오 진행 표시는 만료 여부와 무관하게 선점되지 않는지, `markAudioTranscriptInFlight`가 낡은 선점 값을 비우는지, 회수가 요약이 붙잡고 있는 행을 건드리지 않는지, `selectRetryTargets`가 만료된 선점을 줍는지.
 - 중복 전달 방어: `markAudioTranscriptInFlight`와 `retryAudioTranscriptOrGiveUp`이 자막이 이미 있는 행의 상태를 건드리지 않는지(`ready`가 유지되는지).
 - `reclaimStaleAudioTranscripts` 인계: 만료됐지만 자막이 있는 행은 재발행하지 않고 표시만 풀며, 그 결과가 `selectRetryTargets`에 잡히는지.
 - `selectRetryTargets`: 자막이 있는 `none`·`failed`를 모두 고르고, 자막이 없거나 시도를 소진한 행은 빼는지.
@@ -175,7 +182,16 @@
 
    관측 문제도 함께 드러났다 — 관리자 화면은 "아직 시작 안 함"과 "돌다가 죽음"을 구분해 보여주지 못한다. 둘 다 `none`이라 사람이 기다려 보는 것 말고는 판단할 방법이 없다. 해결 설계는 별도로 잡는다.
 
-8. `claimSermonById`의 stale pending 판정이 `created_at`(위성 행 생성 시각)을 본다 — 행은 설교 등록 시점에 만들어지므로 사실상 언제나 "10분 지남"이고, 그래서 이 조건은 의도한 만큼 걸러 주지 않는다. 이번 변경은 이 분기를 건드리지 않았다(만료 시각이 있는 `pending`은 애초에 이 분기에 걸리지 않는다). 요약 선점 쪽 회수를 손볼 때 함께 볼 것. `forceClaimSermonById`(로컬 백필 스크립트 전용)도 `summary_generated_at`을 지우지 않아 같은 고착을 만들 수 있다 — 사람이 돌리는 경로라 우선순위는 낮다.
+8. ~~`claimSermonById`의 stale pending 판정~~ — 2026-08-27 `summary_claimed_at` 도입으로 해소했다. 아래는 무엇이 왜 틀렸는지의 기록이다.
+
+   판정이 `created_at`·`summary_generated_at IS NULL`·`summary_next_retry_at IS NULL` 세 조건에 걸려 있었는데, 셋 다 "언제부터 붙잡고 있나"의 대용품이었고 각각 다른 방향으로 틀렸다.
+
+   - `created_at`은 위성 행 생성 시각이다. 행은 `claimSermonById`가 선점하며 직접 만들므로 **첫 선점에서는** 우연히 선점 시각과 같아 제대로 동작했다. 낡는 것은 두 번째 선점부터다 — 관리자 재생성을 거친 행이 정확히 그 경우라, 갓 선점한 행이 죽은 워커로 오인돼 **중복 요약이 열렸다**.
+   - `summary_next_retry_at IS NULL`은 반대로 분기를 과하게 막았다. 요약이 실패하면 백오프 시각이 남고 재선점해도 지워지지 않으므로, **재시도를 거친 행에서는 죽은 워커 회수가 통째로 꺼져 있었다.**
+   - `summary_generated_at IS NULL`은 상태가 `pending`인 것으로 이미 걸러지는 조건이라 없어도 됐다.
+
+   이제 `summary_claimed_at` 하나만 본다. 값이 NULL인 `pending`은 오디오 변환 진행 표시라 이 분기에 걸리지 않는다.
+
 9. 오디오 회수가 `summary_attempts`를 요약 재시도와 공유한다 — 회수가 시도를 쓰면 그만큼 이후 요약 재시도가 줄어든다. 총 작업량 예산으로 보면 틀린 동작은 아니지만, 둘을 갈라야 한다면 컬럼이 하나 필요하다.
 
 ## 범위 밖 (YAGNI)

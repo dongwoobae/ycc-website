@@ -22,6 +22,8 @@ export async function insertSermonFixture(
     summaryAttempts?: number
     summaryNextRetryAt?: Date
     summaryGeneratedAt?: Date
+    summaryClaimedAt?: Date
+    createdAt?: Date
     transcriptText?: string
     youtubeVideoId?: string
     worshipType?: string
@@ -45,6 +47,8 @@ export async function insertSermonFixture(
       summaryAttempts: opts.summaryAttempts,
       summaryNextRetryAt: opts.summaryNextRetryAt,
       summaryGeneratedAt: opts.summaryGeneratedAt,
+      summaryClaimedAt: opts.summaryClaimedAt,
+      createdAt: opts.createdAt,
     })
   }
   if (opts.transcriptText !== undefined) {

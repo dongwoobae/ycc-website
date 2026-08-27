@@ -60,7 +60,8 @@ export async function markAudioTranscriptInFlight(sermonId: string, now: Date = 
   await db.execute(sql`
     UPDATE sermon_summaries ss SET
       summary_status = 'pending',
-      summary_next_retry_at = ${new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS).toISOString()}
+      summary_next_retry_at = ${new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS).toISOString()},
+      summary_claimed_at = NULL
     WHERE ss.sermon_id = ${sermonId} AND NOT ${TRANSCRIPT_EXISTS}
   `)
 }
@@ -85,6 +86,9 @@ export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new D
     AND ss.summary_next_retry_at IS NOT NULL
     AND ss.summary_next_retry_at <= ${now.toISOString()}
     AND s.worship_type IN (${AUTO_SUMMARY_TYPES_SQL})
+    -- 요약이 실패하면 next_retry_at에 백오프가 남고 재선점해도 지워지지 않는다. 그 행은
+    -- pending + 지난 next_retry_at이라 오디오 표시와 값이 겹친다 — summary_claimed_at이 갈라 준다.
+    AND ss.summary_claimed_at IS NULL
   `
 
   const bumped = await db.execute(sql`
@@ -207,12 +211,22 @@ export async function selectRetryTargets(limit = 10, now: Date = new Date()): Pr
     .leftJoin(sermonTranscripts, eq(sermonTranscripts.sermonId, sermons.id))
     .where(
       and(
-        // failed만 보면 자막을 저장한 직후 summarize 발행 전에 끊긴 행(none에 잔류)을 놓친다.
-        inArray(sermonSummaries.summaryStatus, ['none', 'failed']),
         isNotNull(sermonTranscripts.transcriptText),
         inArray(sermons.worshipType, [...autoSummaryTypes]),
         lt(sermonSummaries.summaryAttempts, MAX_SUMMARY_ATTEMPTS),
-        or(isNull(sermonSummaries.summaryNextRetryAt), lte(sermonSummaries.summaryNextRetryAt, now)),
+        or(
+          and(
+            // failed만 보면 자막을 저장한 직후 summarize 발행 전에 끊긴 행(none에 잔류)을 놓친다.
+            inArray(sermonSummaries.summaryStatus, ['none', 'failed']),
+            or(isNull(sermonSummaries.summaryNextRetryAt), lte(sermonSummaries.summaryNextRetryAt, now)),
+          ),
+          // 리스가 만료된 선점 — 워커가 죽었다. 아무도 다시 발행해 주지 않으면 영원히 pending에 남는다.
+          and(
+            eq(sermonSummaries.summaryStatus, 'pending'),
+            isNotNull(sermonSummaries.summaryClaimedAt),
+            lte(sermonSummaries.summaryClaimedAt, new Date(now.getTime() - STALE_PENDING_MS)),
+          ),
+        ),
       ),
     )
     .orderBy(desc(sermons.sermonDate))
@@ -233,14 +247,17 @@ export async function claimSermonById(id: string, now: Date = new Date()): Promi
     WITH claimed AS (
       UPDATE sermon_summaries SET
         summary_status = 'pending',
-        summary_attempts = summary_attempts + 1
+        summary_attempts = summary_attempts + 1,
+        summary_claimed_at = ${now.toISOString()}
       WHERE sermon_id = ${id}
         AND summary_attempts < ${MAX_SUMMARY_ATTEMPTS}
         AND (
           (summary_status IN ('none', 'failed')
             AND (summary_next_retry_at IS NULL OR summary_next_retry_at <= ${now.toISOString()}))
-          OR (summary_status = 'pending' AND summary_generated_at IS NULL
-            AND summary_next_retry_at IS NULL AND created_at <= ${staleBefore.toISOString()})
+          -- 죽은 워커 회수. summary_claimed_at이 있어야 pending이 이 선점의 것임이 확정된다 —
+          -- 값이 없는 pending은 오디오 변환 진행 표시이고 회수 주체가 다르다.
+          OR (summary_status = 'pending'
+            AND summary_claimed_at IS NOT NULL AND summary_claimed_at <= ${staleBefore.toISOString()})
         )
       RETURNING sermon_id, summary_attempts
     )
@@ -254,14 +271,15 @@ export async function claimSermonById(id: string, now: Date = new Date()): Promi
   return (rows[0] as ClaimedSermon | undefined) ?? null
 }
 
-export async function forceClaimSermonById(id: string): Promise<ClaimedSermon | null> {
+export async function forceClaimSermonById(id: string, now: Date = new Date()): Promise<ClaimedSermon | null> {
   await db.execute(sql`INSERT INTO sermon_summaries (sermon_id) VALUES (${id}) ON CONFLICT (sermon_id) DO NOTHING`)
   const result = await db.execute(sql`
     WITH claimed AS (
       UPDATE sermon_summaries SET
         summary_status = 'pending',
         summary_attempts = summary_attempts + 1,
-        summary_next_retry_at = NULL
+        summary_next_retry_at = NULL,
+        summary_claimed_at = ${now.toISOString()}
       WHERE sermon_id = ${id}
       RETURNING sermon_id, summary_attempts
     )
@@ -427,7 +445,13 @@ export async function requestSummaryRegeneration(sermonId: string): Promise<void
     .update(sermonSummaries)
     // summary_generated_at을 남겨 두면 claimSermonById의 stale pending 분기가
     // (IS NULL을 요구해) 죽은 워커를 회수하지 못한다.
-    .set({ summaryStatus: 'none', summaryAttempts: 0, summaryNextRetryAt: null, summaryGeneratedAt: null })
+    .set({
+      summaryStatus: 'none',
+      summaryAttempts: 0,
+      summaryNextRetryAt: null,
+      summaryGeneratedAt: null,
+      summaryClaimedAt: null,
+    })
     .where(eq(sermonSummaries.sermonId, sermonId))
 
   if (row.transcriptText?.trim()) {

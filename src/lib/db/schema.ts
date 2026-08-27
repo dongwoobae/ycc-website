@@ -85,6 +85,8 @@ export const sermonSummaries = pgTable(
     summaryAttempts: integer('summary_attempts').notNull().default(0),
     summaryNextRetryAt: timestamp('summary_next_retry_at', { withTimezone: true }),
     summaryGeneratedAt: timestamp('summary_generated_at', { withTimezone: true }),
+    /** summarize 워커가 선점한 시각. NULL은 결측이 아니라 "선점된 적 없음"이고, 오디오 변환 진행 표시가 그 상태다. */
+    summaryClaimedAt: timestamp('summary_claimed_at', { withTimezone: true }),
     summaryModel: text('summary_model'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
