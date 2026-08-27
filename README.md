@@ -24,8 +24,8 @@
 ## 🚀 핵심 성과
 
 - **1인 개발 전 과정 수행** — 요구사항 정리부터 정보 구조, UI, 백엔드, 데이터베이스, 인프라, 배포·운영까지 단독 수행
-- **운영 부담 자동화** — 설교는 YouTube 업로드만으로 등록·자막·AI 요약·썸네일까지 채워지고, 주보는 PDF 한 번 업로드로 면 이미지 3종 변환·R2 업로드·뷰어 렌더링까지 이어짐
-- **서버리스 신뢰성 설계** — 서명 검증, 원자적 작업 선점, 지연 발행 기반 백오프, 정합성 cron으로 중복 실행과 일시 장애에 대응
+- **운영 부담 자동화** — 설교는 YouTube 업로드만으로 등록·자막(끝내 없으면 오디오 받아쓰기)·AI 요약·썸네일까지 채워지고, 주보는 PDF 한 번 업로드로 면 이미지 3종 변환·R2 업로드·뷰어 렌더링까지 이어짐
+- **서버리스 신뢰성 설계** — 서명 검증, 원자적 작업 선점, 지연 발행 기반 백오프, 정합성 cron으로 중복 실행과 일시 장애에 대응하고, 모델이 정상 종료로 위장한 절단 응답까지 경계에서 거름
 - **운영 품질 확보** — Better Auth, R2 업로드 검증, 쿠키리스 방문 분석, Vitest·PGlite·Playwright와 GitHub Actions 검증 체계
 - **서비스 주소** — [https://www.ycjc.kr](https://www.ycjc.kr)
 
@@ -114,20 +114,26 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
                         │                        ▼
                         │         /api/jobs/fetch-audio-transcript
                         │              (Gemini에 유튜브 URL 직접 전달, 오디오 받아쓰기)
+                        │              커버리지 80% 미만 = 앞부분만 받아쓴 원고로 보고 폐기
+                        │              실패는 1회 자동 재시도, 소진 시 no_transcript 종결
                         │                        │
                         └────────────┬───────────┘
                                       ▼
                           /api/jobs/summarize  (Gemini 구조화 요약)
                                    │
                           실패 시 ◀┘ 지수 백오프 재발행 / retry-summaries cron
+
+관리자 "요약 재생성" 버튼 ──▶ 상태 초기화 후 같은 체인에 재투입 (자막 있으면 summarize, 없으면 fetch-transcript)
 ```
 
 - **WebSub(PubSubHubbub) 푸시 구독**: 채널 피드를 Google 허브에 구독(`hub.mode=subscribe`, `verify=async`, `hub.secret`)해 업로드 순간에만 콜백을 받습니다. 주기적 폴링이 없어 YouTube API 쿼터·함수 호출을 평소엔 0으로 유지합니다. 구독 lease는 만료되므로 **QStash cron으로 약 2일마다 재구독**하고, 놓친 영상은 **일일 정합성 cron(`reconcile-sermons`)이 채널 재생목록과 DB를 대조해 자동 백필**합니다.
 - **콜백 보안 2겹**: 구독 검증(GET)은 **우리 채널 토픽일 때만 `hub.challenge`를 에코**해 임의 토픽 구독을 차단하고, 알림(POST)은 **`X-Hub-Signature`(HMAC-SHA1)를 원문 바이트 기준 `timingSafeEqual`로 비교**해 위조를 차단합니다.
-- **QStash 다단계 잡 체이닝**: `ingest-video → fetch-transcript → summarize`를 각각 독립 서버리스 함수로 분리하고 QStash 메시지로 연결합니다. `fetch-transcript`가 자막을 끝내 못 구하면(최대 6회 재시도 소진) `fetch-audio-transcript`가 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓰고, 그 결과를 같은 형식으로 변환해 `summarize`로 합류시킵니다. 모든 잡 엔드포인트는 QStash `Receiver` 서명으로 검증되며, 한 단계가 실패해도 그 단계만 재시도됩니다.
+- **QStash 다단계 잡 체이닝**: `ingest-video → fetch-transcript → summarize`를 각각 독립 서버리스 함수로 분리하고 QStash 메시지로 연결합니다. `fetch-transcript`가 자막을 끝내 못 구하면(최대 6회 재시도 소진) `fetch-audio-transcript`가 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓰고, 그 결과를 같은 형식으로 변환해 `summarize`로 합류시킵니다. 모든 잡 엔드포인트는 QStash `Receiver` 서명으로 검증되며, 한 단계가 실패해도 그 단계만 재시도됩니다. 오디오 받아쓰기가 실패하면 잡 본문의 `attempt`를 올려 **1회 자동으로 다시 태우고**, 소진하면 `no_transcript`로 종결합니다 — 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 일이 있어, 사람이 버튼을 다시 누르지 않아도 회수되게 했습니다.
 - **서버리스식 지수 백오프**: Vercel 함수는 프로세스를 붙잡고 `sleep`할 수 없으므로, **QStash 지연 발행(`delay`)으로 백오프를 외부에 위임**합니다. 간격은 `5 × 3ⁿ분`으로 증가하고 `attempts < 3` 한도를 두며, 자막이 영구히 없는 건은 재시도 후보에서 제외해 API 쿼터 소진을 막습니다. 정기 재시도는 `retry-summaries` cron이 수행합니다.
 - **원자적 동시성 제어(claim)**: WebSub 중복 알림·재시도 cron·수동 트리거가 겹쳐도 같은 설교가 동시에 여러 번 요약되지 않도록, Postgres CTE `UPDATE ... RETURNING`으로 **선점 가능한 상태일 때만 원자적으로 1건을 선점**합니다. pending이 10분 이상 멈추면 죽은 워커로 보고 회수합니다.
 - **Gemini 구조화 출력**: `responseSchema`로 한 줄 소개(핵심 성경구절 포함)·핵심 요점 8~12개·**타임스탬프 챕터 분할**을 JSON 스키마로 강제하고, 받은 결과를 다시 **zod로 검증**(챕터 시작 시각 오름차순·영상 길이 이내)합니다. 모델 응답을 신뢰하지 않고 경계에서 막는 구조이며, 모델 fallback 체인으로 일시 장애에 대응합니다.
+- **조용한 절단 차단**: 오디오 받아쓰기는 `finishReason=STOP`으로 정상 종료하면서 앞부분만 받아쓰고 끝나는 경우가 있습니다(2026-08-27 실측 — 57분 설교를 7분 37초까지). 종료 사유만으로는 걸러지지 않으므로 **마지막 타임스탬프가 영상 길이의 80%에 못 미치면 실패로 돌립니다**. 정상 사례는 99%대라 영상 끝의 침묵이나 마무리 찬양은 흡수합니다.
+- **함수 1회 예산(300초) 분할**: 관리자 "요약 재생성" 버튼은 원래 받아쓰기와 요약을 한 요청 안에서 이어 돌렸는데, 오디오 폴백을 타면 **받아쓰기 329초 + 요약 222초**로 Vercel 함수 1회 예산을 넘깁니다(2026-08-27 실측). 버튼은 이제 **상태만 초기화하고 잡을 발행**해 자동 체인에 재투입합니다 — 상태 초기화가 `claimSermonById`의 관문(종결 상태·시도 소진·백오프)을 대신 열어 주므로 상태별 분기가 없고, 오디오 변환이 도는 곳도 `fetch-audio-transcript` 하나로 유지됩니다.
 
 ### 🎨 AI 설교 썸네일 생성
 
@@ -254,7 +260,7 @@ src/
       jobs/
         ingest-video/route.ts        # 신규 영상 적재
         fetch-transcript/route.ts    # 자막 fetch·캐시 (최대 6회 재시도, 소진 시 오디오 폴백 발행)
-        fetch-audio-transcript/route.ts # 오디오 받아쓰기 폴백 (Gemini 유튜브 URL 직접 입력)
+        fetch-audio-transcript/route.ts # 오디오 받아쓰기 폴백 (Gemini 유튜브 URL 직접 입력, 절단 검사·1회 자동 재시도)
         summarize/route.ts           # Gemini 요약(claim 선점)
         publish-post/route.ts        # 예약 게시 공개 시각 캐시 재검증 (QStash 지연 콜백)
         retry-summaries/route.ts     # 실패 요약 재시도 (QStash cron)
@@ -700,7 +706,7 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 | 인증/SEO        | `auth-origin`, `sitemap`, `seo/jsonld`                                                                                                                                     | Trusted origin 정규화, sitemap URL 생성, JSON-LD 빌더                                                                                                                                                                             |
 | 주보            | `bulletin-editor`, `bulletin-format`, `bulletin-scale`, `bulletin-pdf`, `bulletin-paging`, `bulletin-zoom`, `actions/bulletins`                                            | 공지·면 정규화/검증, 날짜·권호 표기, 긴 변 축소 클램프, PDF 면 렌더·WebP→JPEG 폴백·상한 거부, 면 이동 클램프·표기, 줌 클램프·앵커 고정·오프셋 클램프, 미검증 키 저장 거부                                                         |
 | 설교 동기화     | `youtube/websub`, `sermons/sync`, `sermons/reconcile`                                                                                                                      | WebSub 서명 검증·Atom 파싱, 신규 삽입 계획·중복 방지, 정합성 백필                                                                                                                                                                 |
-| 설교 요약       | `sermons/summarize`(+integration), `ai/gemini`, `ai/sermon-summary`, `transcript/rapidapi`, `transcript/prompt`                                                            | claim 선점·지수 백오프·재시도 선별, Gemini 스키마/챕터 검증, 자막 fetch·프롬프트 빌드                                                                                                                                             |
+| 설교 요약       | `sermons/summarize`(+integration), `ai/gemini`, `ai/sermon-summary`, `ai/audio-transcript`, `transcript/rapidapi`, `transcript/prompt`                                     | claim 선점·지수 백오프·재시도 선별, 재생성 요청의 상태 초기화·오디오 재시도 종결, Gemini 스키마/챕터 검증, 받아쓰기 파싱·커버리지 검사, 자막 fetch·프롬프트 빌드                                                                  |
 | 설교 표기       | `sermons/classify-title`, `sermons/format`, `sermons/list-title`, `sermons/sermon-date`                                                                                    | 제목 분류·표시 포맷·날짜 파싱                                                                                                                                                                                                     |
 | 썸네일          | `thumbnails/scripture`, `detect-caption-band`, `compose-text`, `generate-background`, `position`, `remove-background`, `store`(+integration), `webp`, `actions/thumbnails` | 성경구절 추출, 자막 밴드 crop, 텍스트 합성·배치, 배경 생성, 누끼, 후보 저장/트림, WebP 변환                                                                                                                                       |
 | 방문 분석       | `analytics/bots`, `analytics/datacenter`, `analytics/ip`, `analytics/paths`, `analytics/region-ko`, `analytics/server`                                                     | 봇·데이터센터 판별, IP 마스킹·해시, 지역 한글화, 수집 경로 필터, 체류시간 집계                                                                                                                                                    |
