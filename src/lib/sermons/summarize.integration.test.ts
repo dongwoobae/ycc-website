@@ -46,6 +46,9 @@ const {
   publishSummarizeOrMarkFailed,
   requestSummaryRegeneration,
   MAX_TRANSCRIPT_RETRY,
+  MAX_AUDIO_TRANSCRIPT_RETRY,
+  publishAudioTranscript,
+  retryAudioTranscriptOrGiveUp,
 } = await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
@@ -199,5 +202,69 @@ describe('requestSummaryRegeneration (integration)', () => {
   it('throws when the sermon has no YouTube video id', async () => {
     const id = await insertSermonFixture(h.db)
     await expect(requestSummaryRegeneration(id)).rejects.toThrow()
+  })
+})
+
+describe('retryAudioTranscriptOrGiveUp (integration)', () => {
+  // 같은 영상이 한 판은 MAX_TOKENS로 잘리고 다음 판은 끝까지 가는 것을 실측으로 확인했다.
+  // 모델 실패는 판마다 흔들리므로 한 번은 자동으로 다시 태운다.
+  it('republishes the audio job with an incremented attempt while retries remain', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-a' })
+
+    const outcome = await retryAudioTranscriptOrGiveUp(id, 'vid-a', 0)
+
+    expect(outcome).toBe('retry')
+    expect(publishJob).toHaveBeenCalledWith(
+      'fetch-audio-transcript',
+      { sermonId: id, videoId: 'vid-a', attempt: 1 },
+      0,
+      expect.objectContaining({ retries: expect.any(Number) }),
+    )
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).not.toBe('no_transcript')
+  })
+
+  it('marks the sermon no_transcript once the audio retries are spent', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-b' })
+
+    const outcome = await retryAudioTranscriptOrGiveUp(id, 'vid-b', MAX_AUDIO_TRANSCRIPT_RETRY)
+
+    expect(outcome).toBe('gaveUp')
+    expect(publishJob).not.toHaveBeenCalled()
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('no_transcript')
+  })
+
+  // 재발행이 실패하면 아무 job도 이어받지 않는다 — 그 자리에서 종결해 상태가 none에 매달리는 것을 막는다.
+  it('marks the sermon no_transcript when republishing throws', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockRejectedValueOnce(new Error('qstash down'))
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-c' })
+
+    const outcome = await retryAudioTranscriptOrGiveUp(id, 'vid-c', 0)
+
+    expect(outcome).toBe('gaveUp')
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('no_transcript')
+  })
+})
+
+describe('publishAudioTranscript (integration)', () => {
+  it('publishes with the retry and timeout options the audio job needs', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+
+    await publishAudioTranscript('sid', 'vid-d', 0)
+
+    expect(publishJob).toHaveBeenCalledWith(
+      'fetch-audio-transcript',
+      { sermonId: 'sid', videoId: 'vid-d', attempt: 0 },
+      0,
+      { retries: 1, timeoutSeconds: 300 },
+    )
   })
 })

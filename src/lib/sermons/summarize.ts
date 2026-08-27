@@ -15,6 +15,47 @@ export const STALE_PENDING_MS = 10 * 60 * 1000
 /** fetch-transcript job이 자막을 기다리며 30분 간격으로 재발행하는 상한. 소진하면 오디오 폴백으로 넘어간다. */
 export const MAX_TRANSCRIPT_RETRY = 6
 
+/**
+ * 오디오 변환이 실패했을 때 자동으로 다시 태우는 횟수. 같은 영상이 한 판은 잘리고 다음 판은
+ * 끝까지 가는 것을 실측으로 확인했다 — 모델 실패는 판마다 흔들리므로 한 번은 사람 손 없이 회수한다.
+ * 재시도 한 번이 4~5분짜리 Gemini 호출을 통째로 다시 돌리므로 그 이상 늘리지 않는다.
+ */
+export const MAX_AUDIO_TRANSCRIPT_RETRY = 1
+
+/** fetch-audio-transcript 라우트의 maxDuration과 맞춘 값. 짧으면 정상 처리 중인 호출을 실패로 보고 재전달한다. */
+const AUDIO_TRANSCRIPT_TIMEOUT_SECONDS = 300
+
+/** 오디오 변환 job 발행. 발행 측이 둘(자막 포기 지점, 실패 후 자동 재시도)이라 옵션을 한 곳에 둔다. */
+export async function publishAudioTranscript(sermonId: string, videoId: string, attempt: number): Promise<void> {
+  await publishJob('fetch-audio-transcript', { sermonId, videoId, attempt }, 0, {
+    // QStash 재전달은 네트워크 사고용이다. 모델이 나쁜 결과를 낸 경우는 attempt로 따로 센다.
+    retries: 1,
+    timeoutSeconds: AUDIO_TRANSCRIPT_TIMEOUT_SECONDS,
+  })
+}
+
+/**
+ * 오디오 변환 실패를 자동 재시도로 넘기거나 종결한다.
+ * 재발행이 실패하면 어떤 job도 이어받지 않으므로 그 자리에서 종결해 상태가 none에 매달리는 것을 막는다.
+ */
+export async function retryAudioTranscriptOrGiveUp(
+  sermonId: string,
+  videoId: string,
+  attempt: number,
+): Promise<'retry' | 'gaveUp'> {
+  if (attempt < MAX_AUDIO_TRANSCRIPT_RETRY) {
+    try {
+      await publishAudioTranscript(sermonId, videoId, attempt + 1)
+      return 'retry'
+    } catch (e) {
+      console.error(`[fetch-audio-transcript] 재시도 발행 실패, 최종 포기 videoId=${videoId}`, e)
+      await log('error', 'sermon', sermonId, `오디오 변환 재시도 발행 실패 — 최종 포기: videoId=${videoId}`)
+    }
+  }
+  await db.update(sermonSummaries).set({ summaryStatus: 'no_transcript' }).where(eq(sermonSummaries.sermonId, sermonId))
+  return 'gaveUp'
+}
+
 export function computeNextRetry(attempts: number, now: Date): Date {
   const minutes = 5 * Math.pow(3, Math.max(0, attempts - 1))
   return new Date(now.getTime() + minutes * 60 * 1000)

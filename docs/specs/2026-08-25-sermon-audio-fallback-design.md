@@ -86,13 +86,13 @@
 
 ### 신규
 
-- `src/app/api/jobs/fetch-audio-transcript/route.ts` — 위 아키텍처의 ③-b. QStash 서명검증 필수(기존 워커 패턴과 동일). 실제 오디오 변환은 아래 공용 함수를 호출하기만 한다.
+- `src/app/api/jobs/fetch-audio-transcript/route.ts` — 위 아키텍처의 ③-b. QStash 서명검증 필수(기존 워커 패턴과 동일). 설교의 `durationSeconds`를 조회해 `transcribeFromAudio`에 넘기고(절단 검사 기준), 실패하면 `retryAudioTranscriptOrGiveUp`에 처리를 맡긴다. job 본문의 `attempt`로 자동 재시도 횟수를 센다.
 - `src/lib/ai/audio-transcript.ts`(가칭) — `transcribeFromAudio(videoId: string): Promise<TranscriptSegment[]>`. 유튜브 URL 기반 오디오 받아쓰기 프롬프트·모델 폴백 호출 후 `[MM:SS]`/`[H:MM:SS]` 양쪽을 다 받는 정규식으로 `TranscriptSegment[]`로 파싱하는 **공용 함수**(자동 job·수동 재생성 버튼 공통 사용, `fetchTranscript`와 동일한 반환 타입이라 `storeTranscript`에 그대로 넘길 수 있음). 커스텀 undici dispatcher(`headersTimeout`/`bodyTimeout` 10분) 적용.
 
 ## 에러 처리
 
 - **앞부분만 받아쓰고 정상 종료(조용한 절단)**: `finishReason=STOP`이라 기존 검사를 통과하므로 `assertCoversFullAudio`가 따로 막는다 — 마지막 타임스탬프가 `durationSeconds`의 `MIN_TRANSCRIPT_COVERAGE`(0.8)에 못 미치면 throw. `durationSeconds`가 없는 설교는 비교 기준이 없어 검사하지 않는다(알려진 구멍).
-- **오디오 변환 자체 오류(비일시)**: 재시도 없이 즉시 `no_transcript`로 종결한다 — 자막 조회 실패 시와 동일한 기존 정책을 그대로 유지한다.
+- **오디오 변환 실패(원인 불문)**: `MAX_AUDIO_TRANSCRIPT_RETRY`(1회)까지 job 본문의 `attempt`를 올려 자동으로 다시 태운다. 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 것을 2026-08-27 실측으로 확인했다 — 모델 실패가 판마다 흔들리므로 사람이 버튼을 다시 누르지 않아도 회수된다. 재시도 한 번이 4~5분짜리 Gemini 호출을 통째로 다시 돌리므로 그 이상은 두지 않는다. 재시도를 소진하거나 재발행 자체가 실패하면 `no_transcript`로 종결한다. QStash의 `retries: 1`은 네트워크 사고용으로 남고, 모델 실패는 `attempt`가 따로 센다 — 재전달 횟수 헤더는 SDK가 노출하지 않아 의존하지 않는다.
 - **일시 오류(503 등) 또는 모델 단종(404)**: `gemini-3.1-pro-preview` → `gemini-3.1-pro` → `gemini-3.5-flash` → `gemini-2.5-flash` 순서로 폴백. 넷 다 실패하면 `no_transcript`.
 - **`headersTimeout`으로 인한 `fetch failed`**: 커스텀 dispatcher로 완화하되, 완전히 배제되지는 않으므로 모델 폴백 루프가 이 경우도 함께 흡수한다(재현 시 로그로 빈도 확인 필요 — 미결 사항 참고).
 
@@ -110,6 +110,7 @@
 - `sermon-summary` 프롬프트: `durationSeconds` 보간 값 검증, 챕터 900초 초과 시 실패하는 회귀 케이스(가능하면 스냅샷보다는 프롬프트 문자열 포함 여부 검증).
 - `fetchAndStoreTranscript`: RapidAPI 실패 시 오디오 변환 함수 호출로 폴백, 오디오 변환도 실패하면 기존과 동일하게 에러 throw(관리자 화면에 메시지 노출). 회귀 방지: 폴백을 켜지 않은 기본 호출은 `transcribeFromAudio`를 호출하지 않고 바로 `자막 미준비`를 throw한다(`summarize.integration.test.ts`).
 - `requestSummaryRegeneration`: 자막 캐시 유무에 따른 발행 job 분기, `attempt`가 `MAX_TRANSCRIPT_RETRY`로 채워져 나가는지, 종결 상태(`no_transcript`)와 시도 소진 행이 초기화돼 `claimSermonById`를 통과하는지, 영상 id가 없으면 throw하는지(`summarize.integration.test.ts`).
+- `retryAudioTranscriptOrGiveUp`: 재시도가 남으면 `attempt`를 올려 재발행하고 상태를 건드리지 않는지, 소진하면 `no_transcript`로 종결하는지, 재발행이 throw하면 그 자리에서 종결하는지. `publishAudioTranscript`: 재전달·타임아웃 옵션을 붙여 발행하는지.
 
 ## 실측 검증 기록 (참고용 원자료)
 
