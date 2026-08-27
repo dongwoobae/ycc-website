@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { sermons } from '@/lib/db/schema'
+import { sermons, sermonTranscripts } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { verifyQStash } from '@/lib/qstash'
 import { transcribeFromAudio } from '@/lib/ai/audio-transcript'
@@ -20,10 +20,18 @@ export async function POST(req: Request) {
   const { sermonId, videoId, attempt = 0 } = JSON.parse(raw) as { sermonId: string; videoId: string; attempt?: number }
 
   const [sermon] = await db
-    .select({ durationSeconds: sermons.durationSeconds })
+    .select({ durationSeconds: sermons.durationSeconds, transcriptText: sermonTranscripts.transcriptText })
     .from(sermons)
+    .leftJoin(sermonTranscripts, eq(sermonTranscripts.sermonId, sermons.id))
     .where(eq(sermons.id, sermonId))
     .limit(1)
+
+  // QStash가 같은 job을 재전달하면 이미 자막이 확보된 설교 위에서 두 번째 판이 돈다.
+  // 4~5분짜리 Gemini 호출을 다시 돌릴 이유가 없다.
+  if (sermon?.transcriptText?.trim()) {
+    console.log(`[fetch-audio-transcript] 자막이 이미 있어 건너뜀 videoId=${videoId}`)
+    return Response.json({ ok: true, skipped: true })
+  }
 
   // Vercel이 maxDuration에서 함수를 끊으면 아래 catch가 실행되지 않는다. 그 전에 진행 표시를
   // 남겨 두어야 retry-summaries가 잔류를 보고 회수할 수 있다.

@@ -77,12 +77,23 @@ describe('claimSermonById (integration)', () => {
 })
 
 describe('selectRetryTargets (integration)', () => {
-  it('selects failed sermons that have a transcript, respecting attempts cap', async () => {
-    const ok = await insertSermonFixture(h.db, { summaryStatus: 'failed', transcriptText: 'abc' })
-    await insertSermonFixture(h.db, { summaryStatus: 'failed' }) // 자막 없음 → 제외
-    const targets = await selectRetryTargets(10)
-    expect(targets.map((t) => t.id)).toContain(ok)
-    expect(targets).toHaveLength(1)
+  it('selects sermons that have a transcript but no summary yet, respecting the attempts cap', async () => {
+    const failed = await insertSermonFixture(h.db, { summaryStatus: 'failed', transcriptText: 'abc' })
+    // 자막을 저장한 직후 summarize 발행 전에 끊기면 none에 남는다 — 이것도 주울 잔류다.
+    const stranded = await insertSermonFixture(h.db, { summaryStatus: 'none', transcriptText: 'abc' })
+    const noTranscript = await insertSermonFixture(h.db, { summaryStatus: 'failed' })
+    const capped = await insertSermonFixture(h.db, {
+      summaryStatus: 'failed',
+      transcriptText: 'abc',
+      summaryAttempts: MAX_SUMMARY_ATTEMPTS,
+    })
+
+    const ids = (await selectRetryTargets(10)).map((t) => t.id)
+
+    expect(ids).toContain(failed)
+    expect(ids).toContain(stranded)
+    expect(ids).not.toContain(noTranscript)
+    expect(ids).not.toContain(capped)
   })
 })
 
@@ -366,8 +377,11 @@ describe('reclaimStaleAudioTranscripts (integration)', () => {
     expect(result.gaveUp).not.toContain(id)
   })
 
-  // 자막이 이미 있으면 오디오 변환은 끝난 것이다 — 그 뒤는 요약 재시도 경로 소관이다.
-  it('skips rows that already have a transcript', async () => {
+  // 자막 저장 직후 표시를 풀기 전에 끊기면 pending·만료·자막 있음이 남는다. 오디오 변환은 이미
+  // 끝났으므로 다시 태우지 않고, 표시만 풀어 요약 재시도 경로가 줍게 넘긴다.
+  it('hands a stale row that already has a transcript over to the summary retry path', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
     const now = new Date('2026-08-27T05:00:00Z')
     const id = await insertSermonFixture(h.db, {
       summaryStatus: 'pending',
@@ -378,7 +392,13 @@ describe('reclaimStaleAudioTranscripts (integration)', () => {
 
     const result = await reclaimStaleAudioTranscripts(10, now)
 
+    expect(result.handedOff).toEqual([id])
     expect(result.republished).not.toContain(id)
+    expect(publishJob).not.toHaveBeenCalled()
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('none')
+    expect(row.summaryNextRetryAt).toBeNull()
+    expect((await selectRetryTargets(10)).map((t) => t.id)).toContain(id)
   })
 
   it('skips worship types that are not auto-summarized', async () => {
@@ -414,5 +434,50 @@ describe('reclaimStaleAudioTranscripts (integration)', () => {
     const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
     expect(row.summaryStatus).toBe('no_transcript')
     expect(row.summaryNextRetryAt).toBeNull()
+  })
+})
+
+// QStash가 오디오 job을 재전달하면 이미 요약이 끝난 설교 위에서 두 번째 판이 돈다.
+// 공개 페이지는 ready일 때만 요약을 그리므로, 여기서 상태를 덮으면 공개된 요약이 사라진다.
+describe('중복 전달 방어 (integration)', () => {
+  it('markAudioTranscriptInFlight leaves a row that already has a transcript alone', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'ready', transcriptText: 'done' })
+
+    await markAudioTranscriptInFlight(id, new Date())
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('ready')
+    expect(row.summaryNextRetryAt).toBeNull()
+  })
+
+  it('retryAudioTranscriptOrGiveUp does not bury a summary that already succeeded', async () => {
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'ready',
+      transcriptText: 'done',
+      youtubeVideoId: 'vid-dupe',
+    })
+
+    await retryAudioTranscriptOrGiveUp(id, 'vid-dupe', MAX_AUDIO_TRANSCRIPT_RETRY)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('ready')
+  })
+})
+
+describe('requestSummaryRegeneration — 이전 생성 시각 (integration)', () => {
+  // summary_generated_at이 남아 있으면 claimSermonById의 stale pending 분기가
+  // (summary_generated_at IS NULL을 요구해) 이 행을 회수 대상에서 빼 버린다.
+  it('clears the previous generation timestamp so a dead worker can be reclaimed', async () => {
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'ready',
+      summaryGeneratedAt: new Date('2026-08-01T00:00:00Z'),
+      transcriptText: 'abc',
+      youtubeVideoId: 'vid-regen',
+    })
+
+    await requestSummaryRegeneration(id)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryGeneratedAt).toBeNull()
   })
 })

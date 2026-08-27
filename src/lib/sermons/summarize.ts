@@ -31,6 +31,12 @@ const AUDIO_TRANSCRIPT_TIMEOUT_SECONDS = 300
  */
 export const AUDIO_TRANSCRIPT_STALE_MS = 10 * 60 * 1000
 
+/** 오디오 job이 할 일을 이미 끝냈는지 판정하는 조각. 상관 서브쿼리라 `ss` 별칭을 쓰는 문에서만 유효하다. */
+const TRANSCRIPT_EXISTS = sql`EXISTS (
+  SELECT 1 FROM sermon_transcripts t
+  WHERE t.sermon_id = ss.sermon_id AND t.transcript_text IS NOT NULL
+)`
+
 const AUTO_SUMMARY_TYPES_SQL = sql.join(
   autoSummaryTypes.map((t) => sql`${t}`),
   sql`, `,
@@ -48,18 +54,21 @@ export async function markAudioTranscriptInFlight(sermonId: string, now: Date = 
   await db.execute(
     sql`INSERT INTO sermon_summaries (sermon_id) VALUES (${sermonId}) ON CONFLICT (sermon_id) DO NOTHING`,
   )
-  await db
-    .update(sermonSummaries)
-    .set({
-      summaryStatus: 'pending',
-      summaryNextRetryAt: new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS),
-    })
-    .where(eq(sermonSummaries.sermonId, sermonId))
+  // QStash 재전달로 같은 job이 두 번 오면 이미 요약이 끝난 행 위에서 돈다. 자막이 있다는 것은
+  // 이 job이 할 일이 남지 않았다는 뜻이라 상태를 건드리지 않는다 — 덮으면 공개 페이지에서
+  // ready였던 요약이 사라진다.
+  await db.execute(sql`
+    UPDATE sermon_summaries ss SET
+      summary_status = 'pending',
+      summary_next_retry_at = ${new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS).toISOString()}
+    WHERE ss.sermon_id = ${sermonId} AND NOT ${TRANSCRIPT_EXISTS}
+  `)
 }
 
 interface ReclaimOutcome {
   republished: string[]
   gaveUp: string[]
+  handedOff: string[]
 }
 
 /**
@@ -76,10 +85,6 @@ export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new D
     AND ss.summary_next_retry_at IS NOT NULL
     AND ss.summary_next_retry_at <= ${now.toISOString()}
     AND s.worship_type IN (${AUTO_SUMMARY_TYPES_SQL})
-    AND NOT EXISTS (
-      SELECT 1 FROM sermon_transcripts t
-      WHERE t.sermon_id = ss.sermon_id AND t.transcript_text IS NOT NULL
-    )
   `
 
   const bumped = await db.execute(sql`
@@ -88,6 +93,7 @@ export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new D
       FROM sermon_summaries ss
       JOIN sermons s ON s.id = ss.sermon_id
       WHERE ${staleMarker}
+        AND NOT ${TRANSCRIPT_EXISTS}
         AND ss.summary_attempts < ${MAX_SUMMARY_ATTEMPTS}
         AND s.youtube_video_id IS NOT NULL
       ORDER BY s.sermon_date DESC
@@ -108,18 +114,37 @@ export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new D
     FROM sermons s
     WHERE s.id = ss.sermon_id
       AND ${staleMarker}
+      AND NOT ${TRANSCRIPT_EXISTS}
       AND (ss.summary_attempts >= ${MAX_SUMMARY_ATTEMPTS} OR s.youtube_video_id IS NULL)
+    RETURNING ss.sermon_id AS id
+  `)
+
+  // 자막 저장 직후 진행 표시를 풀기 전에 끊긴 행이다. 오디오 변환은 이미 끝났으니 다시 태우지 않고
+  // 표시만 풀어 요약 재시도 경로(selectRetryTargets)가 줍게 넘긴다.
+  const handed = await db.execute(sql`
+    UPDATE sermon_summaries ss SET
+      summary_status = 'none',
+      summary_next_retry_at = NULL
+    FROM sermons s
+    WHERE s.id = ss.sermon_id
+      AND ${staleMarker}
+      AND ${TRANSCRIPT_EXISTS}
     RETURNING ss.sermon_id AS id
   `)
 
   const toRows = <T>(r: unknown): T[] => (Array.isArray(r) ? r : ((r as { rows: T[] }).rows ?? []))
   const republished = toRows<{ id: string; videoId: string }>(bumped)
   const gaveUp = toRows<{ id: string }>(exhausted)
+  const handedOff = toRows<{ id: string }>(handed)
 
   for (const row of republished) {
     await publishAudioTranscript(row.id, row.videoId, 0)
   }
-  return { republished: republished.map((r) => r.id), gaveUp: gaveUp.map((r) => r.id) }
+  return {
+    republished: republished.map((r) => r.id),
+    gaveUp: gaveUp.map((r) => r.id),
+    handedOff: handedOff.map((r) => r.id),
+  }
 }
 
 /** 오디오 변환 job 발행. 발행 측이 둘(자막 포기 지점, 실패 후 자동 재시도)이라 옵션을 한 곳에 둔다. */
@@ -149,10 +174,12 @@ export async function retryAudioTranscriptOrGiveUp(
       await log('error', 'sermon', sermonId, `오디오 변환 재시도 발행 실패 — 최종 포기: videoId=${videoId}`)
     }
   }
-  await db
-    .update(sermonSummaries)
-    .set({ summaryStatus: 'no_transcript', summaryNextRetryAt: null })
-    .where(eq(sermonSummaries.sermonId, sermonId))
+  await db.execute(sql`
+    UPDATE sermon_summaries ss SET
+      summary_status = 'no_transcript',
+      summary_next_retry_at = NULL
+    WHERE ss.sermon_id = ${sermonId} AND NOT ${TRANSCRIPT_EXISTS}
+  `)
   return 'gaveUp'
 }
 
@@ -180,7 +207,8 @@ export async function selectRetryTargets(limit = 10, now: Date = new Date()): Pr
     .leftJoin(sermonTranscripts, eq(sermonTranscripts.sermonId, sermons.id))
     .where(
       and(
-        eq(sermonSummaries.summaryStatus, 'failed'),
+        // failed만 보면 자막을 저장한 직후 summarize 발행 전에 끊긴 행(none에 잔류)을 놓친다.
+        inArray(sermonSummaries.summaryStatus, ['none', 'failed']),
         isNotNull(sermonTranscripts.transcriptText),
         inArray(sermons.worshipType, [...autoSummaryTypes]),
         lt(sermonSummaries.summaryAttempts, MAX_SUMMARY_ATTEMPTS),
@@ -397,7 +425,9 @@ export async function requestSummaryRegeneration(sermonId: string): Promise<void
   )
   await db
     .update(sermonSummaries)
-    .set({ summaryStatus: 'none', summaryAttempts: 0, summaryNextRetryAt: null })
+    // summary_generated_at을 남겨 두면 claimSermonById의 stale pending 분기가
+    // (IS NULL을 요구해) 죽은 워커를 회수하지 못한다.
+    .set({ summaryStatus: 'none', summaryAttempts: 0, summaryNextRetryAt: null, summaryGeneratedAt: null })
     .where(eq(sermonSummaries.sermonId, sermonId))
 
   if (row.transcriptText?.trim()) {
