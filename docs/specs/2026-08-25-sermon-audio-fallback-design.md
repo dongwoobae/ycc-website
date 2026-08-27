@@ -34,6 +34,8 @@
 - **y2mate 등 유튜브→mp3 변환 사이트 스크래핑**: 공식 API가 없고 전부 비공식 리버스엔지니어링 래퍼뿐이다. 결국 같은 유튜브 봇 탐지·서명 변경 문제를 남의 서버에서 겪는 구조이며, 이런 서비스는 자체 봇 차단·저작권 소송에 의한 서비스 중단 전례(youtube-mp3.org, 2017)가 있어 공식 파이프라인이 의존하기에 리스크가 크다.
 - **Vercel Pro 업그레이드**: Hobby의 함수 실행시간 고정 5분 한계를 넘기 위해 검토했으나, 오디오를 직접 다운로드하지 않는 최종안에서는 실행시간 여유가 충분해 불필요. 월 $20 고정비가 이 기능의 AI 비용(월 200원 미만)보다 훨씬 크다는 점도 배제 사유.
 
+- **`thinkingConfig`로 thinking 토큰 억제**: 받아쓰기에 추론이 불필요해 보여 검토했으나 2026-08-27 실측으로 기각했다. `gemini-3.1-pro-preview`는 `thinkingBudget: 0`을 거부하고(`This model only works in thinking mode`), 2000으로 낮추면 57분 설교를 **7분 37초까지만 받아쓰고 `finishReason=STOP`으로 정상 종료**했다. 4096은 아예 무시되고 18,274 토큰을 썼다. thinking이 긴 오디오를 끝까지 밀고 가는 동력이라 억제하면 조용한 절단을 산다. `maxOutputTokens` 상향(65536)도 기각 — thinking이 그 공간을 채워 26,532 토큰까지 늘고 생성이 389초로 길어져 함수 예산 300초를 넘겼다.
+
 ## 아키텍처 / 데이터 흐름
 
 ```
@@ -89,6 +91,7 @@
 
 ## 에러 처리
 
+- **앞부분만 받아쓰고 정상 종료(조용한 절단)**: `finishReason=STOP`이라 기존 검사를 통과하므로 `assertCoversFullAudio`가 따로 막는다 — 마지막 타임스탬프가 `durationSeconds`의 `MIN_TRANSCRIPT_COVERAGE`(0.8)에 못 미치면 throw. `durationSeconds`가 없는 설교는 비교 기준이 없어 검사하지 않는다(알려진 구멍).
 - **오디오 변환 자체 오류(비일시)**: 재시도 없이 즉시 `no_transcript`로 종결한다 — 자막 조회 실패 시와 동일한 기존 정책을 그대로 유지한다.
 - **일시 오류(503 등) 또는 모델 단종(404)**: `gemini-3.1-pro-preview` → `gemini-3.1-pro` → `gemini-3.5-flash` → `gemini-2.5-flash` 순서로 폴백. 넷 다 실패하면 `no_transcript`.
 - **`headersTimeout`으로 인한 `fetch failed`**: 커스텀 dispatcher로 완화하되, 완전히 배제되지는 않으므로 모델 폴백 루프가 이 경우도 함께 흡수한다(재현 시 로그로 빈도 확인 필요 — 미결 사항 참고).
@@ -103,6 +106,7 @@
 - `fetch-transcript`: 라우트 자체는 전용 테스트가 없다(이 저장소 관행상 route는 얇게 두고 라이브러리 함수를 테스트한다). `MAX_TRANSCRIPT_RETRY=6` 경계값과 소진 시 `fetch-audio-transcript` 발행 분기는 테스트로 커버되지 않는다. 공유 헬퍼 `publishSummarizeOrMarkFailed`는 `summarize.integration.test.ts`가 테스트한다.
 - `generateContentWithFallback`: 모델 배열 일반화 후 기존 텍스트 요약 폴백 동작 회귀 테스트, 404(모델 단종) 시 다음 모델로 전환되는지.
 - `audio-transcript`: `"[MM:SS] 발화"` 파싱, 일시 오류 시 폴백 모델 전환.
+- `assertCoversFullAudio`: 커버리지 미달 시 throw, 영상 끝까지 닿으면 통과, 경계값(0.8) 통과, `durationSeconds`가 없으면 검사 생략, 세그먼트가 비면 throw.
 - `sermon-summary` 프롬프트: `durationSeconds` 보간 값 검증, 챕터 900초 초과 시 실패하는 회귀 케이스(가능하면 스냅샷보다는 프롬프트 문자열 포함 여부 검증).
 - `fetchAndStoreTranscript`: RapidAPI 실패 시 오디오 변환 함수 호출로 폴백, 오디오 변환도 실패하면 기존과 동일하게 에러 throw(관리자 화면에 메시지 노출). 회귀 방지: 폴백을 켜지 않은 기본 호출은 `transcribeFromAudio`를 호출하지 않고 바로 `자막 미준비`를 throw한다(`summarize.integration.test.ts`).
 - `requestSummaryRegeneration`: 자막 캐시 유무에 따른 발행 job 분기, `attempt`가 `MAX_TRANSCRIPT_RETRY`로 채워져 나가는지, 종결 상태(`no_transcript`)와 시도 소진 행이 초기화돼 `claimSermonById`를 통과하는지, 영상 id가 없으면 throw하는지(`summarize.integration.test.ts`).

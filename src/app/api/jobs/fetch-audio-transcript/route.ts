@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { sermonSummaries } from '@/lib/db/schema'
+import { sermons, sermonSummaries } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { verifyQStash } from '@/lib/qstash'
 import { transcribeFromAudio } from '@/lib/ai/audio-transcript'
@@ -15,9 +15,15 @@ export async function POST(req: Request) {
   }
   const { sermonId, videoId } = JSON.parse(raw) as { sermonId: string; videoId: string }
 
+  const [sermon] = await db
+    .select({ durationSeconds: sermons.durationSeconds })
+    .from(sermons)
+    .where(eq(sermons.id, sermonId))
+    .limit(1)
+
   let segments
   try {
-    segments = await transcribeFromAudio(videoId)
+    segments = await transcribeFromAudio(videoId, sermon?.durationSeconds ?? null)
     if (segments.length === 0) throw new Error('오디오 변환 결과 없음')
   } catch (e) {
     const message = e instanceof Error ? e.message.slice(0, 150) : String(e).slice(0, 150)

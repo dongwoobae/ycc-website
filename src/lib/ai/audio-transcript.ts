@@ -27,6 +27,24 @@ export function parseTimestampedTranscript(raw: string): TranscriptSegment[] {
   return segments
 }
 
+/** 받아쓰기가 영상 길이의 이 비율까지는 닿아야 온전한 것으로 본다. 정상 사례 실측이 99% 대라 여유가 크다. */
+export const MIN_TRANSCRIPT_COVERAGE = 0.8
+
+/**
+ * 앞부분만 받아쓰고 중단된 원고를 거른다. thinking 예산이 부족하면 모델이 도중에 손을 놓고도
+ * finishReason=STOP으로 정상 종료하는 것을 실측으로 확인했으므로, finishReason 검사만으로는 못 막는다.
+ * durationSeconds가 없으면 비교 기준이 없어 검사하지 않는다.
+ */
+export function assertCoversFullAudio(segments: TranscriptSegment[], durationSeconds: number | null): void {
+  if (durationSeconds == null || durationSeconds <= 0) return
+  const lastSeconds = segments.at(-1)?.startSeconds ?? 0
+  const covered = lastSeconds / durationSeconds
+  if (covered >= MIN_TRANSCRIPT_COVERAGE) return
+  throw new Error(
+    `gemini audio transcript stopped early: ${lastSeconds}s of ${durationSeconds}s (${Math.round(covered * 100)}%)`,
+  )
+}
+
 const AUDIO_TRANSCRIPT_PROMPT = `이 오디오는 한국어 교회 설교 영상입니다. 처음부터 끝까지 발화된 내용을 그대로(요약하거나 생략하지 말고) 한국어로 받아쓰기 하세요.
 출력 형식은 반드시 아래와 같이, 각 줄마다 [MM:SS] 타임스탬프로 시작해야 합니다. 타임스탬프는 실제 오디오 재생 시각과 최대한 정확히 일치해야 합니다.
 
@@ -46,7 +64,10 @@ function ensureLongRequestDispatcher(): void {
 }
 
 /** 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓴다. 오디오 추출/다운로드는 하지 않는다(구글 서버가 처리). */
-export async function transcribeFromAudio(videoId: string): Promise<TranscriptSegment[]> {
+export async function transcribeFromAudio(
+  videoId: string,
+  durationSeconds: number | null,
+): Promise<TranscriptSegment[]> {
   ensureLongRequestDispatcher()
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
@@ -80,5 +101,7 @@ export async function transcribeFromAudio(videoId: string): Promise<TranscriptSe
 
   const text = res.text
   if (!text) throw new Error('gemini returned empty audio transcript')
-  return parseTimestampedTranscript(text)
+  const segments = parseTimestampedTranscript(text)
+  assertCoversFullAudio(segments, durationSeconds)
+  return segments
 }

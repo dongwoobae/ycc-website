@@ -105,7 +105,7 @@ describe('fetchAndStoreTranscript upsert (integration)', () => {
     const { fetchTranscript } = await import('@/lib/transcript/rapidapi')
     vi.mocked(fetchTranscript).mockResolvedValueOnce([])
     const id = await insertSermonFixture(h.db)
-    const text = await fetchAndStoreTranscript(id, 'vid-no-captions', { audioFallback: true })
+    const text = await fetchAndStoreTranscript(id, 'vid-no-captions', { audioFallback: { durationSeconds: 600 } })
     expect(text).toContain('audio fallback text')
   })
 
@@ -115,9 +115,9 @@ describe('fetchAndStoreTranscript upsert (integration)', () => {
     vi.mocked(fetchTranscript).mockResolvedValueOnce([])
     vi.mocked(transcribeFromAudio).mockResolvedValueOnce([])
     const id = await insertSermonFixture(h.db)
-    await expect(fetchAndStoreTranscript(id, 'vid-no-captions-anywhere', { audioFallback: true })).rejects.toThrow(
-      '자막 미준비',
-    )
+    await expect(
+      fetchAndStoreTranscript(id, 'vid-no-captions-anywhere', { audioFallback: { durationSeconds: 600 } }),
+    ).rejects.toThrow('자막 미준비')
   })
 })
 

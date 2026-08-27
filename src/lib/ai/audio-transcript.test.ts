@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseTimestampedTranscript } from './audio-transcript'
+import { assertCoversFullAudio, MIN_TRANSCRIPT_COVERAGE, parseTimestampedTranscript } from './audio-transcript'
 
 describe('parseTimestampedTranscript', () => {
   it('parses [MM:SS] lines', () => {
@@ -30,5 +30,34 @@ describe('parseTimestampedTranscript', () => {
 
   it('returns an empty array for empty input', () => {
     expect(parseTimestampedTranscript('')).toEqual([])
+  })
+})
+
+describe('assertCoversFullAudio', () => {
+  // thinkingBudget을 낮추면 모델이 앞부분만 받아쓰고 finishReason=STOP으로 정상 종료하는 것을 실측으로 확인했다.
+  // finishReason 검사만으로는 이 조용한 절단이 통과하므로 커버리지로 막는다.
+  it('throws when the transcript stops far short of the audio length', () => {
+    const segments = [{ startSeconds: 457, text: '귀한 찬양 감사합니다.' }]
+    expect(() => assertCoversFullAudio(segments, 3465)).toThrow(/stopped early/)
+  })
+
+  it('accepts a transcript that runs to the end of the audio', () => {
+    const segments = [{ startSeconds: 3454, text: '아멘.' }]
+    expect(() => assertCoversFullAudio(segments, 3465)).not.toThrow()
+  })
+
+  it('accepts a transcript sitting exactly on the coverage floor', () => {
+    const segments = [{ startSeconds: Math.ceil(3465 * MIN_TRANSCRIPT_COVERAGE), text: '끝' }]
+    expect(() => assertCoversFullAudio(segments, 3465)).not.toThrow()
+  })
+
+  // duration을 모르는 설교는 비교 기준이 없다 — 검사를 건너뛴다(문서화된 구멍).
+  it('skips the check when the sermon has no duration', () => {
+    const segments = [{ startSeconds: 5, text: '짧다' }]
+    expect(() => assertCoversFullAudio(segments, null)).not.toThrow()
+  })
+
+  it('throws when there is nothing to measure', () => {
+    expect(() => assertCoversFullAudio([], 3465)).toThrow(/stopped early/)
   })
 })
