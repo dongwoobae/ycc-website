@@ -3,12 +3,58 @@ import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { generateSermonSummary, DEFAULT_GEMINI_MODEL } from '@/lib/ai/sermon-summary'
+import { publishJob } from '@/lib/qstash'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
+import { transcribeFromAudio } from '@/lib/ai/audio-transcript'
 import { buildTranscriptText, type TranscriptSegment } from '@/lib/transcript/prompt'
 import { autoSummaryTypes } from '@/lib/worship'
 
 export const MAX_SUMMARY_ATTEMPTS = 3
 export const STALE_PENDING_MS = 10 * 60 * 1000
+
+/** fetch-transcript job이 자막을 기다리며 30분 간격으로 재발행하는 상한. 소진하면 오디오 폴백으로 넘어간다. */
+export const MAX_TRANSCRIPT_RETRY = 6
+
+/**
+ * 오디오 변환이 실패했을 때 자동으로 다시 태우는 횟수. 같은 영상이 한 판은 잘리고 다음 판은
+ * 끝까지 가는 것을 실측으로 확인했다 — 모델 실패는 판마다 흔들리므로 한 번은 사람 손 없이 회수한다.
+ * 재시도 한 번이 4~5분짜리 Gemini 호출을 통째로 다시 돌리므로 그 이상 늘리지 않는다.
+ */
+export const MAX_AUDIO_TRANSCRIPT_RETRY = 1
+
+/** fetch-audio-transcript 라우트의 maxDuration과 맞춘 값. 짧으면 정상 처리 중인 호출을 실패로 보고 재전달한다. */
+const AUDIO_TRANSCRIPT_TIMEOUT_SECONDS = 300
+
+/** 오디오 변환 job 발행. 발행 측이 둘(자막 포기 지점, 실패 후 자동 재시도)이라 옵션을 한 곳에 둔다. */
+export async function publishAudioTranscript(sermonId: string, videoId: string, attempt: number): Promise<void> {
+  await publishJob('fetch-audio-transcript', { sermonId, videoId, attempt }, 0, {
+    // QStash 재전달은 네트워크 사고용이다. 모델이 나쁜 결과를 낸 경우는 attempt로 따로 센다.
+    retries: 1,
+    timeoutSeconds: AUDIO_TRANSCRIPT_TIMEOUT_SECONDS,
+  })
+}
+
+/**
+ * 오디오 변환 실패를 자동 재시도로 넘기거나 종결한다.
+ * 재발행이 실패하면 어떤 job도 이어받지 않으므로 그 자리에서 종결해 상태가 none에 매달리는 것을 막는다.
+ */
+export async function retryAudioTranscriptOrGiveUp(
+  sermonId: string,
+  videoId: string,
+  attempt: number,
+): Promise<'retry' | 'gaveUp'> {
+  if (attempt < MAX_AUDIO_TRANSCRIPT_RETRY) {
+    try {
+      await publishAudioTranscript(sermonId, videoId, attempt + 1)
+      return 'retry'
+    } catch (e) {
+      console.error(`[fetch-audio-transcript] 재시도 발행 실패, 최종 포기 videoId=${videoId}`, e)
+      await log('error', 'sermon', sermonId, `오디오 변환 재시도 발행 실패 — 최종 포기: videoId=${videoId}`)
+    }
+  }
+  await db.update(sermonSummaries).set({ summaryStatus: 'no_transcript' }).where(eq(sermonSummaries.sermonId, sermonId))
+  return 'gaveUp'
+}
 
 export function computeNextRetry(attempts: number, now: Date): Date {
   const minutes = 5 * Math.pow(3, Math.max(0, attempts - 1))
@@ -115,10 +161,39 @@ export async function storeTranscript(sermonId: string, segments: TranscriptSegm
   return transcriptText
 }
 
-export async function fetchAndStoreTranscript(sermonId: string, videoId: string): Promise<string> {
+/**
+ * audioFallback을 켜면 이 호출은 4~5분 블로킹한다 — 실행시간 예산이 있는 경로에서는 켜지 마라.
+ * durationSeconds는 받아쓰기가 중간에 끊겼는지 검사하는 기준이다(`assertCoversFullAudio`).
+ * 근거는 docs/specs/2026-08-25-sermon-audio-fallback-design.md 참고.
+ */
+export async function fetchAndStoreTranscript(
+  sermonId: string,
+  videoId: string,
+  options: { audioFallback?: { durationSeconds: number | null } } = {},
+): Promise<string> {
   const segments = await fetchTranscript(videoId)
-  if (segments.length === 0) throw new Error('자막 미준비')
-  return storeTranscript(sermonId, segments)
+  if (segments.length > 0) return storeTranscript(sermonId, segments)
+  if (!options.audioFallback) throw new Error('자막 미준비')
+
+  const audioSegments = await transcribeFromAudio(videoId, options.audioFallback.durationSeconds)
+  if (audioSegments.length === 0) throw new Error('자막 미준비')
+  return storeTranscript(sermonId, audioSegments)
+}
+
+/** 자막을 저장하고 summarize job을 발행한다. 발행 자체가 실패하면(자막은 이미 캐시됨) failed로 마킹해 매시간 스위퍼가 재시도하게 한다. */
+export async function publishSummarizeOrMarkFailed(
+  sermonId: string,
+  segments: TranscriptSegment[],
+  videoId: string,
+): Promise<void> {
+  await storeTranscript(sermonId, segments)
+  try {
+    await publishJob('summarize', { sermonId })
+  } catch (e) {
+    console.error(`[transcript] summarize 발행 실패 — 스위퍼 재시도로 인계 videoId=${videoId}`, e)
+    await log('error', 'sermon', sermonId, `summarize 발행 실패 — 매시간 스위퍼가 재시도: videoId=${videoId}`)
+    await db.update(sermonSummaries).set({ summaryStatus: 'failed' }).where(eq(sermonSummaries.sermonId, sermonId))
+  }
 }
 
 export async function summarizeClaimed(
@@ -178,9 +253,45 @@ export async function manualSummarize(id: string): Promise<'ready' | 'failed'> {
     .limit(1)
   if (!row || !row.youtubeVideoId) throw new Error('sermon not found or has no YouTube video id')
 
-  const transcriptText = row.transcriptText?.trim() || (await fetchAndStoreTranscript(row.id, row.youtubeVideoId))
+  const transcriptText =
+    row.transcriptText?.trim() ||
+    (await fetchAndStoreTranscript(row.id, row.youtubeVideoId, {
+      audioFallback: { durationSeconds: row.durationSeconds },
+    }))
 
   const claimed = await forceClaimSermonById(row.id)
   if (!claimed) throw new Error('summary is not claimable')
   return summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText, claimed.attempts)
+}
+
+/**
+ * 관리자 "요약 재생성"의 진입점. 실제 작업은 자동 파이프라인 job에 넘기고 즉시 반환한다 —
+ * 오디오 폴백까지 타는 경우 받아쓰기와 요약을 합치면 Vercel 함수 1회 예산(300초)을 넘긴다.
+ * 상태 초기화는 job이 claimSermonById를 통과하게 만드는 장치다: 종결 상태(no_transcript)나
+ * 시도를 소진한 행도 이 초기화 덕분에 별도 분기 없이 재투입된다.
+ */
+export async function requestSummaryRegeneration(sermonId: string): Promise<void> {
+  const [row] = await db
+    .select({ videoId: sermons.youtubeVideoId, transcriptText: sermonTranscripts.transcriptText })
+    .from(sermons)
+    .leftJoin(sermonTranscripts, eq(sermonTranscripts.sermonId, sermons.id))
+    .where(eq(sermons.id, sermonId))
+    .limit(1)
+  if (!row?.videoId) throw new Error('sermon not found or has no YouTube video id')
+
+  await db.execute(
+    sql`INSERT INTO sermon_summaries (sermon_id) VALUES (${sermonId}) ON CONFLICT (sermon_id) DO NOTHING`,
+  )
+  await db
+    .update(sermonSummaries)
+    .set({ summaryStatus: 'none', summaryAttempts: 0, summaryNextRetryAt: null })
+    .where(eq(sermonSummaries.sermonId, sermonId))
+
+  if (row.transcriptText?.trim()) {
+    await publishJob('summarize', { sermonId })
+    return
+  }
+  // attempt를 상한으로 채워 보내 자막 대기 재시도를 건너뛴다 — RapidAPI를 한 번만 보고
+  // 없으면 곧바로 오디오 폴백으로 넘어간다. 관리자가 3시간을 기다릴 이유가 없다.
+  await publishJob('fetch-transcript', { sermonId, videoId: row.videoId, attempt: MAX_TRANSCRIPT_RETRY })
 }

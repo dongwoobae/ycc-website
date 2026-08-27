@@ -6,7 +6,7 @@ import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonThumbnails } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { revalidateSermonPaths } from '@/lib/sermons/revalidate'
-import { manualSummarize } from '@/lib/sermons/summarize'
+import { requestSummaryRegeneration } from '@/lib/sermons/summarize'
 import { isWorshipType } from '@/lib/worship'
 
 export interface SermonEditInput {
@@ -67,9 +67,8 @@ export async function getSermonForAdmin(id: string) {
 
 export async function generateSummaryAction(id: string) {
   await requireAdmin()
-  const status = await manualSummarize(id)
+  await requestSummaryRegeneration(id)
   revalidateSermonPaths(id)
-  return status
 }
 
 export async function updateSermonAction(id: string, input: SermonEditInput) {

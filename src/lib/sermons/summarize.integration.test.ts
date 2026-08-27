@@ -9,9 +9,13 @@ vi.mock('@/lib/db', () => ({
     return h.db
   },
 }))
+vi.mock('@/lib/qstash', () => ({ publishJob: vi.fn(async () => undefined) }))
 // fetchTranscript는 외부호출이므로 모킹 — buildTranscriptText 경유 결과만 검증
 vi.mock('@/lib/transcript/rapidapi', () => ({
   fetchTranscript: vi.fn(async () => [{ text: 'hello', start: 0, dur: 1 }]),
+}))
+vi.mock('@/lib/ai/audio-transcript', () => ({
+  transcribeFromAudio: vi.fn(async () => [{ startSeconds: 0, text: 'audio fallback text' }]),
 }))
 // generateSermonSummary는 Gemini 외부호출 — summarizeClaimed 위성 갱신만 검증
 vi.mock('@/lib/ai/sermon-summary', async (orig) => ({
@@ -34,7 +38,18 @@ afterAll(async () => {
 })
 
 // 모듈은 mock 설정 이후 import (동적 import로 보장)
-const { claimSermonById, selectRetryTargets, fetchAndStoreTranscript, summarizeClaimed } = await import('./summarize')
+const {
+  claimSermonById,
+  selectRetryTargets,
+  fetchAndStoreTranscript,
+  summarizeClaimed,
+  publishSummarizeOrMarkFailed,
+  requestSummaryRegeneration,
+  MAX_TRANSCRIPT_RETRY,
+  MAX_AUDIO_TRANSCRIPT_RETRY,
+  publishAudioTranscript,
+  retryAudioTranscriptOrGiveUp,
+} = await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
   it('claims a none-status sermon by updating sermon_summaries, then blocks double-claim', async () => {
@@ -78,6 +93,35 @@ describe('fetchAndStoreTranscript upsert (integration)', () => {
     const all = await h.db.select().from(sermonTranscripts).where(eq(sermonTranscripts.sermonId, id))
     expect(all).toHaveLength(1)
   })
+
+  it('does not touch audio transcription unless the caller opts in', async () => {
+    const { fetchTranscript } = await import('@/lib/transcript/rapidapi')
+    const { transcribeFromAudio } = await import('@/lib/ai/audio-transcript')
+    vi.mocked(fetchTranscript).mockResolvedValueOnce([])
+    vi.mocked(transcribeFromAudio).mockClear()
+    const id = await insertSermonFixture(h.db)
+    await expect(fetchAndStoreTranscript(id, 'vid-no-captions-default')).rejects.toThrow('자막 미준비')
+    expect(transcribeFromAudio).not.toHaveBeenCalled()
+  })
+
+  it('falls back to audio transcription when RapidAPI returns no segments', async () => {
+    const { fetchTranscript } = await import('@/lib/transcript/rapidapi')
+    vi.mocked(fetchTranscript).mockResolvedValueOnce([])
+    const id = await insertSermonFixture(h.db)
+    const text = await fetchAndStoreTranscript(id, 'vid-no-captions', { audioFallback: { durationSeconds: 600 } })
+    expect(text).toContain('audio fallback text')
+  })
+
+  it('throws when both RapidAPI and audio transcription come back empty', async () => {
+    const { fetchTranscript } = await import('@/lib/transcript/rapidapi')
+    const { transcribeFromAudio } = await import('@/lib/ai/audio-transcript')
+    vi.mocked(fetchTranscript).mockResolvedValueOnce([])
+    vi.mocked(transcribeFromAudio).mockResolvedValueOnce([])
+    const id = await insertSermonFixture(h.db)
+    await expect(
+      fetchAndStoreTranscript(id, 'vid-no-captions-anywhere', { audioFallback: { durationSeconds: 600 } }),
+    ).rejects.toThrow('자막 미준비')
+  })
 })
 
 describe('summarizeClaimed (integration)', () => {
@@ -88,5 +132,139 @@ describe('summarizeClaimed (integration)', () => {
     const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
     expect(row.summaryStatus).toBe('ready')
     expect(row.summary).toBe('요약본')
+  })
+})
+
+describe('publishSummarizeOrMarkFailed (integration)', () => {
+  it('stores the transcript and publishes a summarize job', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    const id = await insertSermonFixture(h.db)
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid1')
+    const [row] = await h.db.select().from(sermonTranscripts).where(eq(sermonTranscripts.sermonId, id))
+    expect(row.transcriptText).toContain('hi')
+    expect(publishJob).toHaveBeenCalledWith('summarize', { sermonId: id })
+  })
+
+  it('marks the sermon failed when publishing the summarize job throws', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockRejectedValueOnce(new Error('qstash down'))
+    const id = await insertSermonFixture(h.db)
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid1')
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('failed')
+  })
+})
+
+describe('requestSummaryRegeneration (integration)', () => {
+  it('publishes a summarize job when the transcript is already cached', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid1', transcriptText: '[00:00] hi' })
+
+    await requestSummaryRegeneration(id)
+
+    expect(publishJob).toHaveBeenCalledWith('summarize', { sermonId: id })
+  })
+
+  // attempt를 상한으로 채워 발행하면 fetch-transcript가 RapidAPI를 한 번만 보고 오디오 폴백으로 넘어간다.
+  // 관리자가 누른 즉시 처리돼야 하므로 30분 간격 재시도 게이트를 태우지 않는다.
+  it('publishes fetch-transcript at the retry cap when no transcript is cached', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid2' })
+
+    await requestSummaryRegeneration(id)
+
+    expect(publishJob).toHaveBeenCalledWith('fetch-transcript', {
+      sermonId: id,
+      videoId: 'vid2',
+      attempt: MAX_TRANSCRIPT_RETRY,
+    })
+  })
+
+  it('resets a terminal no_transcript row with spent attempts so the job can claim it', async () => {
+    const id = await insertSermonFixture(h.db, {
+      youtubeVideoId: 'vid3',
+      summaryStatus: 'no_transcript',
+      summaryAttempts: 3,
+      summaryNextRetryAt: new Date('2099-01-01'),
+    })
+
+    await requestSummaryRegeneration(id)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('none')
+    expect(row.summaryAttempts).toBe(0)
+    expect(row.summaryNextRetryAt).toBeNull()
+    expect(await claimSermonById(id)).not.toBeNull()
+  })
+
+  it('throws when the sermon has no YouTube video id', async () => {
+    const id = await insertSermonFixture(h.db)
+    await expect(requestSummaryRegeneration(id)).rejects.toThrow()
+  })
+})
+
+describe('retryAudioTranscriptOrGiveUp (integration)', () => {
+  // 같은 영상이 한 판은 MAX_TOKENS로 잘리고 다음 판은 끝까지 가는 것을 실측으로 확인했다.
+  // 모델 실패는 판마다 흔들리므로 한 번은 자동으로 다시 태운다.
+  it('republishes the audio job with an incremented attempt while retries remain', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-a' })
+
+    const outcome = await retryAudioTranscriptOrGiveUp(id, 'vid-a', 0)
+
+    expect(outcome).toBe('retry')
+    expect(publishJob).toHaveBeenCalledWith(
+      'fetch-audio-transcript',
+      { sermonId: id, videoId: 'vid-a', attempt: 1 },
+      0,
+      expect.objectContaining({ retries: expect.any(Number) }),
+    )
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).not.toBe('no_transcript')
+  })
+
+  it('marks the sermon no_transcript once the audio retries are spent', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-b' })
+
+    const outcome = await retryAudioTranscriptOrGiveUp(id, 'vid-b', MAX_AUDIO_TRANSCRIPT_RETRY)
+
+    expect(outcome).toBe('gaveUp')
+    expect(publishJob).not.toHaveBeenCalled()
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('no_transcript')
+  })
+
+  // 재발행이 실패하면 아무 job도 이어받지 않는다 — 그 자리에서 종결해 상태가 none에 매달리는 것을 막는다.
+  it('marks the sermon no_transcript when republishing throws', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockRejectedValueOnce(new Error('qstash down'))
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-c' })
+
+    const outcome = await retryAudioTranscriptOrGiveUp(id, 'vid-c', 0)
+
+    expect(outcome).toBe('gaveUp')
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('no_transcript')
+  })
+})
+
+describe('publishAudioTranscript (integration)', () => {
+  it('publishes with the retry and timeout options the audio job needs', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+
+    await publishAudioTranscript('sid', 'vid-d', 0)
+
+    expect(publishJob).toHaveBeenCalledWith(
+      'fetch-audio-transcript',
+      { sermonId: 'sid', videoId: 'vid-d', attempt: 0 },
+      0,
+      { retries: 1, timeoutSeconds: 300 },
+    )
   })
 })

@@ -16,15 +16,33 @@ export async function makeTestDb(): Promise<{ db: TestDb; close: () => Promise<v
 /** sermons + (선택) sermon_summaries 기본 행을 만들고 sermon id를 반환한다. */
 export async function insertSermonFixture(
   db: TestDb,
-  opts: { withSummaryRow?: boolean; summaryStatus?: string; transcriptText?: string } = {},
+  opts: {
+    withSummaryRow?: boolean
+    summaryStatus?: string
+    summaryAttempts?: number
+    summaryNextRetryAt?: Date
+    transcriptText?: string
+    youtubeVideoId?: string
+  } = {},
 ): Promise<string> {
   const [s] = await db
     .insert(schema.sermons)
-    .values({ title: 't', worshipType: '주일예배', sermonDate: '2026-01-01', isPublished: true })
+    .values({
+      title: 't',
+      worshipType: '주일예배',
+      sermonDate: '2026-01-01',
+      isPublished: true,
+      youtubeVideoId: opts.youtubeVideoId,
+    })
     .returning({ id: schema.sermons.id })
   const id = s.id
   if (opts.withSummaryRow !== false) {
-    await db.insert(schema.sermonSummaries).values({ sermonId: id, summaryStatus: opts.summaryStatus ?? 'none' })
+    await db.insert(schema.sermonSummaries).values({
+      sermonId: id,
+      summaryStatus: opts.summaryStatus ?? 'none',
+      summaryAttempts: opts.summaryAttempts,
+      summaryNextRetryAt: opts.summaryNextRetryAt,
+    })
   }
   if (opts.transcriptText !== undefined) {
     await db.insert(schema.sermonTranscripts).values({ sermonId: id, transcriptText: opts.transcriptText })

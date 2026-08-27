@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { parseSermonSummary } from './sermon-summary'
+import { buildSummaryPrompt, parseSermonSummary } from './sermon-summary'
+
+describe('buildSummaryPrompt', () => {
+  it('길이가 있으면 전체 길이·기대 챕터 수·900초 제한을 명시한다', () => {
+    const prompt = buildSummaryPrompt(4140)
+    expect(prompt).toContain('4140초')
+    expect(prompt).toContain('약 69분')
+    expect(prompt).toContain('총 7개 안팎')
+    expect(prompt).toContain('900초를 초과해서는 안 됩니다')
+  })
+
+  it('짧은 영상도 최소 1개 이상의 기대 챕터 수를 명시한다', () => {
+    const prompt = buildSummaryPrompt(200)
+    expect(prompt).toContain('총 1개 안팎')
+  })
+
+  it('길이를 모르면(null) 강제 챕터 수 지시를 생략한다', () => {
+    const prompt = buildSummaryPrompt(null)
+    expect(prompt).not.toContain('900초를 초과해서는 안 됩니다')
+    expect(prompt).not.toContain('안팎이어야 합니다')
+  })
+})
 
 const valid = {
   summary: '한 줄 소개',

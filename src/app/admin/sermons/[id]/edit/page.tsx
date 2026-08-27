@@ -4,6 +4,8 @@ import SermonEditForm from '@/components/admin/SermonEditForm'
 import { getSermonForAdmin } from '@/lib/actions/sermons'
 import { verifySession } from '@/lib/dal'
 
+export const maxDuration = 300
+
 export default async function EditSermonPage({ params }: { params: Promise<{ id: string }> }) {
   await verifySession()
   const { id } = await params
