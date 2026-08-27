@@ -116,6 +116,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
                         │              (Gemini에 유튜브 URL 직접 전달, 오디오 받아쓰기)
                         │              커버리지 80% 미만 = 앞부분만 받아쓴 원고로 보고 폐기
                         │              실패는 1회 자동 재시도, 소진 시 no_transcript 종결
+                        │              함수가 강제 종료되면 진행 표시만 남고, 스위퍼가 걷어 회수
                         │                        │
                         └────────────┬───────────┘
                                       ▼
@@ -130,9 +131,10 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
 - **콜백 보안 2겹**: 구독 검증(GET)은 **우리 채널 토픽일 때만 `hub.challenge`를 에코**해 임의 토픽 구독을 차단하고, 알림(POST)은 **`X-Hub-Signature`(HMAC-SHA1)를 원문 바이트 기준 `timingSafeEqual`로 비교**해 위조를 차단합니다.
 - **QStash 다단계 잡 체이닝**: `ingest-video → fetch-transcript → summarize`를 각각 독립 서버리스 함수로 분리하고 QStash 메시지로 연결합니다. `fetch-transcript`가 자막을 끝내 못 구하면(최대 6회 재시도 소진) `fetch-audio-transcript`가 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓰고, 그 결과를 같은 형식으로 변환해 `summarize`로 합류시킵니다. 모든 잡 엔드포인트는 QStash `Receiver` 서명으로 검증되며, 한 단계가 실패해도 그 단계만 재시도됩니다. 오디오 받아쓰기가 실패하면 잡 본문의 `attempt`를 올려 **1회 자동으로 다시 태우고**, 소진하면 `no_transcript`로 종결합니다 — 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 일이 있어, 사람이 버튼을 다시 누르지 않아도 회수되게 했습니다.
 - **서버리스식 지수 백오프**: Vercel 함수는 프로세스를 붙잡고 `sleep`할 수 없으므로, **QStash 지연 발행(`delay`)으로 백오프를 외부에 위임**합니다. 간격은 `5 × 3ⁿ분`으로 증가하고 `attempts < 3` 한도를 두며, 자막이 영구히 없는 건은 재시도 후보에서 제외해 API 쿼터 소진을 막습니다. 정기 재시도는 `retry-summaries` cron이 수행합니다.
-- **원자적 동시성 제어(claim)**: WebSub 중복 알림·재시도 cron·수동 트리거가 겹쳐도 같은 설교가 동시에 여러 번 요약되지 않도록, Postgres CTE `UPDATE ... RETURNING`으로 **선점 가능한 상태일 때만 원자적으로 1건을 선점**합니다. pending이 10분 이상 멈추면 죽은 워커로 보고 회수합니다.
+- **원자적 동시성 제어(claim)**: WebSub 중복 알림·재시도 cron·수동 트리거가 겹쳐도 같은 설교가 동시에 여러 번 요약되지 않도록, Postgres CTE `UPDATE ... RETURNING`으로 **선점 가능한 상태일 때만 원자적으로 1건을 선점**합니다. 선점은 `summary_claimed_at`에 시각을 적는 **리스**라, 10분이 지나면 죽은 워커로 보고 회수하고 매시간 스위퍼가 그 행을 다시 태웁니다. 리스를 별도 컬럼에 두는 이유는 상태·백오프 시각 같은 기존 값으로 "언제부터 붙잡고 있나"를 대신하면 재시도를 거친 행에서 판정이 뒤집히기 때문입니다.
 - **Gemini 구조화 출력**: `responseSchema`로 한 줄 소개(핵심 성경구절 포함)·핵심 요점 8~12개·**타임스탬프 챕터 분할**을 JSON 스키마로 강제하고, 받은 결과를 다시 **zod로 검증**(챕터 시작 시각 오름차순·영상 길이 이내)합니다. 모델 응답을 신뢰하지 않고 경계에서 막는 구조이며, 모델 fallback 체인으로 일시 장애에 대응합니다.
 - **조용한 절단 차단**: 오디오 받아쓰기는 `finishReason=STOP`으로 정상 종료하면서 앞부분만 받아쓰고 끝나는 경우가 있습니다(2026-08-27 실측 — 57분 설교를 7분 37초까지). 종료 사유만으로는 걸러지지 않으므로 **마지막 타임스탬프가 영상 길이의 80%에 못 미치면 실패로 돌립니다**. 정상 사례는 99%대라 영상 끝의 침묵이나 마무리 찬양은 흡수합니다.
+- **catch로 잡을 수 없는 실패 회수**: Vercel이 예산을 넘긴 함수를 끊으면 `catch`가 아예 실행되지 않아 어떤 종결 처리도 일어나지 않습니다(2026-08-27 프로덕션에서 실제로 겪었고, 상태가 `none`에 잔류해 사람이 버튼을 다시 눌러야 했습니다). 그래서 오디오 변환은 **시작 시점에 DB로 흔적을 남깁니다** — `summary_status='pending'`에 만료 시각을 함께 찍고, 매시간 도는 `retry-summaries`가 만료된 흔적을 걷어 다시 태웁니다. `pending`은 두 가지를 뜻하는데 **`summary_claimed_at`이 갈라 줍니다** — 값이 있으면 요약 워커의 선점, 없으면 오디오 변환 진행입니다. 회수는 후자만 봅니다. 회수마다 시도 횟수를 소비해, 강제 종료가 반복돼도 회수 → 또 종료 → 또 회수로 무한히 돌지 않습니다. 자막을 저장한 **뒤** 끊긴 건은 오디오 변환이 이미 끝난 것이므로 다시 태우지 않고 요약 재시도 경로로 넘깁니다.
 - **함수 1회 예산(300초) 분할**: 관리자 "요약 재생성" 버튼은 원래 받아쓰기와 요약을 한 요청 안에서 이어 돌렸는데, 오디오 폴백을 타면 **받아쓰기 329초 + 요약 222초**로 Vercel 함수 1회 예산을 넘깁니다(2026-08-27 실측). 버튼은 이제 **상태만 초기화하고 잡을 발행**해 자동 체인에 재투입합니다 — 상태 초기화가 `claimSermonById`의 관문(종결 상태·시도 소진·백오프)을 대신 열어 주므로 상태별 분기가 없고, 오디오 변환이 도는 곳도 `fetch-audio-transcript` 하나로 유지됩니다.
 
 ### 🎨 AI 설교 썸네일 생성
@@ -263,7 +265,7 @@ src/
         fetch-audio-transcript/route.ts # 오디오 받아쓰기 폴백 (Gemini 유튜브 URL 직접 입력, 절단 검사·1회 자동 재시도)
         summarize/route.ts           # Gemini 요약(claim 선점)
         publish-post/route.ts        # 예약 게시 공개 시각 캐시 재검증 (QStash 지연 콜백)
-        retry-summaries/route.ts     # 실패 요약 재시도 (QStash cron)
+        retry-summaries/route.ts     # 오디오 변환 잔류 회수 + 요약 미완료분 재시도 (QStash cron)
         websub-renew/route.ts        # WebSub 재구독 (QStash cron)
         reconcile-sermons/route.ts   # 채널↔DB 정합성 백필 (QStash cron)
         analytics-rollup/route.ts    # 방문 통계 일일 롤업 (QStash cron)
@@ -396,6 +398,7 @@ sermon_summaries
   summary_attempts      integer not null default 0
   summary_next_retry_at timestamptz
   summary_generated_at  timestamptz
+  summary_claimed_at    timestamptz   -- 요약 워커가 선점한 시각(리스). NULL = 선점된 적 없음
   summary_model         text
   created_at            timestamptz default now()
   -- index (summary_status, summary_next_retry_at)
@@ -653,7 +656,7 @@ npm run qstash:schedules
 | 스케줄              | 주기    | 역할                                           |
 | ------------------- | ------- | ---------------------------------------------- |
 | `websub-renew`      | 2일마다 | WebSub 구독 lease 갱신                         |
-| `retry-summaries`   | 매시간  | 실패한 요약 재시도                             |
+| `retry-summaries`   | 매시간  | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
 | `reconcile-sermons` | 매일    | 채널 재생목록 ↔ DB 정합성 대조·누락 백필       |
 | `analytics-rollup`  | 매일    | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
 

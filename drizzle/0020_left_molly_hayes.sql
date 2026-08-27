@@ -1,0 +1,1 @@
+ALTER TABLE "sermon_summaries" ADD COLUMN "summary_claimed_at" timestamp with time zone;

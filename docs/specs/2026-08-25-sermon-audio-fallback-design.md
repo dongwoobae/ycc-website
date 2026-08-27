@@ -1,7 +1,7 @@
 # 자막 없는 설교 영상 오디오 폴백 설계
 
 **작성일**: 2026-08-25
-**상태**: 설계 확정 (구현 완료, 배포 전 확인 항목은 "미결 사항" 참고)
+**상태**: 배포 완료 (2026-08-27). 재현된 미결 #7(강제 종료 잔류)까지 회수 경로를 붙였다
 **관련**: `2026-06-23-youtube-websub-pipeline-design.md`의 "범위 밖 — STT(음성→텍스트) 폴백"을 이번 설계로 도입한다. 기존 파이프라인(WebSub→ingest→fetch-transcript→summarize)은 그대로 두고 `fetch-transcript`가 포기하는 지점에 새 단계를 끼워 넣는 확장이다.
 
 ## 배경
@@ -36,6 +36,12 @@
 
 - **`thinkingConfig`로 thinking 토큰 억제**: 받아쓰기에 추론이 불필요해 보여 검토했으나 2026-08-27 실측으로 기각했다. `gemini-3.1-pro-preview`는 `thinkingBudget: 0`을 거부하고(`This model only works in thinking mode`), 2000으로 낮추면 57분 설교를 **7분 37초까지만 받아쓰고 `finishReason=STOP`으로 정상 종료**했다. 4096은 아예 무시되고 18,274 토큰을 썼다. thinking이 긴 오디오를 끝까지 밀고 가는 동력이라 억제하면 조용한 절단을 산다. `maxOutputTokens` 상향(65536)도 기각 — thinking이 그 공간을 채워 26,532 토큰까지 늘고 생성이 389초로 길어져 함수 예산 300초를 넘겼다.
 
+- **오디오 진행 표시에 `transcribing` 상태를 새로 추가**: 의미는 더 또렷하지만 상태 enum·정렬 순위·표시 문구·타입·테스트로 파급된다. `pending` + `summary_next_retry_at`이 기존 의미 그대로 쓰이므로 상태값을 늘리지 않았고, 관리자 화면에도 `pending`의 기존 표시(**대기**)가 그대로 뜬다.
+
+  단, **처음에 잡은 구분 기준은 틀렸다.** "만료 시각의 유무로 요약 선점과 갈린다"고 봤는데, 요약이 실패하면 `summary_next_retry_at`에 백오프가 남고 재선점해도 지워지지 않아 그 행도 `pending` + 지난 만료 시각이 된다. 두 표시의 값이 겹쳐 회수가 요약 중인 행을 가로챌 수 있었다. 실제 구분자는 `summary_claimed_at`의 유무다(아래 리스 항목).
+
+- **회수 주기를 매시간보다 짧게**: 별도 cron을 추가해야 하고, 실제 발생이 월 1~3건이라 1시간 지연이 문제가 되지 않는다. 기존 `retry-summaries` 스케줄에 얹어 새 인프라를 만들지 않았다.
+
 ## 아키텍처 / 데이터 흐름
 
 ```
@@ -57,6 +63,11 @@
 ④ QStash 워커  /api/jobs/summarize   (변경 없음, 프롬프트만 개선)
    - PROMPT에 durationSeconds·기대 챕터 수 명시, "챕터 900초 초과 금지" 강제 지시 추가
 
+[별도] 스위퍼  /api/jobs/retry-summaries  (QStash cron 매시간)
+   - 요약 실패분(failed + 자막 있음) → "summarize" 재발행 (기존)
+   - 오디오 변환 잔류(pending + 만료 시각 지남 + 자막 없음) → "fetch-audio-transcript" 재발행
+     회수마다 summary_attempts 소비, 상한을 채우면 no_transcript로 종결
+
 [별도] 관리자 "요약 재생성" 버튼 → generateSummaryAction → requestSummaryRegeneration
    - summary_status='none', summary_attempts=0, summary_next_retry_at=NULL 로 초기화
    - 자막 캐시 있음 → "summarize" job 발행
@@ -70,6 +81,9 @@
 - 오디오 폴백은 **별도 job으로 분리**한다 — `fetch-transcript`는 지금처럼 가볍게 유지하고, 4~5분 걸리는 Gemini 오디오 호출만 별도 함수(`maxDuration=300`)로 격리해 기존 `fetch-transcript`의 60초 예산에 영향을 주지 않는다.
 - 오디오 폴백의 출력 계약은 기존 `transcriptText`와 **동일**하다 — `summarize` job은 자막 출처가 RapidAPI인지 Gemini 오디오 변환인지 구분하지 않는다.
 - 수동 재생성 버튼은 **자동 체인에 재투입할 뿐** 자체 실행 경로를 갖지 않는다 — 오디오 변환이 도는 곳은 `fetch-audio-transcript` 하나뿐이라 함수 예산도 한 곳에서만 관리된다.
+- 강제 종료는 **catch로 잡을 수 없으므로 진입 시점에 DB로 흔적을 남긴다.** `summary_status='pending'` + `summary_next_retry_at`(만료 시각)이 오디오 변환의 흔적이다.
+- **`pending`의 두 의미는 `summary_claimed_at`으로 가른다** — 값이 있으면 `claimSermonById`가 잡고 있는 요약 선점, 없으면 오디오 변환 진행이다. 이 구분이 무너지면 요약이 조용히 안 돌거나 중복으로 돈다.
+- **선점은 리스다.** `claimSermonById`가 `summary_claimed_at`에 시각을 적고, `STALE_PENDING_MS`(10분)가 지나면 죽은 워커로 보고 회수한다. 이 값을 기존 컬럼으로 대신할 수 없었던 이유는 "확정된 의사결정"의 리스 항목에 있다.
 
 ## 컴포넌트 (변경 / 신규)
 
@@ -79,20 +93,27 @@
 - `src/lib/qstash.ts` — `JobName` 유니온에 `'fetch-audio-transcript'` 추가. `publishJob`이 4번째 인자로 `JobPublishOptions`(`retries`·`timeoutSeconds`)를 받도록 확장돼, `fetch-audio-transcript` 발행 시 재전달 상한과 QStash HTTP 타임아웃을 job별로 지정할 수 있다.
 - `src/lib/ai/gemini.ts` — `generateContentWithFallback`을 모델 배열 순차 시도로 일반화하고, 503 등 일시 오류 외에 404(모델 단종)도 다음 모델로 넘어가도록 판별을 넓힌다(`isModelUnavailableError` 신규). 오디오 경로는 `[gemini-3.1-pro-preview, gemini-3.1-pro, gemini-3.5-flash, gemini-2.5-flash]` 4단, 기존 텍스트 요약 호출(`[3.5-flash, 2.5-flash]`)도 같은 함수로 통합.
 - `src/lib/ai/sermon-summary.ts` — `PROMPT`에 `durationSeconds`·기대 챕터 수(`Math.round(durationSeconds/600)`)를 보간하고 "챕터 900초 초과 금지, 초과 시 반드시 분할" 지시 추가.
-- `src/lib/sermons/summarize.ts` — `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, `options.audioFallback`이 켜져 있으면 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 폴백은 기본 꺼짐(옵트인)이다 — 자막이 아직 없는 것이 정상인 채널 동기화 경로(`resyncAllSermons`)까지 영상 한 건당 4~5분 블로킹하면 안 되고(SSE 스트림의 300초 예산을 한 건이 먹는다), 30분 뒤면 무료로 잡힐 자막을 두고 3시간 게이트를 우회하게 되기 때문이다. `manualSummarize`만 명시적으로 켠다 — 이 경로는 이제 로컬 백필 스크립트(`scripts/summarize-sermons.ts`) 전용이라 함수 실행시간 예산을 받지 않는다. 신규 `requestSummaryRegeneration`이 관리자 버튼의 진입점이고, `MAX_TRANSCRIPT_RETRY`도 여기서 export해 `fetch-transcript` 라우트와 공유한다.
+- `src/lib/db/schema.ts` + `drizzle/0020_*.sql` — `sermon_summaries.summary_claimed_at` 추가. 요약 워커의 선점 리스다. NULL은 결측이 아니라 "선점된 적 없음"이고, 오디오 변환 진행 표시가 그 상태다.
+- `src/lib/sermons/summarize.ts` — `claimSermonById`/`forceClaimSermonById`가 선점 시각을 적고, 죽은 워커 판정이 그 값 하나만 본다. `selectRetryTargets`가 `failed`뿐 아니라 `none`과 리스 만료된 `pending`도 본다. `requestSummaryRegeneration`은 `summary_generated_at`도 지운다 — 남겨 두면 `claimSermonById`의 stale pending 분기가 `IS NULL`을 요구해 죽은 워커를 회수하지 못한다. 이하 `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, `options.audioFallback`이 켜져 있으면 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 폴백은 기본 꺼짐(옵트인)이다 — 자막이 아직 없는 것이 정상인 채널 동기화 경로(`resyncAllSermons`)까지 영상 한 건당 4~5분 블로킹하면 안 되고(SSE 스트림의 300초 예산을 한 건이 먹는다), 30분 뒤면 무료로 잡힐 자막을 두고 3시간 게이트를 우회하게 되기 때문이다. `manualSummarize`만 명시적으로 켠다 — 이 경로는 이제 로컬 백필 스크립트(`scripts/summarize-sermons.ts`) 전용이라 함수 실행시간 예산을 받지 않는다. 신규 `requestSummaryRegeneration`이 관리자 버튼의 진입점이고, `MAX_TRANSCRIPT_RETRY`도 여기서 export해 `fetch-transcript` 라우트와 공유한다.
 - `src/app/admin/sermons/[id]/edit/page.tsx` — `maxDuration=300` 유지. 최초에는 인라인 오디오 변환 때문에 올린 값이지만, 버튼이 job 발행으로 바뀐 뒤로는 같은 페이지의 `suggestThumbnailTextAction`(Gemini 호출)이 이 예산을 쓴다. Server Action의 타임아웃은 그 액션을 호출한 **페이지**의 route segment config를 따른다(서버 액션 파일에 두면 무시된다).
+- `src/app/api/jobs/retry-summaries/route.ts` — `reclaimStaleAudioTranscripts`를 **먼저** 돌리고 요약 재투입을 나중에 돌린다(회수가 요약 재투입 대상을 만들어 내므로). 종결된 건은 `app_logs`에 남겨 관리자가 사후에 확인할 수 있게 한다.
+- `src/app/api/jobs/fetch-audio-transcript/route.ts` — 진입 시 자막이 이미 있으면 그대로 반환한다(중복 전달 방어). 그다음 `transcribeFromAudio` 호출 **전에** `markAudioTranscriptInFlight`로 진행 표시를 남긴다. 강제 종료는 catch를 실행시키지 않으므로 이 순서가 뒤집히면 흔적이 남지 않는다.
 - `src/lib/actions/sermons.ts` — `generateSummaryAction`이 `manualSummarize` 대신 `requestSummaryRegeneration`을 호출하고 값을 반환하지 않는다.
 - `src/components/admin/SermonEditForm.tsx` — 버튼이 `ready`/`failed` 대신 요청 접수를 표시한다. `no_transcript` 안내 문구도 "완료까지 기다리라"에서 "나중에 새로고침하라"로 바뀐다.
 
 ### 신규
 
 - `src/app/api/jobs/fetch-audio-transcript/route.ts` — 위 아키텍처의 ③-b. QStash 서명검증 필수(기존 워커 패턴과 동일). 설교의 `durationSeconds`를 조회해 `transcribeFromAudio`에 넘기고(절단 검사 기준), 실패하면 `retryAudioTranscriptOrGiveUp`에 처리를 맡긴다. job 본문의 `attempt`로 자동 재시도 횟수를 센다.
+- `markAudioTranscriptInFlight(sermonId, now)` / `reclaimStaleAudioTranscripts(limit, now)` (`summarize.ts`) — 진행 표시를 남기는 쪽과 걷어 가는 쪽. 회수는 원자적 UPDATE 두 개로 나뉘는데, 조건이 `summary_attempts < 상한`과 `>= 상한`(또는 videoId 없음)으로 서로 배타적이라 한 행이 양쪽에 걸리지 않는다. 선점 후 발행 순서라 발행이 실패해도 그 시도만 소모되고 다음 회차에 다시 잡힌다.
 - `src/lib/ai/audio-transcript.ts`(가칭) — `transcribeFromAudio(videoId: string): Promise<TranscriptSegment[]>`. 유튜브 URL 기반 오디오 받아쓰기 프롬프트·모델 폴백 호출 후 `[MM:SS]`/`[H:MM:SS]` 양쪽을 다 받는 정규식으로 `TranscriptSegment[]`로 파싱하는 **공용 함수**(자동 job·수동 재생성 버튼 공통 사용, `fetchTranscript`와 동일한 반환 타입이라 `storeTranscript`에 그대로 넘길 수 있음). 커스텀 undici dispatcher(`headersTimeout`/`bodyTimeout` 10분) 적용.
 
 ## 에러 처리
 
 - **앞부분만 받아쓰고 정상 종료(조용한 절단)**: `finishReason=STOP`이라 기존 검사를 통과하므로 `assertCoversFullAudio`가 따로 막는다 — 마지막 타임스탬프가 `durationSeconds`의 `MIN_TRANSCRIPT_COVERAGE`(0.8)에 못 미치면 throw. `durationSeconds`가 없는 설교는 비교 기준이 없어 검사하지 않는다(알려진 구멍).
 - **오디오 변환 실패(원인 불문)**: `MAX_AUDIO_TRANSCRIPT_RETRY`(1회)까지 job 본문의 `attempt`를 올려 자동으로 다시 태운다. 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 것을 2026-08-27 실측으로 확인했다 — 모델 실패가 판마다 흔들리므로 사람이 버튼을 다시 누르지 않아도 회수된다. 재시도 한 번이 4~5분짜리 Gemini 호출을 통째로 다시 돌리므로 그 이상은 두지 않는다. 재시도를 소진하거나 재발행 자체가 실패하면 `no_transcript`로 종결한다. QStash의 `retries: 1`은 네트워크 사고용으로 남고, 모델 실패는 `attempt`가 따로 센다 — 재전달 횟수 헤더는 SDK가 노출하지 않아 의존하지 않는다.
+- **함수 예산 초과로 강제 종료(catch 미실행)**: 라우트 진입 시 `markAudioTranscriptInFlight`가 `pending` + 만료 시각(`AUDIO_TRANSCRIPT_STALE_MS`, 10분)을 찍어 둔다. 매시간 도는 `retry-summaries`가 만료된 표시를 걷어 `fetch-audio-transcript`를 다시 발행하고, `MAX_SUMMARY_ATTEMPTS`를 채우면 `no_transcript`로 종결한다. 회수마다 시도를 소비하는 이유는 강제 종료가 반복될 때 회수 → 또 종료 → 또 회수로 끝없이 도는 것을 막기 위해서다. 성공 경로에서는 `publishSummarizeOrMarkFailed`가 자막을 저장한 직후 이 표시를 푼다 — 남겨 두면 `claimSermonById`의 두 분기가 모두 막혀 `summarize`가 조용히 아무 일도 하지 않는다.
+- **자막 저장 직후 강제 종료**: 위 회수는 자막이 **없는** 잔류를 다시 태우지만, `publishSummarizeOrMarkFailed`가 자막을 저장한 뒤 표시를 풀기 전에 끊기면 자막이 **있는** 채로 표시만 남는다. 오디오 변환은 이미 끝났으므로 다시 태우지 않고 표시만 풀어 요약 재시도 경로로 넘긴다. `selectRetryTargets`가 `failed`뿐 아니라 `none`도 보게 넓힌 것이 짝이다 — 표시를 푼 직후(그리고 표시가 이미 풀린 뒤 발행 전에 끊긴 경우) 상태가 `none`이기 때문이다. 스위퍼는 회수를 먼저 돌리고 요약 재투입을 나중에 돌려, 넘겨진 건이 같은 실행에서 회수되게 한다.
+- **같은 오디오 job의 중복 전달**: QStash가 재전달하면 이미 자막이 확보된 설교 위에서 두 번째 판이 돈다. 라우트가 진입 시 자막 유무를 보고 그대로 반환하며, `markAudioTranscriptInFlight`와 종결 UPDATE도 자막이 없을 때만 걸리게 조건을 건다. 무조건 UPDATE로 두면 `ready`가 `pending`이나 `no_transcript`로 덮여 **공개 페이지에서 요약이 사라진다**(`SermonSummary`는 `ready`일 때만 그린다).
 - **일시 오류(503 등) 또는 모델 단종(404)**: `gemini-3.1-pro-preview` → `gemini-3.1-pro` → `gemini-3.5-flash` → `gemini-2.5-flash` 순서로 폴백. 넷 다 실패하면 `no_transcript`.
 - **`headersTimeout`으로 인한 `fetch failed`**: 커스텀 dispatcher로 완화하되, 완전히 배제되지는 않으므로 모델 폴백 루프가 이 경우도 함께 흡수한다(재현 시 로그로 빈도 확인 필요 — 미결 사항 참고).
 
@@ -110,7 +131,15 @@
 - `sermon-summary` 프롬프트: `durationSeconds` 보간 값 검증, 챕터 900초 초과 시 실패하는 회귀 케이스(가능하면 스냅샷보다는 프롬프트 문자열 포함 여부 검증).
 - `fetchAndStoreTranscript`: RapidAPI 실패 시 오디오 변환 함수 호출로 폴백, 오디오 변환도 실패하면 기존과 동일하게 에러 throw(관리자 화면에 메시지 노출). 회귀 방지: 폴백을 켜지 않은 기본 호출은 `transcribeFromAudio`를 호출하지 않고 바로 `자막 미준비`를 throw한다(`summarize.integration.test.ts`).
 - `requestSummaryRegeneration`: 자막 캐시 유무에 따른 발행 job 분기, `attempt`가 `MAX_TRANSCRIPT_RETRY`로 채워져 나가는지, 종결 상태(`no_transcript`)와 시도 소진 행이 초기화돼 `claimSermonById`를 통과하는지, 영상 id가 없으면 throw하는지(`summarize.integration.test.ts`).
-- `retryAudioTranscriptOrGiveUp`: 재시도가 남으면 `attempt`를 올려 재발행하고 상태를 건드리지 않는지, 소진하면 `no_transcript`로 종결하는지, 재발행이 throw하면 그 자리에서 종결하는지. `publishAudioTranscript`: 재전달·타임아웃 옵션을 붙여 발행하는지.
+- `retryAudioTranscriptOrGiveUp`: 재시도가 남으면 `attempt`를 올려 재발행하고 상태를 건드리지 않는지, 소진하면 `no_transcript`로 종결하며 만료 시각까지 지우는지, 재발행이 throw하면 그 자리에서 종결하는지. `publishAudioTranscript`: 재전달·타임아웃 옵션을 붙여 발행하는지.
+- `markAudioTranscriptInFlight`: `pending` + 만료 시각을 찍되 시도 횟수는 건드리지 않는지.
+- `reclaimStaleAudioTranscripts`: 만료된 표시를 재발행하며 시도를 소비하는지, 아직 만료되지 않은 표시·만료 시각이 없는 `pending`(요약 선점)·자막이 이미 있는 행·자동 요약 대상이 아닌 예배 유형을 각각 건너뛰는지, 시도를 소진하면 `no_transcript`로 종결하며 만료 시각을 지우는지.
+- 선점 리스: 선점 시각이 기록되는지, 위성 행이 낡았어도 리스가 살아 있으면 재선점이 막히는지, 백오프 시각이 남아 있어도 만료된 리스는 회수되는지, 오디오 진행 표시는 만료 여부와 무관하게 선점되지 않는지, `markAudioTranscriptInFlight`가 낡은 선점 값을 비우는지, 회수가 요약이 붙잡고 있는 행을 건드리지 않는지, `selectRetryTargets`가 만료된 선점을 줍는지.
+- 중복 전달 방어: `markAudioTranscriptInFlight`와 `retryAudioTranscriptOrGiveUp`이 자막이 이미 있는 행의 상태를 건드리지 않는지(`ready`가 유지되는지).
+- `reclaimStaleAudioTranscripts` 인계: 만료됐지만 자막이 있는 행은 재발행하지 않고 표시만 풀며, 그 결과가 `selectRetryTargets`에 잡히는지.
+- `selectRetryTargets`: 자막이 있는 `none`·`failed`를 모두 고르고, 자막이 없거나 시도를 소진한 행은 빼는지.
+- `requestSummaryRegeneration`: `summary_generated_at`을 지우는지.
+- `publishSummarizeOrMarkFailed`: 자막 저장 후 오디오 진행 표시를 풀어 `claimSermonById`가 통과하는지, 만료 시각이 없는 `pending`(요약 선점)은 건드리지 않는지 — 뒤쪽은 무조건 초기화하는 순진한 구현을 막는 가드다.
 
 ## 실측 검증 기록 (참고용 원자료)
 
@@ -129,11 +158,41 @@
 
 1. `gemini-3.1-pro-preview`가 실제 서비스 시점에도 유튜브 URL 직접 입력을 지원하는지 — preview 단종(404) 자체는 `gemini-3.1-pro` 자동 폴백으로 대비했지만, `gemini-3.1-pro`라는 정식 이름이 실제로 그대로 쓰이는지는 출시 전에는 확인 불가. 이름이 다르게 나올 경우 상수만 갱신하면 된다.
 2. Gemini의 유튜브 URL 직접 입력 기능 자체가 아직 프리뷰(무료) 상태 — 정식화 시 과금 정책이 붙을 수 있어 유지보수 시 확인 필요.
-3. `fetch-audio-transcript`의 `maxDuration=300`이 실제 최장 설교에서도 여유 있는지 — 2026-08-27 로컬 실측에서 58분 설교의 오디오 받아쓰기가 **329초**로 이미 300초를 넘겼다. 같은 환경에서 텍스트 요약도 31초와 288초 사이를 오갔고(토큰 수는 거의 동일) 프로덕션 `app_logs`에는 `fetch failed`가 한 건도 없어, 이 지연은 로컬 네트워크 특성일 가능성이 크다. 그래도 여유가 있다는 근거는 사라졌으므로 프로덕션 첫 사례를 반드시 실측할 것.
+3. ~~`fetch-audio-transcript`의 `maxDuration=300`이 실제 최장 설교에서도 여유 있는지~~ — 2026-08-27 프로덕션 3건 실측으로 답이 나왔다. 아래는 `fetch-transcript`의 포기 로그부터 `summarize` 완료 로그까지의 벽시계 시간으로, QStash 큐 지연·오디오 변환·요약이 모두 들어간 값이다.
+
+   | 설교       | 길이           | 소요  |
+   | ---------- | -------------- | ----- |
+   | 2026-08-16 | 3,661초 (61분) | 490초 |
+   | 2026-08-09 | 3,664초 (61분) | 343초 |
+   | 2026-08-02 | 4,168초 (69분) | 289초 |
+
+   가장 긴 69분 설교가 가장 빨랐다. 로컬 실측(받아쓰기 329초)보다 프로덕션이 빠르며 길이와 소요가 비례하지도 않는다. **다만 같은 69분 설교의 20분 전 시도는 300초를 넘겨 강제 종료됐다(미결 #7)** — 예산이 빠듯한 게 아니라 편차가 예산 폭보다 크다는 뜻이고, 그래서 `maxDuration` 조정이 아니라 종료 후 회수 경로가 다음 과제가 된다.
+
 4. `headersTimeout` 관련 "fetch failed"가 프로덕션(Vercel Node 런타임)에서도 동일하게 재현되는지 — 로컬에서는 undici 전역 dispatcher로 완화했으나 Vercel 런타임에서 같은 설정이 유효한지 미확인. 대안으로 `@google/genai`가 지원하는 요청 단위 `httpOptions.timeout`(ms)도 확인했다 — 내부적으로 `includeExtraHttpOptionsToRequestInit`(`node_modules/@google/genai/dist/node/index.mjs`)이 전역 dispatcher의 헤더/바디 타임아웃 심볼을 `Math.max`로 올리기만 해 다른 호출자와 안전하게 공존하고, 그 호출 하나에만 걸리는 `AbortController`를 별도로 붙인다. 다만 이 경로는 전역 dispatcher가 **이미 존재할 때만** 작동해, 콜드 프로세스의 첫 호출에서는 분기가 통째로 건너뛰어지고 Node 기본 5분 헤더 타임아웃이 그대로 남을 수 있다 — `setGlobalDispatcher`는 dispatcher의 존재 자체를 보장하므로 현재 방식을 택했다. `transcribeFromAudio`의 `generateContent` 호출에는 이제 `httpOptions: { timeout: 600_000 }`을 안전망으로 병행 적용했다(전역 dispatcher를 대체하는 게 아니라 함께 건다) — 전역 dispatcher가 Vercel에서 무효로 확인되더라도 요청이 무한정 매달리지는 않는다.
 5. 배포 전 Vercel 프로젝트의 Node 버전이 22.19 이상(24.x 등)인지 확인할 것 — 저장소에 `engines`/`.nvmrc`/`vercel.json` Node 설정이 없어 Vercel 프로젝트 설정이 버전을 정한다. 설치된 `undici@8`은 `engines.node >= 22.19.0`을 요구해, 미달이면 설치 경고나 런타임 오류로 이어질 수 있다.
-6. QStash 플랜의 최대 HTTP 타임아웃이 300초 이상인지 확인할 것 — `fetch-transcript`가 `fetch-audio-transcript` 발행 시 `timeout: 300`(초)을 명시하지만, 플랜 상한이 이보다 낮으면 함수가 오디오 변환을 정상 완료해도 QStash가 응답을 못 받은 것으로 보고 재전달해 오디오 변환이 중복 과금될 수 있다.
-7. `fetch-audio-transcript`가 `maxDuration=300`에 걸려 Vercel에 의해 강제 종료되면 라우트의 catch가 실행되지 않아 `summary_status`가 종결 상태(`no_transcript`)로 남지 않고 `none`에 그대로 머문다 — 첫 실전 사례에서 이 잔류가 실제로 발생하는지 확인할 것.
+6. QStash 플랜의 최대 HTTP 타임아웃이 300초 이상인지 확인할 것 — `fetch-transcript`가 `fetch-audio-transcript` 발행 시 `timeout: 300`(초)을 명시하지만, 플랜 상한이 이보다 낮으면 함수가 오디오 변환을 정상 완료해도 QStash가 응답을 못 받은 것으로 보고 재전달한다. 중복 과금 자체는 라우트의 자막 유무 확인이 막는다(재전달분은 Gemini를 부르지 않고 반환) — 남는 비용은 함수 호출 한 번뿐이라 확인 우선순위는 낮아졌다.
+7. ~~**`fetch-audio-transcript` 강제 종료 시 상태가 `none`에 잔류한다**~~ — 2026-08-27 프로덕션에서 재현됐고, 같은 날 진행 표시 + 스위퍼 회수로 해소했다(위 "에러 처리" 참고). 아래는 재현 기록이다. 69분 설교(`b5153b79`)의 13:04:10 시도에는 완료 로그도 `오디오 변환 실패` 로그도 남지 않았다. catch가 돌았다면 에러 로그와 자동 재시도가 뒤따랐어야 하므로, Vercel이 300초에서 함수를 끊은 것이다. 관리자가 20분 뒤 상태를 보고 버튼을 다시 눌러 해소했다(13:24:07 재발행 → 13:28:56 완료).
+
+   이 잔류를 주울 자동 경로가 없다:
+
+   - `selectRetryTargets`는 `summary_status = 'failed'`이면서 자막이 있는 행만 고른다. 자막 없이 `none`인 행은 조건 두 개를 모두 벗어난다.
+   - `pending` 10분 만료 회수는 `claimSermonById`가 다시 호출될 때만 작동한다. 아무도 부르지 않으면 영원히 잠들어 있다.
+   - QStash `retries: 1`의 재전달은 같은 자리에서 다시 300초를 쓰고 조용히 죽는다.
+   - `retryAudioTranscriptOrGiveUp`은 catch 안에 있어 이 경로에서 실행되지 않는다.
+
+   관측 문제도 함께 드러났다 — 관리자 화면은 "아직 시작 안 함"과 "돌다가 죽음"을 구분해 보여주지 못한다. 둘 다 `none`이라 사람이 기다려 보는 것 말고는 판단할 방법이 없다. 해결 설계는 별도로 잡는다.
+
+8. ~~`claimSermonById`의 stale pending 판정~~ — 2026-08-27 `summary_claimed_at` 도입으로 해소했다. 아래는 무엇이 왜 틀렸는지의 기록이다.
+
+   판정이 `created_at`·`summary_generated_at IS NULL`·`summary_next_retry_at IS NULL` 세 조건에 걸려 있었는데, 셋 다 "언제부터 붙잡고 있나"의 대용품이었고 각각 다른 방향으로 틀렸다.
+
+   - `created_at`은 위성 행 생성 시각이다. 행은 `claimSermonById`가 선점하며 직접 만들므로 **첫 선점에서는** 우연히 선점 시각과 같아 제대로 동작했다. 낡는 것은 두 번째 선점부터다 — 관리자 재생성을 거친 행이 정확히 그 경우라, 갓 선점한 행이 죽은 워커로 오인돼 **중복 요약이 열렸다**.
+   - `summary_next_retry_at IS NULL`은 반대로 분기를 과하게 막았다. 요약이 실패하면 백오프 시각이 남고 재선점해도 지워지지 않으므로, **재시도를 거친 행에서는 죽은 워커 회수가 통째로 꺼져 있었다.**
+   - `summary_generated_at IS NULL`은 상태가 `pending`인 것으로 이미 걸러지는 조건이라 없어도 됐다.
+
+   이제 `summary_claimed_at` 하나만 본다. 값이 NULL인 `pending`은 오디오 변환 진행 표시라 이 분기에 걸리지 않는다.
+
+9. 오디오 회수가 `summary_attempts`를 요약 재시도와 공유한다 — 회수가 시도를 쓰면 그만큼 이후 요약 재시도가 줄어든다. 총 작업량 예산으로 보면 틀린 동작은 아니지만, 둘을 갈라야 한다면 컬럼이 하나 필요하다.
 
 ## 범위 밖 (YAGNI)
 

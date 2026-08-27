@@ -49,6 +49,12 @@ const {
   MAX_AUDIO_TRANSCRIPT_RETRY,
   publishAudioTranscript,
   retryAudioTranscriptOrGiveUp,
+  markAudioTranscriptInFlight,
+  reclaimStaleAudioTranscripts,
+  forceClaimSermonById,
+  AUDIO_TRANSCRIPT_STALE_MS,
+  STALE_PENDING_MS,
+  MAX_SUMMARY_ATTEMPTS,
 } = await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
@@ -73,12 +79,23 @@ describe('claimSermonById (integration)', () => {
 })
 
 describe('selectRetryTargets (integration)', () => {
-  it('selects failed sermons that have a transcript, respecting attempts cap', async () => {
-    const ok = await insertSermonFixture(h.db, { summaryStatus: 'failed', transcriptText: 'abc' })
-    await insertSermonFixture(h.db, { summaryStatus: 'failed' }) // 자막 없음 → 제외
-    const targets = await selectRetryTargets(10)
-    expect(targets.map((t) => t.id)).toContain(ok)
-    expect(targets).toHaveLength(1)
+  it('selects sermons that have a transcript but no summary yet, respecting the attempts cap', async () => {
+    const failed = await insertSermonFixture(h.db, { summaryStatus: 'failed', transcriptText: 'abc' })
+    // 자막을 저장한 직후 summarize 발행 전에 끊기면 none에 남는다 — 이것도 주울 잔류다.
+    const stranded = await insertSermonFixture(h.db, { summaryStatus: 'none', transcriptText: 'abc' })
+    const noTranscript = await insertSermonFixture(h.db, { summaryStatus: 'failed' })
+    const capped = await insertSermonFixture(h.db, {
+      summaryStatus: 'failed',
+      transcriptText: 'abc',
+      summaryAttempts: MAX_SUMMARY_ATTEMPTS,
+    })
+
+    const ids = (await selectRetryTargets(10)).map((t) => t.id)
+
+    expect(ids).toContain(failed)
+    expect(ids).toContain(stranded)
+    expect(ids).not.toContain(noTranscript)
+    expect(ids).not.toContain(capped)
   })
 })
 
@@ -266,5 +283,310 @@ describe('publishAudioTranscript (integration)', () => {
       0,
       { retries: 1, timeoutSeconds: 300 },
     )
+  })
+})
+
+// 오디오 변환은 Vercel 함수 예산(300초)에 걸려 강제 종료될 수 있다. 그러면 라우트의
+// catch가 실행되지 않아 어떤 종결 처리도 일어나지 않는다 — 진입 시 남긴 표시가
+// 그 잔류를 스위퍼에게 보이게 하는 유일한 흔적이다.
+describe('markAudioTranscriptInFlight (integration)', () => {
+  it('marks the row pending with an expiry so a killed run leaves a trace', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'none' })
+    const now = new Date('2026-08-27T04:00:00Z')
+
+    await markAudioTranscriptInFlight(id, now)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('pending')
+    expect(row.summaryNextRetryAt?.getTime()).toBe(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS)
+    expect(row.summaryAttempts).toBe(0)
+  })
+})
+
+describe('publishSummarizeOrMarkFailed — 진행 표시 해제 (integration)', () => {
+  // 표시를 남겨 두면 claimSermonById의 두 분기가 모두 막혀 summarize가 조용히 아무 일도 안 한다.
+  it('clears the audio in-flight marker so summarize can claim the row', async () => {
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-flight' })
+    await markAudioTranscriptInFlight(id, new Date())
+
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid-flight')
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('none')
+    expect(row.summaryNextRetryAt).toBeNull()
+    expect(await claimSermonById(id)).not.toBeNull()
+  })
+
+  // claimSermonById가 찍는 pending은 next_retry_at이 비어 있다 — 그쪽 선점은 건드리지 않는다.
+  it('leaves a summarize claim (pending without expiry) untouched', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'pending', youtubeVideoId: 'vid-claimed' })
+
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid-claimed')
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('pending')
+  })
+})
+
+describe('reclaimStaleAudioTranscripts (integration)', () => {
+  const stale = (now: Date) => new Date(now.getTime() - 1000)
+
+  it('republishes the audio job and consumes an attempt for an expired marker', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: stale(now),
+      youtubeVideoId: 'vid-stale',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).toEqual([id])
+    expect(publishJob).toHaveBeenCalledWith(
+      'fetch-audio-transcript',
+      { sermonId: id, videoId: 'vid-stale', attempt: 0 },
+      0,
+      expect.objectContaining({ retries: expect.any(Number) }),
+    )
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryAttempts).toBe(1)
+    expect(row.summaryNextRetryAt?.getTime()).toBe(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS)
+  })
+
+  it('leaves a marker that has not expired alone', async () => {
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: new Date(now.getTime() + 60_000),
+      youtubeVideoId: 'vid-fresh',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).not.toContain(id)
+    expect(result.gaveUp).not.toContain(id)
+  })
+
+  it('leaves a summarize claim (pending without expiry) alone', async () => {
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'pending', youtubeVideoId: 'vid-summarizing' })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).not.toContain(id)
+    expect(result.gaveUp).not.toContain(id)
+  })
+
+  // 자막 저장 직후 표시를 풀기 전에 끊기면 pending·만료·자막 있음이 남는다. 오디오 변환은 이미
+  // 끝났으므로 다시 태우지 않고, 표시만 풀어 요약 재시도 경로가 줍게 넘긴다.
+  it('hands a stale row that already has a transcript over to the summary retry path', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: stale(now),
+      transcriptText: 'already here',
+      youtubeVideoId: 'vid-has-text',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.handedOff).toEqual([id])
+    expect(result.republished).not.toContain(id)
+    expect(publishJob).not.toHaveBeenCalled()
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('none')
+    expect(row.summaryNextRetryAt).toBeNull()
+    expect((await selectRetryTargets(10)).map((t) => t.id)).toContain(id)
+  })
+
+  it('skips worship types that are not auto-summarized', async () => {
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      worshipType: '시온찬양대',
+      summaryStatus: 'pending',
+      summaryNextRetryAt: stale(now),
+      youtubeVideoId: 'vid-choir',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).not.toContain(id)
+  })
+
+  // 강제 종료가 반복되면 회수 → 또 종료 → 또 회수로 끝없이 돈다. 횟수를 DB에 세야 끊긴다.
+  it('gives up once the attempts are spent, clearing the marker', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const now = new Date('2026-08-27T05:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: stale(now),
+      summaryAttempts: MAX_SUMMARY_ATTEMPTS,
+      youtubeVideoId: 'vid-spent',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.gaveUp).toEqual([id])
+    expect(publishJob).not.toHaveBeenCalled()
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('no_transcript')
+    expect(row.summaryNextRetryAt).toBeNull()
+  })
+})
+
+// QStash가 오디오 job을 재전달하면 이미 요약이 끝난 설교 위에서 두 번째 판이 돈다.
+// 공개 페이지는 ready일 때만 요약을 그리므로, 여기서 상태를 덮으면 공개된 요약이 사라진다.
+describe('중복 전달 방어 (integration)', () => {
+  it('markAudioTranscriptInFlight leaves a row that already has a transcript alone', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'ready', transcriptText: 'done' })
+
+    await markAudioTranscriptInFlight(id, new Date())
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('ready')
+    expect(row.summaryNextRetryAt).toBeNull()
+  })
+
+  it('retryAudioTranscriptOrGiveUp does not bury a summary that already succeeded', async () => {
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'ready',
+      transcriptText: 'done',
+      youtubeVideoId: 'vid-dupe',
+    })
+
+    await retryAudioTranscriptOrGiveUp(id, 'vid-dupe', MAX_AUDIO_TRANSCRIPT_RETRY)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('ready')
+  })
+})
+
+describe('requestSummaryRegeneration — 이전 생성 시각 (integration)', () => {
+  // summary_generated_at이 남아 있으면 claimSermonById의 stale pending 분기가
+  // (summary_generated_at IS NULL을 요구해) 이 행을 회수 대상에서 빼 버린다.
+  it('clears the previous generation timestamp so a dead worker can be reclaimed', async () => {
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'ready',
+      summaryGeneratedAt: new Date('2026-08-01T00:00:00Z'),
+      transcriptText: 'abc',
+      youtubeVideoId: 'vid-regen',
+    })
+
+    await requestSummaryRegeneration(id)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryGeneratedAt).toBeNull()
+  })
+})
+
+// pending은 두 가지를 뜻한다 — summarize 워커의 선점(summary_claimed_at 있음)과 오디오 변환
+// 진행 표시(summary_claimed_at 없음). 이 구분이 무너지면 서로의 선점을 가로챈다.
+describe('summary_claimed_at 리스 (integration)', () => {
+  const long_ago = (now: Date) => new Date(now.getTime() - STALE_PENDING_MS - 1000)
+
+  it('records the claim time so a lease can expire', async () => {
+    const now = new Date('2026-08-27T06:00:00Z')
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'none' })
+
+    await claimSermonById(id, now)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryClaimedAt?.getTime()).toBe(now.getTime())
+  })
+
+  // 재생성을 거친 행은 위성 행이 오래됐고 next_retry_at·generated_at이 비어 있다. created_at을
+  // 기준으로 삼으면 갓 선점한 행을 죽은 워커로 오인해 중복 요약이 열린다.
+  it('blocks a second claim on an old row whose lease is still fresh', async () => {
+    const now = new Date('2026-08-27T06:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'none',
+      createdAt: new Date('2026-08-01T00:00:00Z'),
+    })
+
+    expect(await claimSermonById(id, now)).not.toBeNull()
+    expect(await claimSermonById(id, new Date(now.getTime() + 1000))).toBeNull()
+  })
+
+  // 요약이 실패하면 next_retry_at에 백오프가 남고, 재선점해도 지워지지 않는다. 그 값을
+  // NULL로 요구하면 죽은 워커 회수 분기가 재시도 경로에서 통째로 꺼진다.
+  it('reclaims an expired lease even when a backoff time is still recorded', async () => {
+    const now = new Date('2026-08-27T06:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryClaimedAt: long_ago(now),
+      summaryNextRetryAt: new Date(now.getTime() - 60_000),
+    })
+
+    expect(await claimSermonById(id, now)).not.toBeNull()
+  })
+
+  it('never claims an audio in-flight marker, expired or not', async () => {
+    const now = new Date('2026-08-27T06:00:00Z')
+    const fresh = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: new Date(now.getTime() + 60_000),
+    })
+    const expired = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryNextRetryAt: new Date(now.getTime() - 60_000),
+    })
+
+    expect(await claimSermonById(fresh, now)).toBeNull()
+    expect(await claimSermonById(expired, now)).toBeNull()
+  })
+
+  it('forceClaimSermonById records the claim time too', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'ready' })
+
+    await forceClaimSermonById(id)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryClaimedAt).not.toBeNull()
+  })
+
+  it('markAudioTranscriptInFlight clears a stale claim so the marker stays distinguishable', async () => {
+    const now = new Date('2026-08-27T06:00:00Z')
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'failed', summaryClaimedAt: long_ago(now) })
+
+    await markAudioTranscriptInFlight(id, now)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryClaimedAt).toBeNull()
+  })
+
+  // 재선점된 행(pending + 지난 백오프)은 오디오 표시와 컬럼 값이 겹친다. claimed_at이 갈라 준다.
+  it('reclaimStaleAudioTranscripts leaves a row that summarize is holding alone', async () => {
+    const now = new Date('2026-08-27T06:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryClaimedAt: now,
+      summaryNextRetryAt: new Date(now.getTime() - 60_000),
+      transcriptText: 'being summarized',
+      youtubeVideoId: 'vid-busy',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.republished).not.toContain(id)
+    expect(result.gaveUp).not.toContain(id)
+    expect(result.handedOff).not.toContain(id)
+  })
+
+  it('selectRetryTargets picks up a summarize claim whose lease expired', async () => {
+    const now = new Date('2026-08-27T06:00:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryClaimedAt: long_ago(now),
+      transcriptText: 'abc',
+    })
+
+    const ids = (await selectRetryTargets(20, now)).map((t) => t.id)
+
+    expect(ids).toContain(id)
   })
 })
