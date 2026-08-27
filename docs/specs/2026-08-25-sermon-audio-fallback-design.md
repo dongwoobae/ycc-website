@@ -21,8 +21,8 @@
 | HTTP 타임아웃            | Node 기본 undici `headersTimeout`(5분)이 긴 오디오 처리(4~5분)와 맞물려 간헐적으로 `fetch failed`를 유발함을 확인. 오디오 변환 호출 경로에 `headersTimeout`/`bodyTimeout`을 10분으로 올린 커스텀 dispatcher 적용                                                                                                                                                            |
 | 인프라                   | **Vercel Hobby 유지, Python 런타임 불필요.** 오디오 다운로드 자체가 없어졌으므로 새 job(`fetch-audio-transcript`)의 `maxDuration`만 Hobby 상한(300초)으로 올리면 충분                                                                                                                                                                                                       |
 | 최종 실패 시             | 폴백까지 실패하면 기존과 동일하게 `no_transcript`로 종결                                                                                                                                                                                                                                                                                                                    |
-| 수동 재생성 경로         | 관리자 "요약 재생성" 버튼(`fetchAndStoreTranscript`)의 RapidAPI 실패 분기에도 같은 오디오 변환 로직을 태운다 — 자동 경로(잡 체인)와 수동 경로가 오디오 변환 함수를 공유                                                                                                                                                                                                     |
-| 기존 `no_transcript` 3건 | 별도 백필 스크립트 없이, 배포 후 관리자가 해당 3건에서 "요약 재생성" 버튼을 눌러 수동으로 해소                                                                                                                                                                                                                                                                              |
+| 수동 재생성 경로         | 관리자 "요약 재생성" 버튼은 **자동 파이프라인 job을 발행하고 즉시 반환**한다(`requestSummaryRegeneration`). 자막이 캐시돼 있으면 `summarize`를, 없으면 `fetch-transcript`를 `attempt`가 상한에 찬 상태로 발행해 RapidAPI 1회 실패 즉시 오디오 폴백으로 넘긴다. 인라인 실행은 받아쓰기(실측 329초)와 요약(실측 222초)이 한 함수에 겹쳐 Vercel 300초 예산을 넘기므로 폐기     |
+| 기존 `no_transcript` 3건 | 별도 백필 스크립트 없이, 배포 후 관리자가 해당 3건에서 "요약 재생성" 버튼을 눌러 해소. 버튼이 job을 발행하므로 결과는 몇 분 뒤 상태 표시로 확인한다                                                                                                                                                                                                                         |
 
 ## 검토했지만 기각한 대안
 
@@ -55,16 +55,19 @@
 ④ QStash 워커  /api/jobs/summarize   (변경 없음, 프롬프트만 개선)
    - PROMPT에 durationSeconds·기대 챕터 수 명시, "챕터 900초 초과 금지" 강제 지시 추가
 
-[별도] 관리자 "요약 재생성" 버튼 → generateSummaryAction → manualSummarize
-   → fetchAndStoreTranscript: RapidAPI 1회 시도 실패 시 (신규) 같은 오디오 변환 함수 호출
-   → 기존 no_transcript 3건은 이 버튼으로 수동 해소(백필 스크립트 불필요)
+[별도] 관리자 "요약 재생성" 버튼 → generateSummaryAction → requestSummaryRegeneration
+   - summary_status='none', summary_attempts=0, summary_next_retry_at=NULL 로 초기화
+   - 자막 캐시 있음 → "summarize" job 발행
+   - 자막 캐시 없음 → "fetch-transcript" job을 attempt=MAX_TRANSCRIPT_RETRY 로 발행
+     (RapidAPI 1회 실패 → 곧바로 ③-b 오디오 폴백)
+   - 발행 후 즉시 반환 — 이후는 위 자동 체인과 완전히 동일한 경로
 ```
 
 ### 핵심 원칙
 
 - 오디오 폴백은 **별도 job으로 분리**한다 — `fetch-transcript`는 지금처럼 가볍게 유지하고, 4~5분 걸리는 Gemini 오디오 호출만 별도 함수(`maxDuration=300`)로 격리해 기존 `fetch-transcript`의 60초 예산에 영향을 주지 않는다.
 - 오디오 폴백의 출력 계약은 기존 `transcriptText`와 **동일**하다 — `summarize` job은 자막 출처가 RapidAPI인지 Gemini 오디오 변환인지 구분하지 않는다.
-- 오디오 변환 로직은 **자동 job과 수동 재생성 버튼이 같은 함수를 공유**한다 — 트리거 경로만 다르고 구현은 하나.
+- 수동 재생성 버튼은 **자동 체인에 재투입할 뿐** 자체 실행 경로를 갖지 않는다 — 오디오 변환이 도는 곳은 `fetch-audio-transcript` 하나뿐이라 함수 예산도 한 곳에서만 관리된다.
 
 ## 컴포넌트 (변경 / 신규)
 
@@ -74,8 +77,10 @@
 - `src/lib/qstash.ts` — `JobName` 유니온에 `'fetch-audio-transcript'` 추가. `publishJob`이 4번째 인자로 `JobPublishOptions`(`retries`·`timeoutSeconds`)를 받도록 확장돼, `fetch-audio-transcript` 발행 시 재전달 상한과 QStash HTTP 타임아웃을 job별로 지정할 수 있다.
 - `src/lib/ai/gemini.ts` — `generateContentWithFallback`을 모델 배열 순차 시도로 일반화하고, 503 등 일시 오류 외에 404(모델 단종)도 다음 모델로 넘어가도록 판별을 넓힌다(`isModelUnavailableError` 신규). 오디오 경로는 `[gemini-3.1-pro-preview, gemini-3.1-pro, gemini-3.5-flash, gemini-2.5-flash]` 4단, 기존 텍스트 요약 호출(`[3.5-flash, 2.5-flash]`)도 같은 함수로 통합.
 - `src/lib/ai/sermon-summary.ts` — `PROMPT`에 `durationSeconds`·기대 챕터 수(`Math.round(durationSeconds/600)`)를 보간하고 "챕터 900초 초과 금지, 초과 시 반드시 분할" 지시 추가.
-- `src/lib/sermons/summarize.ts` — `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, `options.audioFallback`이 켜져 있으면 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 폴백은 기본 꺼짐(옵트인)이다 — 자막이 아직 없는 것이 정상인 채널 동기화 경로(`resyncAllSermons`)까지 영상 한 건당 4~5분 블로킹하면 안 되고(SSE 스트림의 300초 예산을 한 건이 먹는다), 30분 뒤면 무료로 잡힐 자막을 두고 3시간 게이트를 우회하게 되기 때문이다. `manualSummarize`만 명시적으로 켠다. 이 함수는 자동 job(`fetch-audio-transcript`)과 수동 `manualSummarize` 양쪽에서 재사용된다.
-- `src/app/admin/sermons/[id]/edit/page.tsx` — 오디오 변환이 최대 4~5분 걸릴 수 있으므로 `maxDuration`을 300으로 상향. Server Action의 타임아웃은 그 액션을 호출한 **페이지**의 route segment config를 따르므로, `generateSummaryAction`을 호출하는 `SermonEditForm`을 렌더링하는 이 페이지에 둬야 한다(서버 액션 파일에 두면 무시된다).
+- `src/lib/sermons/summarize.ts` — `fetchAndStoreTranscript`가 RapidAPI 실패(`자막 미준비`) 시 바로 던지지 않고, `options.audioFallback`이 켜져 있으면 신규 오디오 변환 함수를 호출해 성공하면 그 텍스트를 저장·반환. 폴백은 기본 꺼짐(옵트인)이다 — 자막이 아직 없는 것이 정상인 채널 동기화 경로(`resyncAllSermons`)까지 영상 한 건당 4~5분 블로킹하면 안 되고(SSE 스트림의 300초 예산을 한 건이 먹는다), 30분 뒤면 무료로 잡힐 자막을 두고 3시간 게이트를 우회하게 되기 때문이다. `manualSummarize`만 명시적으로 켠다 — 이 경로는 이제 로컬 백필 스크립트(`scripts/summarize-sermons.ts`) 전용이라 함수 실행시간 예산을 받지 않는다. 신규 `requestSummaryRegeneration`이 관리자 버튼의 진입점이고, `MAX_TRANSCRIPT_RETRY`도 여기서 export해 `fetch-transcript` 라우트와 공유한다.
+- `src/app/admin/sermons/[id]/edit/page.tsx` — `maxDuration=300` 유지. 최초에는 인라인 오디오 변환 때문에 올린 값이지만, 버튼이 job 발행으로 바뀐 뒤로는 같은 페이지의 `suggestThumbnailTextAction`(Gemini 호출)이 이 예산을 쓴다. Server Action의 타임아웃은 그 액션을 호출한 **페이지**의 route segment config를 따른다(서버 액션 파일에 두면 무시된다).
+- `src/lib/actions/sermons.ts` — `generateSummaryAction`이 `manualSummarize` 대신 `requestSummaryRegeneration`을 호출하고 값을 반환하지 않는다.
+- `src/components/admin/SermonEditForm.tsx` — 버튼이 `ready`/`failed` 대신 요청 접수를 표시한다. `no_transcript` 안내 문구도 "완료까지 기다리라"에서 "나중에 새로고침하라"로 바뀐다.
 
 ### 신규
 
@@ -100,6 +105,7 @@
 - `audio-transcript`: `"[MM:SS] 발화"` 파싱, 일시 오류 시 폴백 모델 전환.
 - `sermon-summary` 프롬프트: `durationSeconds` 보간 값 검증, 챕터 900초 초과 시 실패하는 회귀 케이스(가능하면 스냅샷보다는 프롬프트 문자열 포함 여부 검증).
 - `fetchAndStoreTranscript`: RapidAPI 실패 시 오디오 변환 함수 호출로 폴백, 오디오 변환도 실패하면 기존과 동일하게 에러 throw(관리자 화면에 메시지 노출). 회귀 방지: 폴백을 켜지 않은 기본 호출은 `transcribeFromAudio`를 호출하지 않고 바로 `자막 미준비`를 throw한다(`summarize.integration.test.ts`).
+- `requestSummaryRegeneration`: 자막 캐시 유무에 따른 발행 job 분기, `attempt`가 `MAX_TRANSCRIPT_RETRY`로 채워져 나가는지, 종결 상태(`no_transcript`)와 시도 소진 행이 초기화돼 `claimSermonById`를 통과하는지, 영상 id가 없으면 throw하는지(`summarize.integration.test.ts`).
 
 ## 실측 검증 기록 (참고용 원자료)
 
@@ -118,7 +124,7 @@
 
 1. `gemini-3.1-pro-preview`가 실제 서비스 시점에도 유튜브 URL 직접 입력을 지원하는지 — preview 단종(404) 자체는 `gemini-3.1-pro` 자동 폴백으로 대비했지만, `gemini-3.1-pro`라는 정식 이름이 실제로 그대로 쓰이는지는 출시 전에는 확인 불가. 이름이 다르게 나올 경우 상수만 갱신하면 된다.
 2. Gemini의 유튜브 URL 직접 입력 기능 자체가 아직 프리뷰(무료) 상태 — 정식화 시 과금 정책이 붙을 수 있어 유지보수 시 확인 필요.
-3. `fetch-audio-transcript`의 `maxDuration=300`이 실제 최장 설교(설교 길이 상한 확인 필요, 현재 최대 확인된 사례는 약 70분)에서도 여유 있게 처리되는지 프로덕션 배포 후 1건은 실측 확인.
+3. `fetch-audio-transcript`의 `maxDuration=300`이 실제 최장 설교에서도 여유 있는지 — 2026-08-27 로컬 실측에서 58분 설교의 오디오 받아쓰기가 **329초**로 이미 300초를 넘겼다. 같은 환경에서 텍스트 요약도 31초와 288초 사이를 오갔고(토큰 수는 거의 동일) 프로덕션 `app_logs`에는 `fetch failed`가 한 건도 없어, 이 지연은 로컬 네트워크 특성일 가능성이 크다. 그래도 여유가 있다는 근거는 사라졌으므로 프로덕션 첫 사례를 반드시 실측할 것.
 4. `headersTimeout` 관련 "fetch failed"가 프로덕션(Vercel Node 런타임)에서도 동일하게 재현되는지 — 로컬에서는 undici 전역 dispatcher로 완화했으나 Vercel 런타임에서 같은 설정이 유효한지 미확인. 대안으로 `@google/genai`가 지원하는 요청 단위 `httpOptions.timeout`(ms)도 확인했다 — 내부적으로 `includeExtraHttpOptionsToRequestInit`(`node_modules/@google/genai/dist/node/index.mjs`)이 전역 dispatcher의 헤더/바디 타임아웃 심볼을 `Math.max`로 올리기만 해 다른 호출자와 안전하게 공존하고, 그 호출 하나에만 걸리는 `AbortController`를 별도로 붙인다. 다만 이 경로는 전역 dispatcher가 **이미 존재할 때만** 작동해, 콜드 프로세스의 첫 호출에서는 분기가 통째로 건너뛰어지고 Node 기본 5분 헤더 타임아웃이 그대로 남을 수 있다 — `setGlobalDispatcher`는 dispatcher의 존재 자체를 보장하므로 현재 방식을 택했다. `transcribeFromAudio`의 `generateContent` 호출에는 이제 `httpOptions: { timeout: 600_000 }`을 안전망으로 병행 적용했다(전역 dispatcher를 대체하는 게 아니라 함께 건다) — 전역 dispatcher가 Vercel에서 무효로 확인되더라도 요청이 무한정 매달리지는 않는다.
 5. 배포 전 Vercel 프로젝트의 Node 버전이 22.19 이상(24.x 등)인지 확인할 것 — 저장소에 `engines`/`.nvmrc`/`vercel.json` Node 설정이 없어 Vercel 프로젝트 설정이 버전을 정한다. 설치된 `undici@8`은 `engines.node >= 22.19.0`을 요구해, 미달이면 설치 경고나 런타임 오류로 이어질 수 있다.
 6. QStash 플랜의 최대 HTTP 타임아웃이 300초 이상인지 확인할 것 — `fetch-transcript`가 `fetch-audio-transcript` 발행 시 `timeout: 300`(초)을 명시하지만, 플랜 상한이 이보다 낮으면 함수가 오디오 변환을 정상 완료해도 QStash가 응답을 못 받은 것으로 보고 재전달해 오디오 변환이 중복 과금될 수 있다.

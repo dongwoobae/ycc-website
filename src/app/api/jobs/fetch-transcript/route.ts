@@ -3,12 +3,10 @@ import { db } from '@/lib/db'
 import { sermonSummaries } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { publishJob, RETRY_DELAY_SECONDS, verifyQStash } from '@/lib/qstash'
-import { publishSummarizeOrMarkFailed } from '@/lib/sermons/summarize'
+import { MAX_TRANSCRIPT_RETRY, publishSummarizeOrMarkFailed } from '@/lib/sermons/summarize'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 
 export const maxDuration = 60
-
-const MAX_TRANSCRIPT_RETRY = 6
 
 /** fetch-audio-transcript 라우트의 maxDuration과 맞춘 값. */
 const AUDIO_TRANSCRIPT_TIMEOUT_SECONDS = 300

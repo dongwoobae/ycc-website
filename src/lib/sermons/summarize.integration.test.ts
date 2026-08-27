@@ -38,8 +38,15 @@ afterAll(async () => {
 })
 
 // 모듈은 mock 설정 이후 import (동적 import로 보장)
-const { claimSermonById, selectRetryTargets, fetchAndStoreTranscript, summarizeClaimed, publishSummarizeOrMarkFailed } =
-  await import('./summarize')
+const {
+  claimSermonById,
+  selectRetryTargets,
+  fetchAndStoreTranscript,
+  summarizeClaimed,
+  publishSummarizeOrMarkFailed,
+  requestSummaryRegeneration,
+  MAX_TRANSCRIPT_RETRY,
+} = await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
   it('claims a none-status sermon by updating sermon_summaries, then blocks double-claim', async () => {
@@ -142,5 +149,55 @@ describe('publishSummarizeOrMarkFailed (integration)', () => {
     await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: 'hi' }], 'vid1')
     const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
     expect(row.summaryStatus).toBe('failed')
+  })
+})
+
+describe('requestSummaryRegeneration (integration)', () => {
+  it('publishes a summarize job when the transcript is already cached', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid1', transcriptText: '[00:00] hi' })
+
+    await requestSummaryRegeneration(id)
+
+    expect(publishJob).toHaveBeenCalledWith('summarize', { sermonId: id })
+  })
+
+  // attempt를 상한으로 채워 발행하면 fetch-transcript가 RapidAPI를 한 번만 보고 오디오 폴백으로 넘어간다.
+  // 관리자가 누른 즉시 처리돼야 하므로 30분 간격 재시도 게이트를 태우지 않는다.
+  it('publishes fetch-transcript at the retry cap when no transcript is cached', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid2' })
+
+    await requestSummaryRegeneration(id)
+
+    expect(publishJob).toHaveBeenCalledWith('fetch-transcript', {
+      sermonId: id,
+      videoId: 'vid2',
+      attempt: MAX_TRANSCRIPT_RETRY,
+    })
+  })
+
+  it('resets a terminal no_transcript row with spent attempts so the job can claim it', async () => {
+    const id = await insertSermonFixture(h.db, {
+      youtubeVideoId: 'vid3',
+      summaryStatus: 'no_transcript',
+      summaryAttempts: 3,
+      summaryNextRetryAt: new Date('2099-01-01'),
+    })
+
+    await requestSummaryRegeneration(id)
+
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('none')
+    expect(row.summaryAttempts).toBe(0)
+    expect(row.summaryNextRetryAt).toBeNull()
+    expect(await claimSermonById(id)).not.toBeNull()
+  })
+
+  it('throws when the sermon has no YouTube video id', async () => {
+    const id = await insertSermonFixture(h.db)
+    await expect(requestSummaryRegeneration(id)).rejects.toThrow()
   })
 })

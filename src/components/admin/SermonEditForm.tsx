@@ -125,8 +125,8 @@ export default function SermonEditForm({
             setMsg('')
             startTransition(async () => {
               try {
-                const status = await generateSummaryAction(id)
-                setMsg(`요약: ${status}`)
+                await generateSummaryAction(id)
+                setMsg('요약 요청됨 — 몇 분 뒤 새로고침하면 상태가 바뀌어요')
                 router.refresh()
               } catch (e) {
                 setMsg(e instanceof Error ? e.message : String(e))
@@ -154,7 +154,7 @@ export default function SermonEditForm({
         {summaryStatus === 'no_transcript' && (
           <p className="mt-1 text-xs text-ink-muted">
             유튜브 자막도, 오디오 변환도 모두 실패해 자동 요약을 건너뛴 건입니다. &lsquo;요약 재생성&rsquo;을 누르면
-            오디오 변환으로 다시 시도해요 — 최대 5분 정도 걸리니 완료될 때까지 페이지에서 기다려 주세요.
+            오디오 변환으로 다시 시도해요 — 백그라운드에서 처리되니 10분쯤 뒤에 새로고침해 상태를 확인해 주세요.
           </p>
         )}
         {quickSummary.length > 0 && (

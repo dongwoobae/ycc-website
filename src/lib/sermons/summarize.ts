@@ -12,6 +12,9 @@ import { autoSummaryTypes } from '@/lib/worship'
 export const MAX_SUMMARY_ATTEMPTS = 3
 export const STALE_PENDING_MS = 10 * 60 * 1000
 
+/** fetch-transcript job이 자막을 기다리며 30분 간격으로 재발행하는 상한. 소진하면 오디오 폴백으로 넘어간다. */
+export const MAX_TRANSCRIPT_RETRY = 6
+
 export function computeNextRetry(attempts: number, now: Date): Date {
   const minutes = 5 * Math.pow(3, Math.max(0, attempts - 1))
   return new Date(now.getTime() + minutes * 60 * 1000)
@@ -214,4 +217,36 @@ export async function manualSummarize(id: string): Promise<'ready' | 'failed'> {
   const claimed = await forceClaimSermonById(row.id)
   if (!claimed) throw new Error('summary is not claimable')
   return summarizeClaimed(claimed.id, claimed.durationSeconds, transcriptText, claimed.attempts)
+}
+
+/**
+ * 관리자 "요약 재생성"의 진입점. 실제 작업은 자동 파이프라인 job에 넘기고 즉시 반환한다 —
+ * 오디오 폴백까지 타는 경우 받아쓰기와 요약을 합치면 Vercel 함수 1회 예산(300초)을 넘긴다.
+ * 상태 초기화는 job이 claimSermonById를 통과하게 만드는 장치다: 종결 상태(no_transcript)나
+ * 시도를 소진한 행도 이 초기화 덕분에 별도 분기 없이 재투입된다.
+ */
+export async function requestSummaryRegeneration(sermonId: string): Promise<void> {
+  const [row] = await db
+    .select({ videoId: sermons.youtubeVideoId, transcriptText: sermonTranscripts.transcriptText })
+    .from(sermons)
+    .leftJoin(sermonTranscripts, eq(sermonTranscripts.sermonId, sermons.id))
+    .where(eq(sermons.id, sermonId))
+    .limit(1)
+  if (!row?.videoId) throw new Error('sermon not found or has no YouTube video id')
+
+  await db.execute(
+    sql`INSERT INTO sermon_summaries (sermon_id) VALUES (${sermonId}) ON CONFLICT (sermon_id) DO NOTHING`,
+  )
+  await db
+    .update(sermonSummaries)
+    .set({ summaryStatus: 'none', summaryAttempts: 0, summaryNextRetryAt: null })
+    .where(eq(sermonSummaries.sermonId, sermonId))
+
+  if (row.transcriptText?.trim()) {
+    await publishJob('summarize', { sermonId })
+    return
+  }
+  // attempt를 상한으로 채워 보내 자막 대기 재시도를 건너뛴다 — RapidAPI를 한 번만 보고
+  // 없으면 곧바로 오디오 폴백으로 넘어간다. 관리자가 3시간을 기다릴 이유가 없다.
+  await publishJob('fetch-transcript', { sermonId, videoId: row.videoId, attempt: MAX_TRANSCRIPT_RETRY })
 }
