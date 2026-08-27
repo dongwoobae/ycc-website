@@ -1,7 +1,7 @@
 # 자막 없는 설교 영상 오디오 폴백 설계
 
 **작성일**: 2026-08-25
-**상태**: 설계 확정 (구현 완료, 배포 전 확인 항목은 "미결 사항" 참고)
+**상태**: 배포 완료 (2026-08-27). 남은 `no_transcript` 3건까지 해소했으나 미결 #7이 그 과정에서 재현됐다 — "미결 사항" 참고
 **관련**: `2026-06-23-youtube-websub-pipeline-design.md`의 "범위 밖 — STT(음성→텍스트) 폴백"을 이번 설계로 도입한다. 기존 파이프라인(WebSub→ingest→fetch-transcript→summarize)은 그대로 두고 `fetch-transcript`가 포기하는 지점에 새 단계를 끼워 넣는 확장이다.
 
 ## 배경
@@ -129,11 +129,29 @@
 
 1. `gemini-3.1-pro-preview`가 실제 서비스 시점에도 유튜브 URL 직접 입력을 지원하는지 — preview 단종(404) 자체는 `gemini-3.1-pro` 자동 폴백으로 대비했지만, `gemini-3.1-pro`라는 정식 이름이 실제로 그대로 쓰이는지는 출시 전에는 확인 불가. 이름이 다르게 나올 경우 상수만 갱신하면 된다.
 2. Gemini의 유튜브 URL 직접 입력 기능 자체가 아직 프리뷰(무료) 상태 — 정식화 시 과금 정책이 붙을 수 있어 유지보수 시 확인 필요.
-3. `fetch-audio-transcript`의 `maxDuration=300`이 실제 최장 설교에서도 여유 있는지 — 2026-08-27 로컬 실측에서 58분 설교의 오디오 받아쓰기가 **329초**로 이미 300초를 넘겼다. 같은 환경에서 텍스트 요약도 31초와 288초 사이를 오갔고(토큰 수는 거의 동일) 프로덕션 `app_logs`에는 `fetch failed`가 한 건도 없어, 이 지연은 로컬 네트워크 특성일 가능성이 크다. 그래도 여유가 있다는 근거는 사라졌으므로 프로덕션 첫 사례를 반드시 실측할 것.
+3. ~~`fetch-audio-transcript`의 `maxDuration=300`이 실제 최장 설교에서도 여유 있는지~~ — 2026-08-27 프로덕션 3건 실측으로 답이 나왔다. 아래는 `fetch-transcript`의 포기 로그부터 `summarize` 완료 로그까지의 벽시계 시간으로, QStash 큐 지연·오디오 변환·요약이 모두 들어간 값이다.
+
+   | 설교       | 길이           | 소요  |
+   | ---------- | -------------- | ----- |
+   | 2026-08-16 | 3,661초 (61분) | 490초 |
+   | 2026-08-09 | 3,664초 (61분) | 343초 |
+   | 2026-08-02 | 4,168초 (69분) | 289초 |
+
+   가장 긴 69분 설교가 가장 빨랐다. 로컬 실측(받아쓰기 329초)보다 프로덕션이 빠르며 길이와 소요가 비례하지도 않는다. **다만 같은 69분 설교의 20분 전 시도는 300초를 넘겨 강제 종료됐다(미결 #7)** — 예산이 빠듯한 게 아니라 편차가 예산 폭보다 크다는 뜻이고, 그래서 `maxDuration` 조정이 아니라 종료 후 회수 경로가 다음 과제가 된다.
+
 4. `headersTimeout` 관련 "fetch failed"가 프로덕션(Vercel Node 런타임)에서도 동일하게 재현되는지 — 로컬에서는 undici 전역 dispatcher로 완화했으나 Vercel 런타임에서 같은 설정이 유효한지 미확인. 대안으로 `@google/genai`가 지원하는 요청 단위 `httpOptions.timeout`(ms)도 확인했다 — 내부적으로 `includeExtraHttpOptionsToRequestInit`(`node_modules/@google/genai/dist/node/index.mjs`)이 전역 dispatcher의 헤더/바디 타임아웃 심볼을 `Math.max`로 올리기만 해 다른 호출자와 안전하게 공존하고, 그 호출 하나에만 걸리는 `AbortController`를 별도로 붙인다. 다만 이 경로는 전역 dispatcher가 **이미 존재할 때만** 작동해, 콜드 프로세스의 첫 호출에서는 분기가 통째로 건너뛰어지고 Node 기본 5분 헤더 타임아웃이 그대로 남을 수 있다 — `setGlobalDispatcher`는 dispatcher의 존재 자체를 보장하므로 현재 방식을 택했다. `transcribeFromAudio`의 `generateContent` 호출에는 이제 `httpOptions: { timeout: 600_000 }`을 안전망으로 병행 적용했다(전역 dispatcher를 대체하는 게 아니라 함께 건다) — 전역 dispatcher가 Vercel에서 무효로 확인되더라도 요청이 무한정 매달리지는 않는다.
 5. 배포 전 Vercel 프로젝트의 Node 버전이 22.19 이상(24.x 등)인지 확인할 것 — 저장소에 `engines`/`.nvmrc`/`vercel.json` Node 설정이 없어 Vercel 프로젝트 설정이 버전을 정한다. 설치된 `undici@8`은 `engines.node >= 22.19.0`을 요구해, 미달이면 설치 경고나 런타임 오류로 이어질 수 있다.
 6. QStash 플랜의 최대 HTTP 타임아웃이 300초 이상인지 확인할 것 — `fetch-transcript`가 `fetch-audio-transcript` 발행 시 `timeout: 300`(초)을 명시하지만, 플랜 상한이 이보다 낮으면 함수가 오디오 변환을 정상 완료해도 QStash가 응답을 못 받은 것으로 보고 재전달해 오디오 변환이 중복 과금될 수 있다.
-7. `fetch-audio-transcript`가 `maxDuration=300`에 걸려 Vercel에 의해 강제 종료되면 라우트의 catch가 실행되지 않아 `summary_status`가 종결 상태(`no_transcript`)로 남지 않고 `none`에 그대로 머문다 — 첫 실전 사례에서 이 잔류가 실제로 발생하는지 확인할 것.
+7. **`fetch-audio-transcript` 강제 종료 시 상태가 `none`에 잔류한다 — 2026-08-27 프로덕션에서 재현됐다.** 69분 설교(`b5153b79`)의 13:04:10 시도에는 완료 로그도 `오디오 변환 실패` 로그도 남지 않았다. catch가 돌았다면 에러 로그와 자동 재시도가 뒤따랐어야 하므로, Vercel이 300초에서 함수를 끊은 것이다. 관리자가 20분 뒤 상태를 보고 버튼을 다시 눌러 해소했다(13:24:07 재발행 → 13:28:56 완료).
+
+   이 잔류를 주울 자동 경로가 없다:
+
+   - `selectRetryTargets`는 `summary_status = 'failed'`이면서 자막이 있는 행만 고른다. 자막 없이 `none`인 행은 조건 두 개를 모두 벗어난다.
+   - `pending` 10분 만료 회수는 `claimSermonById`가 다시 호출될 때만 작동한다. 아무도 부르지 않으면 영원히 잠들어 있다.
+   - QStash `retries: 1`의 재전달은 같은 자리에서 다시 300초를 쓰고 조용히 죽는다.
+   - `retryAudioTranscriptOrGiveUp`은 catch 안에 있어 이 경로에서 실행되지 않는다.
+
+   관측 문제도 함께 드러났다 — 관리자 화면은 "아직 시작 안 함"과 "돌다가 죽음"을 구분해 보여주지 못한다. 둘 다 `none`이라 사람이 기다려 보는 것 말고는 판단할 방법이 없다. 해결 설계는 별도로 잡는다.
 
 ## 범위 밖 (YAGNI)
 
