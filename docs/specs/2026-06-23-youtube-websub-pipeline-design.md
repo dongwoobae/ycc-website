@@ -193,6 +193,7 @@ CRON_SECRET=
 - **요약 무한루프 방지** → `summary_attempts >= MAX_ATTEMPTS`면 자동 워커 중단(수동만).
 - **stale pending** → 10분 초과 시 재claim.
 - **YouTube quota(403)/없음(404)** → 로그 후 부분 성공 허용.
+- **등록 DB 쓰기 실패**(`insertSermon`) → 로그 후 다시 던짐. 목록을 도는 reconcile·sync는 한 건 실패로 멈추지 않고 다음 영상으로 넘어간다. `sermons` 행만 남고 자식 행이 없는 부분 등록은 자동 경로가 줍지 못하므로(reconcile은 등록됐다고 보고 건너뛰고 요약 스위퍼는 `sermon_summaries` 행만 훑는다) 이 로그가 유일한 신호다.
 
 ## 테스트 (vitest, 외부 API 모킹)
 

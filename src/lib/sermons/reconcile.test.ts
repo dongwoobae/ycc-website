@@ -49,4 +49,18 @@ describe('reconcileSermons', () => {
 
     expect(result).toEqual({ checked: 1, inserted: 1 })
   })
+
+  it('한 영상의 등록이 실패해도 나머지 영상은 계속 등록한다', async () => {
+    vi.stubEnv('YOUTUBE_CHANNEL_ID', 'UC_test')
+    vi.mocked(fetchChannelVideos).mockResolvedValue([
+      vid('missing-4', '주일예배 - 등록 실패'),
+      vid('missing-5', '수요예배 - 정상 등록'),
+    ])
+    vi.mocked(insertSermon).mockRejectedValueOnce(new Error('insert failed'))
+
+    const result = await reconcileSermons()
+
+    expect(result).toEqual({ checked: 2, inserted: 1 })
+    expect(publishJob).toHaveBeenCalledWith('fetch-transcript', { sermonId: 'sid', videoId: 'missing-5', attempt: 0 })
+  })
 })

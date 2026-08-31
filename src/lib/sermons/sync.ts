@@ -45,7 +45,13 @@ export async function resyncAllSermons(
     const autoSummary = AUTO_SUMMARY_TYPES.has(worshipType)
     onProgress?.({ current, total, title: video.title, phase: autoSummary ? '자막·요약 중' : '등록' })
 
-    const sermonId = await insertSermon(video, worshipType)
+    // 실패 사유는 insertSermon이 남긴다. 여기서는 한 건의 실패로 남은 영상까지 놓치지 않게만 한다.
+    let sermonId: string
+    try {
+      sermonId = await insertSermon(video, worshipType)
+    } catch {
+      continue
+    }
     if (!sermonId) continue
     inserted++
     if (!autoSummary) continue

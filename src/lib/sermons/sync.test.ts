@@ -13,6 +13,7 @@ vi.mock('./summarize', () => ({
 vi.mock('@/lib/qstash', () => ({ publishJob: vi.fn(async () => undefined) }))
 
 import { resyncAllSermons } from './sync'
+import { insertSermon } from './ingest'
 import { fetchChannelVideos } from '@/lib/youtube/rapidapi-channel'
 import { fetchAndStoreTranscript } from './summarize'
 import { publishJob } from '@/lib/qstash'
@@ -51,5 +52,15 @@ describe('resyncAllSermons onProgress', () => {
     expect(result.inserted).toBe(1)
     expect(result.summarized).toBe(0)
     expect(publishJob).toHaveBeenCalledWith('fetch-transcript', { sermonId: 'sid', videoId: 'c' })
+  })
+
+  it('한 영상의 등록이 실패해도 나머지 영상은 계속 등록한다', async () => {
+    vi.stubEnv('YOUTUBE_CHANNEL_ID', 'UC_test')
+    vi.mocked(fetchChannelVideos).mockResolvedValue([vid('d', '특송 - 등록 실패'), vid('e', '특송 - 정상 등록')])
+    vi.mocked(insertSermon).mockRejectedValueOnce(new Error('insert failed'))
+
+    const result = await resyncAllSermons()
+
+    expect(result.inserted).toBe(1)
   })
 })
