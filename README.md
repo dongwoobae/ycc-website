@@ -620,7 +620,7 @@ npm run db:generate
 # 마이그레이션 검증
 npm run db:check
 
-# 마이그레이션 적용
+# 마이그레이션 적용 (로컬·CI 대상)
 npm run db:migrate
 
 # 스키마를 DB에 직접 반영
@@ -636,6 +636,19 @@ npm run db:studio
 npm run db:reset
 npm run db:seed
 ```
+
+### 프로덕션 마이그레이션
+
+**손으로 적용하지 않습니다.** `vercel.json`의 `buildCommand`가 빌드 앞에 `npm run db:migrate:deploy`
+(`scripts/migrate-deploy.mjs`)를 세워 두었고, 이 스크립트는 `VERCEL_ENV`가 `production`일 때만 움직입니다 —
+프리뷰 배포도 같은 `DATABASE_URL`을 물려받기 때문입니다. 실패하면 배포가 함께 실패합니다.
+
+빌드 앞에 두는 이유는 순서입니다. GitHub Actions에 두면 Vercel 빌드와 병렬로 돌아 새 코드가 컬럼보다 먼저
+살아날 수 있습니다. 대신 이 배치는 **마이그레이션 직후 잠깐 구 버전 코드가 새 스키마 위에서 돈다**는 뜻이라,
+컬럼 삭제·이름 변경은 한 배포에 담지 말고 확장 → 코드 교체 → 정리로 나눠야 합니다.
+
+적용 여부는 `drizzle.__drizzle_migrations`의 마지막 `created_at`(= 저널의 `when`)으로만 판정됩니다.
+해시는 비교하지 않으므로 CRLF 차이로 어긋난 기록이 있어도 재적용되지 않습니다.
 
 ---
 
@@ -734,6 +747,9 @@ Build job은 Postgres 서비스 컨테이너와 Neon HTTP 프록시(`ghcr.io/tim
 `src/lib/db/index.ts`가 모듈 최상위에서 접속을 만들고 상세 라우트 4개가 `generateStaticParams`에서 DB를 읽기 때문에,
 **빌드 자체가 살아 있는 DB를 요구**합니다. 앱은 neon-http로 말하므로 프록시가 그 HTTP 요청을 Postgres로 옮기고,
 드라이버 종점은 `NEON_HTTP_PROXY` 환경변수로만 갈아끼웁니다 — 이 변수가 없으면 평소대로 Neon 클라우드로 붙습니다.
+
+Build job의 `db:migrate`는 그 서비스 컨테이너를 향합니다. 프로덕션 DB는 CI가 건드리지 않고 배포 시점에
+갱신됩니다(위 '프로덕션 마이그레이션').
 
 `endOfLine`은 `auto`입니다 — 이 저장소에는 `.gitattributes`가 없고 Windows 작업 트리가 CRLF라,
 `lf`로 고정하면 로컬에서 전 파일이 매번 불일치로 잡힙니다.

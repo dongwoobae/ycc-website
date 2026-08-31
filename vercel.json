@@ -1,3 +1,4 @@
 {
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "buildCommand": "npm run db:migrate:deploy && npm run build"
 }

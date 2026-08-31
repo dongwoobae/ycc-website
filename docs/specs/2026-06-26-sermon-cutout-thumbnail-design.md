@@ -33,7 +33,8 @@ removeBackground(imageUrl: string): Promise<Buffer>
 
 `sermon_thumbnails` 테이블에 `thumbnail_cutout_url text` 컬럼 추가.
 
-- 마이그레이션: drizzle generate로 SQL 생성. **ycc는 drizzle-kit migrate 작동 불가** → 생성된 ADD COLUMN SQL을 postgres.js로 직접 적용(기존 우회 절차 동일).
+- 마이그레이션: drizzle generate로 SQL 생성. 당시 절차는 생성된 ADD COLUMN SQL을 postgres.js로 직접 적용하는 우회였다.
+  - 2026-08-31 — 이 우회는 폐기. 프로덕션 마이그레이션은 배포가 적용한다(README '프로덕션 마이그레이션'). 수동 적용이 한 번 누락되자 신규 설교 등록이 조용히 깨졌다.
 - 저장 위치: R2 `thumbnails/cutouts/{sermonId}-{ts}.png`.
 
 ### 3. 저장 헬퍼 (store.ts)
