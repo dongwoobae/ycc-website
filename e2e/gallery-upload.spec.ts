@@ -52,8 +52,9 @@ async function createUnpublishedAlbum(page: Page, title: string, cover: Buffer) 
 
 async function deleteAlbum(page: Page, title: string) {
   if (!page.url().endsWith('/admin/gallery')) await page.goto('/admin/gallery')
-  page.on('dialog', (dialog) => dialog.accept())
+  // 삭제 버튼은 window.confirm이 아니라 인라인 확인 모달(role=dialog)을 띄운다.
   await page.getByRole('row').filter({ hasText: title }).getByRole('button', { name: '삭제' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '삭제' }).click()
   await expect(page.getByRole('row').filter({ hasText: title })).toHaveCount(0, { timeout: 30_000 })
 }
 
@@ -68,15 +69,17 @@ test('대용량 표지 업로드 시 전송 본문이 Vercel 4.5MB 한도 밑으
   // ── 서버 액션 POST 본문 크기 계측 ────────────────────────────────────────
   // 대용량 multipart는 postDataBuffer()가 비어 나오므로(CDP 한계)
   // 실제 전송된 content-length 헤더로 잰다.
+  // allHeaders()는 응답이 와야 풀리는데, 생성 직후 페이지 이동으로 취소된 요청은
+  // 응답이 영영 없다. 그런 요청은 0으로 치고 넘어간다.
   const actionBodySizes: Promise<number>[] = []
   page.on('request', (request) => {
     if (request.method() !== 'POST') return
-    actionBodySizes.push(
-      request
-        .allHeaders()
-        .then((headers) => (headers['next-action'] ? Number(headers['content-length'] ?? 0) : 0))
-        .catch(() => 0),
-    )
+    const size = request
+      .allHeaders()
+      .then((headers) => (headers['next-action'] ? Number(headers['content-length'] ?? 0) : 0))
+      .catch(() => 0)
+    const gaveUp = new Promise<number>((resolve) => setTimeout(() => resolve(0), 15_000))
+    actionBodySizes.push(Promise.race([size, gaveUp]))
   })
 
   const title = `e2e-압축테스트-${Date.now()}`

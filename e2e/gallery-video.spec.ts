@@ -24,8 +24,9 @@ async function signIn(page: Page) {
 
 async function deleteAlbum(page: Page, title: string) {
   if (!page.url().endsWith('/admin/gallery')) await page.goto('/admin/gallery')
-  page.on('dialog', (dialog) => dialog.accept())
+  // 삭제 버튼은 window.confirm이 아니라 인라인 확인 모달(role=dialog)을 띄운다.
   await page.getByRole('row').filter({ hasText: title }).getByRole('button', { name: '삭제' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '삭제' }).click()
   await expect(page.getByRole('row').filter({ hasText: title })).toHaveCount(0, { timeout: 30_000 })
 }
 
