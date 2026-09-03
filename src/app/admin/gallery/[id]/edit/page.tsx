@@ -48,7 +48,13 @@ export default async function EditGalleryAlbumPage({ params }: EditGalleryAlbumP
       </div>
 
       <div className="grid gap-6">
-        <AlbumForm submitLabel="변경 저장" initialValue={initialValue} submitAction={updateAlbum.bind(null, id)} />
+        <AlbumForm
+          submitLabel="변경 저장"
+          initialValue={initialValue}
+          submitAction={updateAlbum.bind(null, id)}
+          albumId={id}
+          addImageAction={addImageRecord}
+        />
         <GalleryImageManager
           images={album.images}
           saveImageAction={addImageRecord.bind(null, id)}

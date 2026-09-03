@@ -44,14 +44,17 @@ async function createUnpublishedAlbum(page: Page, title: string, cover: Buffer) 
   await page.getByLabel('공개').uncheck()
   await page.setInputFiles('#cover', { name: 'cover.jpg', mimeType: 'image/jpeg', buffer: cover })
   await page.getByRole('button', { name: '앨범 작성' }).click()
-  await page.waitForURL('**/admin/gallery', { timeout: 60_000 })
+  // 생성 후에는 방금 만든 앨범의 수정 페이지로 이동한다.
+  await page.waitForURL('**/admin/gallery/**/edit', { timeout: 60_000 })
+  await page.goto('/admin/gallery')
   return page.getByRole('row').filter({ hasText: title })
 }
 
 async function deleteAlbum(page: Page, title: string) {
   if (!page.url().endsWith('/admin/gallery')) await page.goto('/admin/gallery')
-  page.on('dialog', (dialog) => dialog.accept())
+  // 삭제 버튼은 window.confirm이 아니라 인라인 확인 모달(role=dialog)을 띄운다.
   await page.getByRole('row').filter({ hasText: title }).getByRole('button', { name: '삭제' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '삭제' }).click()
   await expect(page.getByRole('row').filter({ hasText: title })).toHaveCount(0, { timeout: 30_000 })
 }
 
@@ -66,15 +69,17 @@ test('대용량 표지 업로드 시 전송 본문이 Vercel 4.5MB 한도 밑으
   // ── 서버 액션 POST 본문 크기 계측 ────────────────────────────────────────
   // 대용량 multipart는 postDataBuffer()가 비어 나오므로(CDP 한계)
   // 실제 전송된 content-length 헤더로 잰다.
+  // allHeaders()는 응답이 와야 풀리는데, 생성 직후 페이지 이동으로 취소된 요청은
+  // 응답이 영영 없다. 그런 요청은 0으로 치고 넘어간다.
   const actionBodySizes: Promise<number>[] = []
   page.on('request', (request) => {
     if (request.method() !== 'POST') return
-    actionBodySizes.push(
-      request
-        .allHeaders()
-        .then((headers) => (headers['next-action'] ? Number(headers['content-length'] ?? 0) : 0))
-        .catch(() => 0),
-    )
+    const size = request
+      .allHeaders()
+      .then((headers) => (headers['next-action'] ? Number(headers['content-length'] ?? 0) : 0))
+      .catch(() => 0)
+    const gaveUp = new Promise<number>((resolve) => setTimeout(() => resolve(0), 15_000))
+    actionBodySizes.push(Promise.race([size, gaveUp]))
   })
 
   const title = `e2e-압축테스트-${Date.now()}`
@@ -103,26 +108,29 @@ test('여러 장 동시 선택 시 병렬 업로드되고 각 요청이 4.5MB �
 
   await signIn(page)
 
-  // ── 병렬 업로드 API 요청 계측 (본문 크기) ─────────────────────────────────
-  const uploadBodySizes: Promise<number>[] = []
-  page.on('request', (request) => {
-    if (request.method() !== 'POST' || !request.url().includes('/api/admin/gallery/upload')) return
-    uploadBodySizes.push(
-      request
-        .allHeaders()
-        .then((headers) => Number(headers['content-length'] ?? 0))
-        .catch(() => 0),
-    )
-  })
-
   const title = `e2e-병렬업로드-${Date.now()}`
   const row = await createUnpublishedAlbum(page, title, cover)
 
   try {
-    // ── 수정 페이지에서 3장 동시 선택 업로드 (대용량 1 + 소용량 2) ────────────
     await row.getByRole('link', { name: '수정' }).click()
     await page.waitForURL('**/admin/gallery/**/edit')
+    // 표지는 앨범 사진으로도 등록되므로 생성 직후 이미 1장이 있다.
+    await expect(page.locator('figure')).toHaveCount(1)
 
+    // ── 병렬 업로드 API 요청 계측 (본문 크기) ─────────────────────────────────
+    // 표지 사진 등록도 같은 API를 타므로, 계측은 앨범 생성이 끝난 뒤에 붙인다.
+    const uploadBodySizes: Promise<number>[] = []
+    page.on('request', (request) => {
+      if (request.method() !== 'POST' || !request.url().includes('/api/admin/gallery/upload')) return
+      uploadBodySizes.push(
+        request
+          .allHeaders()
+          .then((headers) => Number(headers['content-length'] ?? 0))
+          .catch(() => 0),
+      )
+    })
+
+    // ── 수정 페이지에서 3장 동시 선택 업로드 (대용량 1 + 소용량 2) ────────────
     await page.setInputFiles('#image', [
       { name: 'oversized.jpg', mimeType: 'image/jpeg', buffer: bigJpeg },
       { name: 'small-red.jpg', mimeType: 'image/jpeg', buffer: red },
@@ -130,8 +138,8 @@ test('여러 장 동시 선택 시 병렬 업로드되고 각 요청이 4.5MB �
     ])
     await page.getByRole('button', { name: '사진 추가' }).click()
 
-    // 3장 모두 사진 목록에 나타난다.
-    await expect(page.locator('figure')).toHaveCount(3, { timeout: 90_000 })
+    // 표지 1장 + 새로 올린 3장이 사진 목록에 나타난다.
+    await expect(page.locator('figure')).toHaveCount(4, { timeout: 90_000 })
 
     // 업로드 API로 파일당 1건씩 갔고, 전부 Vercel 한도 밑이다.
     const sizes = (await Promise.all(uploadBodySizes)).filter((size) => size > 0)
@@ -148,6 +156,6 @@ test('여러 장 동시 선택 시 병렬 업로드되고 각 요청이 4.5MB �
     await firstCard.getByRole('button', { name: '저장' }).click()
     await expect(firstCard.getByText('e2e 수정된 캡션')).toBeVisible({ timeout: 30_000 })
   } finally {
-    await deleteAlbum(page, title) // 이미지 3장 + 표지 R2 파일까지 연쇄 삭제
+    await deleteAlbum(page, title) // 이미지 4장 + 표지 R2 파일까지 연쇄 삭제
   }
 })

@@ -24,8 +24,9 @@ async function signIn(page: Page) {
 
 async function deleteAlbum(page: Page, title: string) {
   if (!page.url().endsWith('/admin/gallery')) await page.goto('/admin/gallery')
-  page.on('dialog', (dialog) => dialog.accept())
+  // 삭제 버튼은 window.confirm이 아니라 인라인 확인 모달(role=dialog)을 띄운다.
   await page.getByRole('row').filter({ hasText: title }).getByRole('button', { name: '삭제' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '삭제' }).click()
   await expect(page.getByRole('row').filter({ hasText: title })).toHaveCount(0, { timeout: 30_000 })
 }
 
@@ -40,12 +41,10 @@ test('영상 추가 폼이 렌더되고 허용 외 형식은 클라이언트에�
   await page.getByLabel('공개').uncheck()
   await page.setInputFiles('#cover', { name: 'cover.jpg', mimeType: 'image/jpeg', buffer: await makeCoverJpeg() })
   await page.getByRole('button', { name: '앨범 작성' }).click()
-  await page.waitForURL('**/admin/gallery', { timeout: 60_000 })
+  // 생성 후에는 방금 만든 앨범의 수정 페이지로 이동한다.
+  await page.waitForURL('**/admin/gallery/**/edit', { timeout: 60_000 })
 
   try {
-    await page.getByRole('row').filter({ hasText: title }).getByRole('link', { name: '수정' }).click()
-    await page.waitForURL('**/admin/gallery/**/edit')
-
     // 폼 렌더 확인
     await expect(page.getByRole('heading', { name: '영상 추가' })).toBeVisible()
     await expect(page.locator('#video')).toHaveAttribute('accept', 'video/mp4,video/quicktime,video/webm')
