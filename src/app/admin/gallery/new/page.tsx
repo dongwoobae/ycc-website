@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import AlbumForm from '@/components/admin/AlbumForm'
-import { createAlbum } from '@/lib/actions/gallery'
+import { addImageRecord, createAlbum } from '@/lib/actions/gallery'
 import { verifySession } from '@/lib/dal'
 
 export default async function NewGalleryAlbumPage() {
@@ -20,7 +20,7 @@ export default async function NewGalleryAlbumPage() {
           목록
         </Link>
       </div>
-      <AlbumForm submitLabel="앨범 작성" submitAction={createAlbum} coverRequired />
+      <AlbumForm submitLabel="앨범 작성" submitAction={createAlbum} addImageAction={addImageRecord} />
     </div>
   )
 }

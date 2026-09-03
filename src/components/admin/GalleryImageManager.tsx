@@ -3,7 +3,7 @@
 import { FormEvent, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import SubmitButton from './SubmitButton'
-import { compressImageFile } from '@/lib/client-image-compress'
+import { uploadGalleryImages } from '@/lib/client-gallery-upload'
 import { extractVideoPoster, putWithProgress } from '@/lib/client-video-upload'
 import { videoUploadProblem } from '@/lib/gallery-video'
 import type { GalleryUploadResponse } from '@/app/api/admin/gallery/upload/route'
@@ -65,8 +65,6 @@ export default function GalleryImageManager({
     })
   }
 
-  // 압축(순차) → R2 업로드(병렬, API Route) → DB 저장(순차 서버 액션) 3단계.
-  // 서버 액션은 React가 직렬화하므로 업로드 단계만 fetch로 병렬 처리한다.
   function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!addFormRef.current) return
@@ -80,49 +78,7 @@ export default function GalleryImageManager({
 
     startTransition(async () => {
       try {
-        // 1) 클라이언트 압축 — 캔버스는 메인 스레드라 순차로 돌리고 진행률만 표시
-        const compressed: File[] = []
-        for (const [index, file] of files.entries()) {
-          setProgress(`압축 중 (${index + 1}/${files.length})`)
-          compressed.push(await compressImageFile(file))
-        }
-
-        // 2) R2 병렬 업로드
-        let uploadedCount = 0
-        setProgress(`업로드 중 (0/${compressed.length})`)
-        type UploadResult = { name: string; url: string } | { name: string; url?: never; error: string }
-        const results = await Promise.all(
-          compressed.map(async (file): Promise<UploadResult> => {
-            try {
-              const body = new FormData()
-              body.append('image', file)
-              const res = await fetch('/api/admin/gallery/upload', { method: 'POST', body })
-              const data = (await res.json()) as GalleryUploadResponse
-              if (!res.ok || !('url' in data)) {
-                return { name: file.name, error: 'error' in data ? data.error : '업로드 실패' }
-              }
-              return { name: file.name, url: data.url }
-            } catch {
-              return { name: file.name, error: '네트워크 오류' }
-            } finally {
-              uploadedCount += 1
-              setProgress(`업로드 중 (${uploadedCount}/${compressed.length})`)
-            }
-          }),
-        )
-
-        // 3) DB 저장 — sortOrder 경합을 피해 순차 실행
-        setProgress('저장 중...')
-        const failures = results.filter((result): result is { name: string; error: string } => 'error' in result)
-        for (const result of results) {
-          if (!result.url) continue
-          try {
-            await saveImageAction(result.url, caption, alt)
-          } catch {
-            failures.push({ name: result.name, error: '저장 실패' })
-          }
-        }
-
+        const failures = await uploadGalleryImages(files, (url) => saveImageAction(url, caption, alt), setProgress)
         if (failures.length > 0) {
           setError(failures.map((failure) => `${failure.name}: ${failure.error}`).join(' / '))
         } else {
