@@ -127,7 +127,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
 관리자 "요약 재생성" 버튼 ──▶ 상태 초기화 후 같은 체인에 재투입 (자막 있으면 summarize, 없으면 fetch-transcript)
 ```
 
-- **WebSub(PubSubHubbub) 푸시 구독**: 채널 피드를 Google 허브에 구독(`hub.mode=subscribe`, `verify=async`, `hub.secret`)해 업로드 순간에만 콜백을 받습니다. 주기적 폴링이 없어 YouTube API 쿼터·함수 호출을 평소엔 0으로 유지합니다. 구독 lease는 만료되므로 **QStash cron으로 약 2일마다 재구독**하고, 놓친 영상은 **일일 정합성 cron(`reconcile-sermons`)이 채널 재생목록과 DB를 대조해 자동 백필**합니다.
+- **WebSub(PubSubHubbub) 푸시 구독**: 채널 피드를 Google 허브에 구독(`hub.mode=subscribe`, `verify=async`, `hub.secret`)해 업로드 순간에만 콜백을 받습니다. 주기적 폴링이 없어 YouTube API 쿼터·함수 호출을 평소엔 0으로 유지합니다. 구독 lease는 만료되므로 **QStash cron으로 매일 재구독**하고, 놓친 영상은 **일일 정합성 cron(`reconcile-sermons`)이 채널 재생목록과 DB를 대조해 자동 백필**합니다.
 - **콜백 보안 2겹**: 구독 검증(GET)은 **우리 채널 토픽일 때만 `hub.challenge`를 에코**해 임의 토픽 구독을 차단하고, 알림(POST)은 **`X-Hub-Signature`(HMAC-SHA1)를 원문 바이트 기준 `timingSafeEqual`로 비교**해 위조를 차단합니다.
 - **QStash 다단계 잡 체이닝**: `ingest-video → fetch-transcript → summarize`를 각각 독립 서버리스 함수로 분리하고 QStash 메시지로 연결합니다. `fetch-transcript`가 자막을 끝내 못 구하면(최대 6회 재시도 소진) `fetch-audio-transcript`가 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓰고, 그 결과를 같은 형식으로 변환해 `summarize`로 합류시킵니다. 모든 잡 엔드포인트는 QStash `Receiver` 서명으로 검증되며, 한 단계가 실패해도 그 단계만 재시도됩니다. 오디오 받아쓰기가 실패하면 잡 본문의 `attempt`를 올려 **1회 자동으로 다시 태우고**, 소진하면 `no_transcript`로 종결합니다 — 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 일이 있어, 사람이 버튼을 다시 누르지 않아도 회수되게 했습니다.
 - **서버리스식 지수 백오프**: Vercel 함수는 프로세스를 붙잡고 `sleep`할 수 없으므로, **QStash 지연 발행(`delay`)으로 백오프를 외부에 위임**합니다. 간격은 `5 × 3ⁿ분`으로 증가하고 `attempts < 3` 한도를 두며, 자막이 영구히 없는 건은 재시도 후보에서 제외해 API 쿼터 소진을 막습니다. 정기 재시도는 `retry-summaries` cron이 수행합니다.
@@ -661,17 +661,18 @@ npm run db:seed
 npm run websub:subscribe
 
 # QStash 정기 스케줄 등록 (멱등, 재실행 안전)
-npm run qstash:schedules
+# 대상 URL은 실행 환경의 NEXT_PUBLIC_SITE_URL로 결정된다. 로컬 .env.local이 프리뷰 도메인이면 프로덕션 스케줄이 그쪽으로 바뀌므로 반드시 프로덕션 origin을 넘긴다.
+NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules
 ```
 
 `qstash:schedules`는 다음 4개 스케줄을 등록/갱신합니다.
 
-| 스케줄              | 주기    | 역할                                           |
-| ------------------- | ------- | ---------------------------------------------- |
-| `websub-renew`      | 2일마다 | WebSub 구독 lease 갱신                         |
-| `retry-summaries`   | 매시간  | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
-| `reconcile-sermons` | 매일    | 채널 재생목록 ↔ DB 정합성 대조·누락 백필       |
-| `analytics-rollup`  | 매일    | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
+| 스케줄              | 주기   | 역할                                           |
+| ------------------- | ------ | ---------------------------------------------- |
+| `websub-renew`      | 매일   | WebSub 구독 lease 갱신                         |
+| `retry-summaries`   | 매시간 | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
+| `reconcile-sermons` | 매일   | 채널 재생목록 ↔ DB 정합성 대조·누락 백필       |
+| `analytics-rollup`  | 매일   | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
 
 실제 설교 데이터 시드와 일괄 요약(수동 보충):
 
