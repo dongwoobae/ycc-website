@@ -7,7 +7,7 @@ import { neon } from '@neondatabase/serverless'
 // 'no_transcript' 상태 도입 이전에 자막 미생성으로 failed 처리된 건을 일회성으로 재분류한다.
 //
 // failed + 자막 없음 조합은 fetch-transcript의 재시도 포기 경로에서만 나온다:
-//  - summarize 발행 실패(route.ts)와 Gemini 요약 실패(summarize.ts)는 둘 다 자막이 이미 저장된 뒤에만 failed를 쓴다.
+//  - summarize 발행 실패(route.ts)와 AI 요약 실패(summarize.ts)는 둘 다 자막이 이미 저장된 뒤에만 failed를 쓴다.
 //  - manualSummarize는 자막을 못 받으면 상태를 건드리기 전에 throw 한다.
 // 따라서 자막 행이 없는 failed는 전부 '유튜브가 자막을 안 만든 건'으로 안전하게 단정할 수 있다.
 async function main() {

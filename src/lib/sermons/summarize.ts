@@ -197,7 +197,7 @@ export interface RetryTarget {
 }
 
 /**
- * 요약(Gemini) 단계에서 실패한 설교를 재시도 대상으로 고른다(스케줄 스위퍼용).
+ * AI 요약 단계에서 실패한 설교를 재시도 대상으로 고른다(스케줄 스위퍼용).
  * - 자동요약 예배유형, status='failed', 자막(transcript_text)이 이미 캐시된 건만
  *   → 자막 단계 영구실패(자막 없음)는 제외해 fetch 무한반복/쿼터소진을 막는다.
  * - summary_attempts < MAX (횟수 소진분 제외) AND next_retry 비었거나 경과 (백오프 존중)

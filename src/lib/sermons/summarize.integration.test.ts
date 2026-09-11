@@ -17,7 +17,7 @@ vi.mock('@/lib/transcript/rapidapi', () => ({
 vi.mock('@/lib/ai/audio-transcript', () => ({
   transcribeFromAudio: vi.fn(async () => [{ startSeconds: 0, text: 'audio fallback text' }]),
 }))
-// generateSermonSummary는 Gemini 외부호출 — summarizeClaimed 위성 갱신만 검증
+// generateSermonSummary는 AI 외부호출 — summarizeClaimed 위성 갱신만 검증
 vi.mock('@/lib/ai/sermon-summary', async (orig) => ({
   ...(await orig<typeof import('@/lib/ai/sermon-summary')>()),
   generateSermonSummary: vi.fn(async () => ({

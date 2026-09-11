@@ -4,7 +4,7 @@
  * - none: 아직 요약 파이프라인이 돌지 않음
  * - pending: 클레임되어 진행 중
  * - ready: 요약 완료
- * - failed: 자막은 있으나 요약(Gemini)/잡 발행이 실패 — 스위퍼 재시도 대상
+ * - failed: 자막은 있으나 AI 요약/잡 발행이 실패 — 스위퍼 재시도 대상
  * - no_transcript: 유튜브 자막·오디오 변환 모두 실패 — 자동 스위퍼는 재시도하지 않는 종결 상태(관리자 수동 재생성으로만 오디오 재시도 가능)
  */
 export const SUMMARY_STATUS_META: Record<string, { color: string; label: string }> = {
