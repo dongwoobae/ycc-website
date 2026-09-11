@@ -4,21 +4,22 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 config()
 import { upsertSchedule } from '../src/lib/qstash'
+import { getCanonicalSiteOrigin } from '../src/lib/site-origin'
 
 /**
  * QStash 정기 스케줄을 등록/갱신한다(멱등). 콜백 대상은 site-origin 기반 프로덕션 URL.
- * - websub-renew: 2일마다 WebSub 구독 재구독(리스 만료로 신규 업로드 감지가 멈추는 것 방지)
+ * - websub-renew: 매일 WebSub 구독 재구독. 허브 리스가 5일이라 매일이면 연속 4회 실패까지 견딘다(2일 주기는 2회 연속 실패로 끊겼다, 2026-09-03~06)
  * - retry-summaries: 매시간 자동요약 실패/미완료 설교 재투입
  * - reconcile-sermons: 매일 KST 09:00(UTC 00:00) 채널↔DB 대조로 WebSub 알림 소실분 보정 등록
  * - analytics-rollup: 매일 KST 00:10(UTC 15:10) 방문 로그 일별 집계 및 90일 보관 정리
  */
 async function main() {
-  await upsertSchedule({ job: 'websub-renew', cron: '0 0 */2 * *', scheduleId: 'ycc-websub-renew' })
+  await upsertSchedule({ job: 'websub-renew', cron: '0 0 * * *', scheduleId: 'ycc-websub-renew' })
   await upsertSchedule({ job: 'retry-summaries', cron: '0 * * * *', scheduleId: 'ycc-retry-summaries' })
   await upsertSchedule({ job: 'reconcile-sermons', cron: '0 0 * * *', scheduleId: 'ycc-reconcile-sermons' })
   await upsertSchedule({ job: 'analytics-rollup', cron: '10 15 * * *', scheduleId: 'ycc-analytics-rollup' })
   console.log(
-    'QStash schedules upserted: websub-renew(2일 0 0 */2 * *), retry-summaries(매시간 0 * * * *), reconcile-sermons(매일 0 0 * * *), analytics-rollup(매일 10 15 * * *)',
+    `QStash schedules upserted → ${getCanonicalSiteOrigin()}: websub-renew(매일 0 0 * * *), retry-summaries(매시간 0 * * * *), reconcile-sermons(매일 0 0 * * *), analytics-rollup(매일 10 15 * * *)`,
   )
 }
 
