@@ -115,7 +115,7 @@ export function normalizeDirectTranscript(input: unknown): TranscriptSegment[] {
 
   const out: TranscriptSegment[] = []
   for (const item of items as DirectTranscriptItem[]) {
-    const text = typeof item.text === 'string' ? item.text.replace(/\s+/g, ' ').trim() : ''
+    const text = typeof item.text === 'string' ? decodeEntities(item.text).replace(/\s+/g, ' ').trim() : ''
     if (!text) continue
     // 현재 제공자(youtube-transcript3)는 offset/start를 '초' 단위로 반환한다.
     // ms로 반환하는 제공자로 교체하면 타임스탬프가 1000배 어긋나므로 환산 보정이 필요하다.
@@ -141,6 +141,8 @@ async function fetchTranscriptFromYoutubeTranscript3(
 ): Promise<TranscriptSegment[]> {
   const url = new URL(`https://${host}/api/transcript`)
   url.searchParams.set('videoId', videoId)
+  // 언어를 지정하는 이유는 2026-06-23-youtube-websub-pipeline-design.md "자막 수집" 항목.
+  url.searchParams.set('lang', 'ko')
 
   const res = await fetch(url.toString(), { headers })
   if (res.status === 404) return []
@@ -173,7 +175,7 @@ async function fetchTranscriptFromYtApi(
 }
 
 /**
- * yt-api에서 한국어 자막을 가져온다.
+ * 한국어 자막을 가져온다.
  * 자막 미준비/없음은 빈 배열로 처리한다(상위에서 재시도/포기 판단).
  */
 export async function fetchTranscript(videoId: string): Promise<TranscriptSegment[]> {
