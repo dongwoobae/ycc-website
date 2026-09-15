@@ -96,6 +96,8 @@ describe('generateSermonSummary', () => {
     expect(String(url)).toBe('https://api.openai.com/v1/responses')
     const body = JSON.parse(String(init?.body))
     expect(body.model).toBe('gpt-5.6-sol')
+    expect(body.store).toBe(false)
+    expect(body.prompt_cache_options).toEqual({ mode: 'explicit' })
     expect(body.text.format).toMatchObject({ type: 'json_schema', strict: true })
     expect(body.input).toContain('[00:00] 말씀')
   })

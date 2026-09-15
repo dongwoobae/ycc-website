@@ -133,6 +133,9 @@ async function summarizeWithOpenAI(
     body: JSON.stringify({
       model: SUMMARY_OPENAI_MODEL,
       input: prompt,
+      // 단발 요약이므로 응답을 저장하거나 암묵적 prompt cache를 쓰지 않는다.
+      store: false,
+      prompt_cache_options: { mode: 'explicit' },
       text: { format: { type: 'json_schema', name: 'sermon_summary', schema: openAISchema, strict: true } },
     }),
     signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
