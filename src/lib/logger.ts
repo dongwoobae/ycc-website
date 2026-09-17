@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { appLogs } from '@/lib/db/schema'
 
-type LogAction = 'create' | 'update' | 'delete' | 'login' | 'logout' | 'error' | 'view'
+type LogAction = 'create' | 'update' | 'delete' | 'login' | 'logout' | 'error' | 'warning' | 'view'
 
 export async function log(action: LogAction, entityType: string, entityId?: string, message?: string, userId?: string) {
   try {

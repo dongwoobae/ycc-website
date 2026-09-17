@@ -6,18 +6,9 @@ import { verifySession } from '@/lib/dal'
 import { db } from '@/lib/db'
 import { appLogs, user } from '@/lib/db/schema'
 import { formatKstDateTime } from '@/lib/date'
+import { ACTION_BADGE, ACTION_OPTIONS } from './actions'
 
-const ACTION_OPTIONS = ['create', 'update', 'delete', 'error', 'login', 'logout'] as const
 const PAGE_SIZE = 50
-
-const ACTION_BADGE: Record<string, string> = {
-  create: 'bg-green-100 text-green-800',
-  update: 'bg-blue-100 text-blue-800',
-  delete: 'bg-orange-100 text-orange-800',
-  error: 'bg-red-100 text-red-800',
-  login: 'bg-slate-100 text-slate-700',
-  logout: 'bg-slate-100 text-slate-700',
-}
 
 // entityType별 관리 편집 경로 (알려진 것만 링크화)
 const ENTITY_HREF: Record<string, (id: string) => string> = {
