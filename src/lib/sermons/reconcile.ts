@@ -3,46 +3,104 @@ import { sermons } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { publishJob } from '@/lib/qstash'
 import { expectsAutoSummary } from '@/lib/worship'
+import {
+  fetchVideoDetails,
+  listUploadCandidates,
+  toYouTubeVideo,
+  type VideoDetail,
+} from '@/lib/youtube/data-api'
 import { fetchChannelVideos } from '@/lib/youtube/rapidapi-channel'
+import type { YouTubeVideoCandidate } from '@/lib/youtube/types'
 import { classifyByTitle } from './classify-title'
 import { insertSermon } from './ingest'
 import { revalidateSermonPaths } from './revalidate'
 
+interface UploadListing {
+  candidates: YouTubeVideoCandidate[]
+  detailsFor: (videoIds: string[]) => Promise<Map<string, VideoDetail>>
+}
+
 /**
- * 채널 최신 영상과 DB를 대조해 WebSub 푸시가 소실된 누락분을 주워 담는 일일 보정(스케줄 전용).
+ * 업로드 목록을 가져온다. Data API가 못 쓰이는 모든 경우에 yt-api로 폴백한다.
+ *
+ * 폴백 조건을 "키 미설정"으로만 두면 폐기된 키가 설정돼 있을 때 매 회차 403으로 건너뛰며
+ * 주경로가 무기한 멈춘다 — 능동 알림이 없어 사람이 로그를 보기 전까지 아무도 모른다.
+ * 폴백의 상세 조회는 이미 받아 둔 목록에서 꺼내 쓴다. yt-api 호출 수가 늘지 않아야 한다.
+ */
+async function listUploads(channelId: string): Promise<UploadListing> {
+  try {
+    return { candidates: await listUploadCandidates(channelId), detailsFor: fetchVideoDetails }
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e)
+    console.warn(`[reconcile] Data API 조회 실패 — yt-api로 폴백: ${reason}`)
+    await log('warning', 'sermon', undefined, `[reconcile] Data API 조회 실패 — yt-api로 폴백: ${reason}`)
+    const videos = await fetchChannelVideos(channelId, 1)
+    const byId = new Map(videos.map((v) => [v.videoId, v]))
+    return {
+      candidates: videos,
+      detailsFor: async (ids) =>
+        new Map(
+          ids
+            .map((id) => byId.get(id))
+            .filter((v): v is NonNullable<typeof v> => !!v)
+            .map((v) => [v.videoId, { durationSeconds: v.durationSeconds, isLiveOrUpcoming: false }]),
+        ),
+    }
+  }
+}
+
+/**
+ * 채널 최신 영상과 DB를 대조해 새 설교를 등록하는 폴링(스케줄 전용).
+ * WebSub 푸시가 죽어 있는 동안 이것이 유일한 등록 경로다(2026-09-17).
  * 등록은 in-process로 직접 수행해 QStash 아웃바운드 장애와 독립적으로 동작하고,
  * 자막·요약은 기존 fetch-transcript 체인에 best-effort로 넘긴다.
- * 여기서 누락분이 발견됐다는 것 자체가 푸시 경로(WebSub→웹훅→발행) 고장 신호라 error로 남긴다.
  */
 export async function reconcileSermons(): Promise<{ checked: number; inserted: number }> {
   const channelId = process.env.YOUTUBE_CHANNEL_ID
   if (!channelId) throw new Error('YOUTUBE_CHANNEL_ID is not set')
 
+  let listing: UploadListing
+  try {
+    listing = await listUploads(channelId)
+  } catch (e) {
+    // 주경로·폴백이 모두 죽은 회차. 다음 회차가 같은 누락분을 다시 잡는다.
+    const reason = e instanceof Error ? e.message : String(e)
+    console.error(`[reconcile] 업로드 목록 조회 실패 — 이번 회차를 건너뛴다: ${reason}`)
+    await log('error', 'sermon', undefined, `[reconcile] 업로드 목록 조회 실패 — 이번 회차 건너뜀: ${reason}`)
+    return { checked: 0, inserted: 0 }
+  }
+
   const existing = await db.select({ id: sermons.youtubeVideoId }).from(sermons)
   const existingIds = new Set(existing.map((r) => r.id).filter((x): x is string => !!x))
-  const videos = await fetchChannelVideos(channelId, 1)
-  const missing = videos.filter((v) => !existingIds.has(v.videoId))
+  const missing = listing.candidates.filter((v) => !existingIds.has(v.videoId))
+  if (missing.length === 0) return { checked: listing.candidates.length, inserted: 0 }
+
+  const details = await listing.detailsFor(missing.map((v) => v.videoId))
 
   let inserted = 0
-  for (const video of missing) {
+  for (const candidate of missing) {
+    const detail = details.get(candidate.videoId)
+    // 상세를 못 받았거나 방송 중·예약 공개다. 길이가 확정되지 않아 지금 등록하면 0초로 남는다.
+    if (!detail || detail.isLiveOrUpcoming) continue
+
+    const video = toYouTubeVideo(candidate, detail)
     const worshipType = classifyByTitle(video.title)
-    // 실패 사유는 insertSermon이 남긴다. 여기서는 한 건의 실패로 남은 누락분까지 놓치지 않게만 한다.
     let sermonId: string
     try {
+      // 실패 사유는 insertSermon이 남긴다. 여기서는 한 건의 실패로 남은 누락분까지 놓치지 않게만 한다.
       sermonId = await insertSermon(video, worshipType, 'reconcile')
     } catch {
       continue
     }
     if (!sermonId) continue
     inserted++
-    revalidateSermonPaths(sermonId)
-    console.warn(`[reconcile] WebSub 누락분 보정 등록 videoId=${video.videoId} "${video.title}"`)
-    await log(
-      'error',
-      'sermon',
-      sermonId,
-      `[reconcile] WebSub 알림 소실 감지 — 보정 등록됨(푸시 경로 점검 필요): ${video.title}`,
-    )
+
+    try {
+      // ISR 무효화 실패가 밖으로 나가면 회차 전체가 죽어 남은 누락분이 시도조차 되지 않는다.
+      revalidateSermonPaths(sermonId)
+    } catch (e) {
+      console.error(`[reconcile] ISR 무효화 실패 videoId=${video.videoId}`, e)
+    }
 
     if (!expectsAutoSummary(worshipType)) continue
     try {
@@ -57,5 +115,5 @@ export async function reconcileSermons(): Promise<{ checked: number; inserted: n
       )
     }
   }
-  return { checked: videos.length, inserted }
+  return { checked: listing.candidates.length, inserted }
 }
