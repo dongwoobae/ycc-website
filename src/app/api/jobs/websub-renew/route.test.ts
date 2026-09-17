@@ -14,16 +14,16 @@ import { log } from '@/lib/logger'
 const req = () => new Request('https://example.test/api/jobs/websub-renew', { method: 'POST', body: '{}' })
 
 describe('POST /api/jobs/websub-renew', () => {
-  it('허브 재구독이 실패하면 감사 로그에 error를 남기고 500을 돌려 QStash 재시도를 유도한다', async () => {
+  it('허브 재구독이 실패하면 warning을 남기고 200을 돌려 재시도를 끊는다', async () => {
     vi.stubEnv('YOUTUBE_CHANNEL_ID', 'UC_test')
     vi.stubEnv('WEBSUB_SECRET', 's')
     vi.mocked(subscribeToChannel).mockRejectedValueOnce(new Error('websub subscribe failed: 503 Transient error'))
 
     const res = await POST(req())
 
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
     expect(log).toHaveBeenCalledWith(
-      'error',
+      'warning',
       'sermon',
       undefined,
       expect.stringContaining('websub subscribe failed: 503'),
