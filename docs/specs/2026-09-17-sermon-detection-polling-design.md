@@ -94,6 +94,23 @@ RapidAPI yt-api 무료 플랜은 응답 헤더 실측으로 **월 300회**(`X-Ra
 
 `videos.list`가 필요한 이유는 `playlistItems.list`가 길이를 주지 않기 때문이다. `durationSeconds`는 `fetch-audio-transcript`의 `transcribeFromAudio`·`assertCoversFullAudio`와 `summarize` 경로, 설교 상세 페이지가 쓴다.
 
+### 실호출로 확인한 것 (2026-09-17)
+
+| 확인 대상 | 결과 |
+| --- | --- |
+| `playlistItems.list?part=snippet,contentDetails&playlistId=UUzB3…&maxResults=10` | HTTP 200, 10건 최신순, `pageInfo.totalResults` 225 |
+| 업로드 시각 필드 | **`contentDetails.videoPublishedAt`**. `snippet.publishedAt`은 재생목록에 담긴 시각이라 쓰면 안 된다 |
+| `videos.list?part=contentDetails,snippet,status&id=…` | HTTP 200, `contentDetails.duration`이 `PT34M37S` 형식 |
+| 길이 값 정합성 | `c-oLFHUSx8A` 2077초, `cnwtLTol8Bw` 3803초, `Un6WJA0Np4w` 217초 — **DB에 저장된 yt-api 산출값과 세 건 모두 일치** |
+| 라이브 판별 | `snippet.liveBroadcastContent`(`none`/`live`/`upcoming`), `status.privacyStatus` |
+
+파생 결론:
+
+- 썸네일은 API에서 받지 않는다. 기존 `thumbnailUrlFor(videoId)`가 만드는 고정 주소(`img.youtube.com/vi/{id}/hqdefault.jpg`)를 그대로 쓴다
+- 진행 중 라이브·예약 공개는 `liveBroadcastContent !== 'none'`으로 걸러 등록을 미룬다. yt-api `fetchVideoInfo`가 `null`을 돌려주던 것과 같은 역할이다
+- 쿼터는 메서드 단위라 `part`를 여러 개 붙여도 호출당 1 unit이다
+- **API 키에 HTTP 리퍼러 제한을 걸면 안 된다.** 서버에서 호출하므로 리퍼러가 없다. 제한이 필요하면 API 제한(YouTube Data API v3만 허용)으로 건다
+
 ## 로그 설계
 
 `app_logs.action`에 `warning`을 추가한다. 손대는 곳은 세 군데다.
@@ -151,7 +168,7 @@ RapidAPI yt-api 무료 플랜은 응답 헤더 실측으로 **월 300회**(`X-Ra
 
 ## 함께 고치는 문서
 
-- `.env.example` — `YOUTUBE_API_KEY` 추가. 아울러 QStash 항목 주석의 "WebSub 갱신 2일·요약 재시도 매시간"은 갱신이 이미 매일로 바뀌어 있어 사실과 다르다. 새 스케줄과 함께 고친다
+- `.env.example` — `YOUTUBE_API_KEY` 추가(리퍼러 제한 금지를 주석으로 적는다). 아울러 QStash 항목 주석의 "WebSub 갱신 2일·요약 재시도 매시간"은 갱신이 이미 매일로 바뀌어 있어 사실과 다르다. 새 스케줄과 함께 고친다
 - `scripts/qstash-schedules.ts` — 상단 JSDoc의 스케줄 목록
 - `2026-06-23-youtube-websub-pipeline-design.md` — 머리에 이 문서로의 포인터를 추가한다
 
