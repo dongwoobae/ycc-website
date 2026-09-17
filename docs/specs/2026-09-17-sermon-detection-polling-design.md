@@ -122,8 +122,9 @@ RapidAPI yt-api 무료 플랜은 응답 헤더 실측으로 **월 300회**(`X-Ra
 
 `app_logs.action`에 `warning`을 추가한다. 손대는 곳은 세 군데다.
 
-- `src/lib/logger.ts` — `LogAction` union
-- `src/app/admin/log/page.tsx` — `ACTION_OPTIONS`(필터 드롭다운 겸 쿼리 파라미터 화이트리스트), `ACTION_BADGE`(색상). 뱃지를 등록하지 않으면 미등록 액션 폴백인 회색으로 떨어져 `login`/`logout`과 구분되지 않는다
+- `src/lib/logger.ts` — `LogAction` union에 `'warning'` 추가
+- `src/app/admin/log/actions.ts` — `ACTION_OPTIONS`(필터 드롭다운 겸 쿼리 파라미터 화이트리스트), `ACTION_BADGE`(색상). 뱃지를 등록하지 않으면 미등록 액션 폴백인 회색으로 떨어져 `login`/`logout`과 구분되지 않는다. **이 두 상수를 별도 모듈로 분리한 이유**: `page.tsx`는 서버 컴포넌트라 vitest가 직접 import할 수 없다. 테스트가 상수를 읽을 수 있게 서버 컴포넌트 밖으로 빼낸다
+- `src/app/admin/log/page.tsx` — `actions.ts`에서 `ACTION_OPTIONS`와 `ACTION_BADGE`를 import
 
 행동 변경:
 
