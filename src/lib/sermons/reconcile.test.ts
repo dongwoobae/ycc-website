@@ -106,12 +106,7 @@ describe('reconcileSermons — Data API 주경로', () => {
 
     expect(result).toEqual({ checked: 1, inserted: 0 })
     expect(insertSermon).not.toHaveBeenCalled()
-    expect(log).toHaveBeenCalledWith(
-      'warning',
-      'sermon',
-      undefined,
-      expect.stringContaining('videoId=missing-1'),
-    )
+    expect(log).toHaveBeenCalledWith('warning', 'sermon', undefined, expect.stringContaining('videoId=missing-1'))
   })
 
   it('영상 상세 조회(videos.list)가 실패하면 이번 회차를 건너뛰고 error를 남긴다', async () => {

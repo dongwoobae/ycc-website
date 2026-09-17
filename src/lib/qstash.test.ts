@@ -52,10 +52,7 @@ describe('syncSchedules', () => {
   it('우리 접두사가 아닌 스케줄은 건드리지 않는다', async () => {
     list.mockResolvedValue([{ scheduleId: 'someone-elses' }])
 
-    await syncSchedules(
-      [{ job: 'reconcile-sermons', cron: '0 0 * * *', scheduleId: 'ycc-reconcile-sermons' }],
-      true,
-    )
+    await syncSchedules([{ job: 'reconcile-sermons', cron: '0 0 * * *', scheduleId: 'ycc-reconcile-sermons' }], true)
 
     expect(del).not.toHaveBeenCalled()
   })
@@ -124,10 +121,7 @@ describe('syncSchedules', () => {
   it('apply가 false면 create는 하되 삭제는 건너뛰고 후보만 돌려준다', async () => {
     list.mockResolvedValue([{ scheduleId: 'ycc-a' }, { scheduleId: 'ycc-stale' }])
 
-    const result = await syncSchedules(
-      [{ job: 'reconcile-sermons', cron: '0 0 * * *', scheduleId: 'ycc-a' }],
-      false,
-    )
+    const result = await syncSchedules([{ job: 'reconcile-sermons', cron: '0 0 * * *', scheduleId: 'ycc-a' }], false)
 
     expect(create).toHaveBeenCalledTimes(1)
     expect(del).not.toHaveBeenCalled()

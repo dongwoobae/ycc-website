@@ -3,12 +3,7 @@ import { sermons } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { publishJob } from '@/lib/qstash'
 import { expectsAutoSummary } from '@/lib/worship'
-import {
-  fetchVideoDetails,
-  listUploadCandidates,
-  toYouTubeVideo,
-  type VideoDetail,
-} from '@/lib/youtube/data-api'
+import { fetchVideoDetails, listUploadCandidates, toYouTubeVideo, type VideoDetail } from '@/lib/youtube/data-api'
 import { fetchChannelVideos } from '@/lib/youtube/rapidapi-channel'
 import type { YouTubeVideoCandidate } from '@/lib/youtube/types'
 import { classifyByTitle } from './classify-title'

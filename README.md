@@ -680,14 +680,14 @@ NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules -- --apply
 
 `qstash:schedules`는 다음 스케줄의 desired set을 적용합니다. `--apply` 없이는 목록 조회와 등록만 하고 삭제 후보를 출력만 합니다. 목록에서 빠진 `ycc-` 스케줄은 `--apply`를 붙였을 때만 삭제됩니다.
 
-| 스케줄                       | 주기                        | 역할                                           |
-| ---------------------------- | --------------------------- | ---------------------------------------------- |
-| `websub-renew`               | 매일                        | WebSub 구독 lease 갱신(부경로 유지용)          |
-| `retry-summaries`            | 매시간                      | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
-| `reconcile-sermons`          | 매일                        | 업로드 감지 안전망                             |
-| `reconcile-sermons-sun`      | 주일 11~17시 KST 매시간     | 업로드 감지 주경로(주일 예배)                  |
-| `reconcile-sermons-wed`      | 수요일 20~23시 KST 매시간   | 업로드 감지 주경로(수요 예배)                  |
-| `analytics-rollup`           | 매일                        | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
+| 스케줄                  | 주기                      | 역할                                           |
+| ----------------------- | ------------------------- | ---------------------------------------------- |
+| `websub-renew`          | 매일                      | WebSub 구독 lease 갱신(부경로 유지용)          |
+| `retry-summaries`       | 매시간                    | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
+| `reconcile-sermons`     | 매일                      | 업로드 감지 안전망                             |
+| `reconcile-sermons-sun` | 주일 11~17시 KST 매시간   | 업로드 감지 주경로(주일 예배)                  |
+| `reconcile-sermons-wed` | 수요일 20~23시 KST 매시간 | 업로드 감지 주경로(수요 예배)                  |
+| `analytics-rollup`      | 매일                      | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
 
 이 표는 `scripts/qstash-schedules.ts`의 `main()` desired 배열을 옮겨 적은 것입니다. cron 값의 정본은 그 스크립트입니다 — 어긋나면 스크립트 쪽이 맞습니다.
 
@@ -739,7 +739,7 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 | 업로드/스토리지 | `upload-sniff`, `r2`, `gallery-video`                                                                                                                                      | 허용 MIME/파일 시그니처(`%PDF-` 포함), R2 파일명 정규화·key prefix, 주보 면·PDF key 형식과 presign prefix 가드, 영상 형식·크기·서명 URL 검증                                                                                      |
 | 인증/SEO        | `auth-origin`, `sitemap`, `seo/jsonld`                                                                                                                                     | Trusted origin 정규화, sitemap URL 생성, JSON-LD 빌더                                                                                                                                                                             |
 | 주보            | `bulletin-editor`, `bulletin-format`, `bulletin-scale`, `bulletin-pdf`, `bulletin-paging`, `bulletin-zoom`, `actions/bulletins`                                            | 공지·면 정규화/검증, 날짜·권호 표기, 긴 변 축소 클램프, PDF 면 렌더·WebP→JPEG 폴백·상한 거부, 면 이동 클램프·표기, 줌 클램프·앵커 고정·오프셋 클램프, 미검증 키 저장 거부                                                         |
-| 설교 동기화     | `youtube/websub`, `sermons/sync`, `sermons/reconcile`                                                                                                                      | WebSub 서명 검증·Atom 파싱, 신규 삽입 계획·중복 방지, 업로드 감지 폴링(Data API 주경로·yt-api 폴백)                                                                                                                              |
+| 설교 동기화     | `youtube/websub`, `sermons/sync`, `sermons/reconcile`                                                                                                                      | WebSub 서명 검증·Atom 파싱, 신규 삽입 계획·중복 방지, 업로드 감지 폴링(Data API 주경로·yt-api 폴백)                                                                                                                               |
 | 설교 요약       | `sermons/summarize`(+integration), `ai/gemini`, `ai/sermon-summary`, `ai/audio-transcript`, `transcript/rapidapi`, `transcript/prompt`                                     | claim 선점·지수 백오프·재시도 선별, 재생성 요청의 상태 초기화·오디오 재시도 종결, 요약 모델 폴백(Sol 실패 시 Gemini)·스키마/챕터 검증, 받아쓰기 파싱·커버리지 검사, 자막 fetch·프롬프트 빌드                                      |
 | 설교 표기       | `sermons/classify-title`, `sermons/format`, `sermons/list-title`, `sermons/sermon-date`                                                                                    | 제목 분류·표시 포맷·날짜 파싱                                                                                                                                                                                                     |
 | 썸네일          | `thumbnails/scripture`, `detect-caption-band`, `compose-text`, `generate-background`, `position`, `remove-background`, `store`(+integration), `webp`, `actions/thumbnails` | 성경구절 추출, 자막 밴드 crop, 텍스트 합성·배치, 배경 생성, 누끼, 후보 저장/트림, WebP 변환                                                                                                                                       |

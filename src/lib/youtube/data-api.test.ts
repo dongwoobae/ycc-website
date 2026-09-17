@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  normalizePlaylistItems,
-  normalizeVideoDetails,
-  parseIsoDuration,
-  uploadsPlaylistId,
-} from './data-api'
+import { normalizePlaylistItems, normalizeVideoDetails, parseIsoDuration, uploadsPlaylistId } from './data-api'
 
 describe('uploadsPlaylistId', () => {
   it('UC 접두를 UU로 바꾼다', () => {

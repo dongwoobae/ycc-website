@@ -44,8 +44,7 @@ export function normalizePlaylistItems(raw: unknown): YouTubeVideoCandidate[] {
     out.push({
       videoId,
       title: typeof it.snippet?.title === 'string' ? it.snippet.title : '',
-      publishedAt:
-        typeof it.contentDetails?.videoPublishedAt === 'string' ? it.contentDetails.videoPublishedAt : '',
+      publishedAt: typeof it.contentDetails?.videoPublishedAt === 'string' ? it.contentDetails.videoPublishedAt : '',
     })
   }
   return out

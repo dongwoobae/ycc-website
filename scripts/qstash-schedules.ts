@@ -34,9 +34,7 @@ async function main() {
   if (apply) {
     console.log(`  삭제: ${deleted.length ? deleted.join(', ') : '없음'}`)
   } else {
-    console.log(
-      `  삭제 예정(--apply 없음, 반영 안 됨): ${staleManaged.length ? staleManaged.join(', ') : '없음'}`,
-    )
+    console.log(`  삭제 예정(--apply 없음, 반영 안 됨): ${staleManaged.length ? staleManaged.join(', ') : '없음'}`)
   }
 }
 
