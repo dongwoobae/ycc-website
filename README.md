@@ -668,14 +668,16 @@ npm run websub:subscribe
 NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules
 ```
 
-`qstash:schedules`는 다음 4개 스케줄을 등록/갱신합니다.
+`qstash:schedules`는 다음 스케줄의 desired set을 적용합니다. 목록에서 빠진 `ycc-` 스케줄은 삭제됩니다.
 
-| 스케줄              | 주기   | 역할                                           |
-| ------------------- | ------ | ---------------------------------------------- |
-| `websub-renew`      | 매일   | WebSub 구독 lease 갱신                         |
-| `retry-summaries`   | 매시간 | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
-| `reconcile-sermons` | 매일   | 채널 재생목록 ↔ DB 정합성 대조·누락 백필       |
-| `analytics-rollup`  | 매일   | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
+| 스케줄                       | 주기                        | 역할                                           |
+| ---------------------------- | --------------------------- | ---------------------------------------------- |
+| `websub-renew`               | 매일                        | WebSub 구독 lease 갱신(부경로 유지용)          |
+| `retry-summaries`            | 매시간                      | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
+| `reconcile-sermons`          | 매일                        | 업로드 감지 안전망                             |
+| `reconcile-sermons-sun`      | 주일 11~17시 KST 매시간     | 업로드 감지 주경로(주일 예배)                  |
+| `reconcile-sermons-wed`      | 수요일 20~23시 KST 매시간   | 업로드 감지 주경로(수요 예배)                  |
+| `analytics-rollup`           | 매일                        | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
 
 실제 설교 데이터 시드와 일괄 요약(수동 보충):
 

@@ -42,16 +42,41 @@ export async function publishJob(
   })
 }
 
+/** 이 저장소가 소유하는 스케줄의 ID 접두사. 이 접두사가 아닌 것은 지우지 않는다. */
+const MANAGED_PREFIX = 'ycc-'
+
+export interface ManagedSchedule {
+  job: JobName
+  cron: string
+  scheduleId: string
+}
+
 /**
- * QStash 정기 스케줄을 멱등 등록한다. scheduleId 고정이라 재실행 시 중복 없이 갱신된다.
- * (scripts/qstash-schedules.ts에서 호출 — WebSub 갱신·요약 재시도 cron)
+ * ycc- 스케줄의 desired set을 QStash에 적용한다(멱등).
+ *
+ * create만 하면 스크립트에서 항목을 지우거나 ID를 바꿔도 QStash에는 옛 스케줄이 남아
+ * 계속 실행된다 — 중복 폴링·중복 로그·쿼터 소모가 조용히 이어진다. 그래서 삭제까지 여기서 한다.
  */
-export async function upsertSchedule(opts: { job: JobName; cron: string; scheduleId: string }): Promise<void> {
-  await client().schedules.create({
-    destination: `${baseUrl()}/api/jobs/${opts.job}`,
-    cron: opts.cron,
-    scheduleId: opts.scheduleId,
-  })
+export async function syncSchedules(
+  desired: ManagedSchedule[],
+): Promise<{ upserted: string[]; deleted: string[] }> {
+  const c = client()
+  for (const s of desired) {
+    await c.schedules.create({
+      destination: `${baseUrl()}/api/jobs/${s.job}`,
+      cron: s.cron,
+      scheduleId: s.scheduleId,
+    })
+  }
+
+  const wanted = new Set(desired.map((s) => s.scheduleId))
+  const deleted: string[] = []
+  for (const s of await c.schedules.list()) {
+    if (!s.scheduleId.startsWith(MANAGED_PREFIX) || wanted.has(s.scheduleId)) continue
+    await c.schedules.delete(s.scheduleId)
+    deleted.push(s.scheduleId)
+  }
+  return { upserted: desired.map((s) => s.scheduleId), deleted }
 }
 
 const receiver = () =>
