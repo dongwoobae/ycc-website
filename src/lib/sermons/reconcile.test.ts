@@ -64,6 +64,16 @@ describe('reconcileSermons — Data API 주경로', () => {
 
     expect(result).toEqual({ checked: 3, inserted: 2 })
     expect(insertSermon).toHaveBeenCalledTimes(2)
+    // 등록 출처는 'reconcile' 리터럴로 고정 — insertSermon의 create 로그가 "— 폴링" 행을 남기는 유일한 신호다
+    expect(insertSermon).toHaveBeenCalledWith(
+      expect.objectContaining({
+        videoId: 'missing-1',
+        thumbnailUrl: 'https://img.youtube.com/vi/missing-1/hqdefault.jpg',
+        durationSeconds: 10,
+      }),
+      '주일예배',
+      'reconcile',
+    )
     // 요약 유형(주일예배)만 자막 체인에 투입, 특송은 등록만
     expect(publishJob).toHaveBeenCalledTimes(1)
     expect(publishJob).toHaveBeenCalledWith('fetch-transcript', { sermonId: 'sid', videoId: 'missing-1', attempt: 0 })
@@ -96,6 +106,19 @@ describe('reconcileSermons — Data API 주경로', () => {
 
     expect(result).toEqual({ checked: 1, inserted: 0 })
     expect(insertSermon).not.toHaveBeenCalled()
+  })
+
+  it('영상 상세 조회(videos.list)가 실패하면 이번 회차를 건너뛰고 error를 남긴다', async () => {
+    vi.mocked(listUploadCandidates).mockResolvedValue([candidate('missing-1', '주일예배 - 상세 조회 실패')])
+    vi.mocked(fetchVideoDetails).mockRejectedValue(new Error('youtube data api videos 500'))
+
+    const result = await reconcileSermons()
+
+    expect(result).toEqual({ checked: 1, inserted: 0 })
+    expect(insertSermon).not.toHaveBeenCalled()
+    // 주경로 목록 조회는 살아 있었으므로 yt-api로 다시 폴백하지 않는다
+    expect(fetchChannelVideos).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith('error', 'sermon', undefined, expect.stringContaining('상세 조회 실패'))
   })
 
   it('빈 목록을 "전부 삭제됨"으로 해석하지 않는다', async () => {
@@ -168,6 +191,35 @@ describe('reconcileSermons — yt-api 폴백', () => {
     expect(result).toEqual({ checked: 1, inserted: 1 })
     expect(fetchChannelVideos).toHaveBeenCalledWith('UC_test', 1)
     expect(log).toHaveBeenCalledWith('warning', 'sermon', undefined, expect.stringContaining('폴백'))
+    // toYouTubeVideo가 썸네일·길이를 다시 채운다 — ytVideo() 헬퍼가 넣은 thumbnailUrl: null이 그대로 나가지 않는다
+    expect(insertSermon).toHaveBeenCalledWith(
+      expect.objectContaining({
+        videoId: 'missing-1',
+        thumbnailUrl: 'https://img.youtube.com/vi/missing-1/hqdefault.jpg',
+        durationSeconds: 10,
+      }),
+      '주일예배',
+      'reconcile',
+    )
+  })
+
+  it('폴백 목록에 방송 중 스트림이 섞여도 길이가 0으로 와 등록하지 않는다', async () => {
+    vi.mocked(listUploadCandidates).mockRejectedValue(new Error('youtube data api playlistItems 500'))
+    vi.mocked(fetchChannelVideos).mockResolvedValue([
+      { ...candidate('live-1', '주일예배 - 방송 중'), thumbnailUrl: null, durationSeconds: 0 },
+      ytVideo('missing-1', '주일예배 - 폴백 등록'),
+    ])
+
+    const result = await reconcileSermons()
+
+    // live-1은 checked에는 잡히지만(목록에 있었으므로) 등록되지 않는다 — 다음 회차가 다시 시도한다
+    expect(result).toEqual({ checked: 2, inserted: 1 })
+    expect(insertSermon).toHaveBeenCalledTimes(1)
+    expect(insertSermon).not.toHaveBeenCalledWith(
+      expect.objectContaining({ videoId: 'live-1' }),
+      expect.anything(),
+      expect.anything(),
+    )
   })
 
   it('폐기된 키로 403이 나도 폴백이 걸려 주경로가 멈추지 않는다', async () => {

@@ -99,14 +99,17 @@ Better Auth 이메일/비밀번호 로그인으로 보호되며, 공개 회원�
 
 ```text
 [YouTube 업로드]
-      │  (WebSub 푸시)
-      ▼
-/api/youtube/websub  ── 서명검증(HMAC-SHA1) → Atom 파싱(yt:videoId)
-      │  publishJob
-      ▼
-QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
-                                   │
-                                   ▼
+      │                                                     │
+      │ (WebSub 푸시 — 2026-09-03부터 미도착)                    │ (예배 시간대 집중 폴링)
+      ▼                                                     ▼
+/api/youtube/websub                              /api/jobs/reconcile-sermons
+  서명검증(HMAC-SHA1) → Atom 파싱(yt:videoId)          playlistItems.list ↔ DB 대조, 누락분 in-process 등록
+      │  publishJob                                          │  publishJob (요약 대상만)
+      ▼                                                     │
+QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video           │
+                                   │                          │
+                                   └────────────┬─────────────┘
+                                                 ▼
                           /api/jobs/fetch-transcript  (RapidAPI yt-api 자막, 최대 6회 재시도)
                                    │
                     자막 확보 ─────┴───── 6회 소진(자막 끝내 없음)

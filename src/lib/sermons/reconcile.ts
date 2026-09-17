@@ -42,7 +42,9 @@ async function listUploads(channelId: string): Promise<UploadListing> {
         new Map(
           ids
             .map((id) => byId.get(id))
-            .filter((v): v is NonNullable<typeof v> => !!v)
+            // 채널 목록 응답에는 라이브 판별 필드가 없다 — 방송 중·예약 공개 영상은 lengthText가
+            // 비어 durationSeconds가 0으로 온다. 0을 라이브 신호로 써서 배제하고 다음 회차에 다시 잡는다.
+            .filter((v): v is NonNullable<typeof v> => !!v && v.durationSeconds > 0)
             .map((v) => [v.videoId, { durationSeconds: v.durationSeconds, isLiveOrUpcoming: false }]),
         ),
     }
@@ -75,12 +77,22 @@ export async function reconcileSermons(): Promise<{ checked: number; inserted: n
   const missing = listing.candidates.filter((v) => !existingIds.has(v.videoId))
   if (missing.length === 0) return { checked: listing.candidates.length, inserted: 0 }
 
-  const details = await listing.detailsFor(missing.map((v) => v.videoId))
+  let details: Map<string, VideoDetail>
+  try {
+    details = await listing.detailsFor(missing.map((v) => v.videoId))
+  } catch (e) {
+    // 상세 조회(videos.list)만 실패한 경우. yt-api로 다시 폴백하지 않는다 — RapidAPI 월 300회
+    // 한도를 상세 조회로 태울 이유가 없고, 다음 회차가 같은 누락분을 다시 잡는다.
+    const reason = e instanceof Error ? e.message : String(e)
+    console.error(`[reconcile] 영상 상세 조회 실패 — 이번 회차를 건너뛴다: ${reason}`)
+    await log('error', 'sermon', undefined, `[reconcile] 영상 상세 조회 실패 — 이번 회차 건너뜀: ${reason}`)
+    return { checked: listing.candidates.length, inserted: 0 }
+  }
 
   let inserted = 0
   for (const candidate of missing) {
     const detail = details.get(candidate.videoId)
-    // 상세를 못 받았거나 방송 중·예약 공개다. 길이가 확정되지 않아 지금 등록하면 0초로 남는다.
+    // 길이가 확정되지 않아 지금 등록하면 0초로 남는다.
     if (!detail || detail.isLiveOrUpcoming) continue
 
     const video = toYouTubeVideo(candidate, detail)
