@@ -186,7 +186,7 @@ RapidAPI yt-api 무료 플랜은 응답 헤더 실측으로 **월 300회**(`X-Ra
 
 ## 함께 고치는 문서
 
-- `.env.example` — **완료(2026-09-17).** `YOUTUBE_API_KEY`를 YouTube 키 묶음에 넣고 리퍼러 제한 금지를 주석으로 적었다. QStash 항목 주석은 주기를 나열하는 대신 등록 스크립트의 JSDoc을 정본으로 가리키게 바꿨다 — 같은 사실을 두 곳에 두면 또 어긋난다
+- `.env.example` — **완료(2026-09-17).** `YOUTUBE_API_KEY`를 YouTube 키 묶음에 넣고 리퍼러 제한 금지를 주석으로 적었다. QStash 항목 주석은 주기를 나열하는 대신 등록 스크립트 `main()`의 desired 배열과 README 운영 절 표를 정본으로 가리키게 바꿨다 — 같은 사실을 두 곳에 두면 또 어긋난다
 - `scripts/qstash-schedules.ts` — 상단 JSDoc의 스케줄 목록과 `console.log` 요약 문자열
 - `README.md` — **이번 변경으로 거짓이 되는 문장이 세 곳이다.**
   - 설교 파이프라인 절의 "폴링 없이 실시간으로 등록·자막화·요약까지 자동으로 진행됩니다"

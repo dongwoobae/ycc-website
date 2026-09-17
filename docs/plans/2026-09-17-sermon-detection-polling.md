@@ -1164,8 +1164,8 @@ git commit -m "feat: 폴링 스케줄을 예배 시간대에 집중시키고 폐
 코드가 아니라 사람이 하는 절차다. 계획 완료 조건에 포함한다.
 
 - [ ] Vercel 환경변수에 `YOUTUBE_API_KEY`가 있는지 확인한다(운영에는 등록돼 있으나 이 키를 쓰는 코드가 없어 아직 검증되지 않았다).
-- [ ] 배포 후 `NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules`를 실행한다. **origin을 붙이지 않으면 `.env.local`의 `ycc-website.vercel.app`으로 스케줄 대상이 전부 바뀐다.**
-- [ ] 출력의 "삭제" 줄이 비어 있는지 본다. 비어 있지 않은데 예상 밖 ID가 있으면 멈추고 확인한다.
+- [ ] 배포 후 `NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules`를 실행한다(기본 dry-run). **origin을 붙이지 않으면 `.env.local`의 `ycc-website.vercel.app`으로 스케줄 대상이 전부 바뀐다.**
+- [ ] 출력의 "삭제 예정" 줄이 비어 있는지 본다. 비어 있지 않은데 예상 밖 ID가 있으면 멈추고 확인한다. 문제 없으면 같은 명령에 `-- --apply`를 붙여 다시 실행하고, "삭제" 줄이 방금 본 "삭제 예정" 목록과 일치하는지 확인한다.
 - [ ] 2026-09-20(주일) 업로드가 폴링 창 안에서 잡히는지 확인한다. 기대: 감지 지연 59분 이내, 관리자 로그에 `create … — 폴링` 행. 비교 기준은 09-16 수요예배의 12시간 17분이다.
 - [ ] 관리자 로그에 `[reconcile] Data API 조회 실패 — yt-api로 폴백` warning이 없는지 확인한다. 있으면 키가 서버에서 안 먹는 것이다(리퍼러 제한을 걸었을 가능성부터 본다).
 - [ ] 계획이 끝나 base 브랜치로 병합할 때 이 문서를 `git rm` 한다.

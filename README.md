@@ -330,7 +330,7 @@ scripts/
   seed-from-rapidapi.ts              # RapidAPI로 실제 설교 데이터 시드
   summarize-sermons.ts               # 설교 일괄 요약 (수동 실행)
   websub-subscribe.ts                # WebSub 최초 구독
-  qstash-schedules.ts                # QStash 정기 스케줄 등록 (멱등)
+  qstash-schedules.ts                # QStash 정기 스케줄 desired set 적용, 폐기 스케줄 삭제 (dry-run 기본, --apply)
   cleanup-thumbnails.ts              # 썸네일 후보 트림 + R2 고아 객체 정리 (dry-run 기본)
   audit-bulletin-r2.ts               # bulletins/ 프리픽스 고아 객체 감사 (조회 기본, --delete)
   reset-db.ts                        # 개발 DB 초기화
@@ -663,12 +663,16 @@ npm run db:seed
 # YouTube 채널 WebSub 최초 구독 (이후 갱신은 cron이 담당)
 npm run websub:subscribe
 
-# QStash 정기 스케줄 등록 (멱등, 재실행 안전)
+# QStash 정기 스케줄의 desired set 적용. 등록(create)은 멱등이라 그대로 반영된다.
+# 목록에서 빠진 ycc- 스케줄 삭제는 기본이 dry-run — "삭제 예정" 줄에 예상 밖 ID가 있으면 멈추고 확인한다.
 # 대상 URL은 실행 환경의 NEXT_PUBLIC_SITE_URL로 결정된다. 로컬 .env.local이 프리뷰 도메인이면 프로덕션 스케줄이 그쪽으로 바뀌므로 반드시 프로덕션 origin을 넘긴다.
 NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules
+
+# 삭제 예정 목록을 확인했으면 반영
+NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules -- --apply
 ```
 
-`qstash:schedules`는 다음 스케줄의 desired set을 적용합니다. 목록에서 빠진 `ycc-` 스케줄은 삭제됩니다.
+`qstash:schedules`는 다음 스케줄의 desired set을 적용합니다. `--apply` 없이는 목록 조회와 등록만 하고 삭제 후보를 출력만 합니다. 목록에서 빠진 `ycc-` 스케줄은 `--apply`를 붙였을 때만 삭제됩니다.
 
 | 스케줄                       | 주기                        | 역할                                           |
 | ---------------------------- | --------------------------- | ---------------------------------------------- |
