@@ -130,7 +130,7 @@
   2. **삭제** — `created_at < now() - 90 days`인 `page_views` 행 삭제.
 - 순서 보장: 반드시 롤업 완료 후 삭제. 롤업이 매 실행마다 미집계 완료일을 **전부 백필**하고 보관선(90일)이 일별 갭(1일)보다 훨씬 크므로, 집계 안 된 날이 삭제되는 일은 없음.
 - 타임존: 롤업 집계 키는 KST 날짜, 삭제 임계는 절대시각(`now()-90d`) — 둘은 목적이 달라 혼용 문제 없음(집계 우선 후 삭제).
-- 스케줄 등록: `scripts/qstash-schedules.ts`에 `upsertSchedule({ job: 'analytics-rollup', cron: '10 15 * * *', scheduleId: 'ycc-analytics-rollup' })` 추가.
+- 스케줄 등록: `scripts/qstash-schedules.ts`의 `syncSchedules` desired 배열에 `{ job: 'analytics-rollup', cron: '10 15 * * *', scheduleId: 'ycc-analytics-rollup' }` 추가.
 
 ## 5. 대시보드 UI (`src/app/admin/analytics/page.tsx`)
 

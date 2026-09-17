@@ -95,18 +95,21 @@ Better Auth 이메일/비밀번호 로그인으로 보호되며, 공개 회원�
 
 ### 🎬 설교 자동 동기화 & AI 요약 파이프라인
 
-새 설교 영상이 YouTube에 올라오면 **폴링 없이 실시간으로** 등록·자막화·요약까지 자동으로 진행됩니다.
+새 설교 영상이 YouTube에 올라오면 **예배 시간대 집중 폴링**으로 등록·자막화·요약까지 자동으로 진행됩니다. WebSub 푸시가 살아 있으면 업로드 즉시 같은 체인을 탑니다.
 
 ```text
 [YouTube 업로드]
-      │  (WebSub 푸시)
-      ▼
-/api/youtube/websub  ── 서명검증(HMAC-SHA1) → Atom 파싱(yt:videoId)
-      │  publishJob
-      ▼
-QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
-                                   │
-                                   ▼
+      │                                                     │
+      │ (WebSub 푸시 — 2026-09-03부터 미도착)                    │ (예배 시간대 집중 폴링)
+      ▼                                                     ▼
+/api/youtube/websub                              /api/jobs/reconcile-sermons
+  서명검증(HMAC-SHA1) → Atom 파싱(yt:videoId)          playlistItems.list ↔ DB 대조, 누락분 in-process 등록
+      │  publishJob                                          │  publishJob (요약 대상만)
+      ▼                                                     │
+QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video           │
+                                   │                          │
+                                   └────────────┬─────────────┘
+                                                 ▼
                           /api/jobs/fetch-transcript  (RapidAPI yt-api 자막, 최대 6회 재시도)
                                    │
                     자막 확보 ─────┴───── 6회 소진(자막 끝내 없음)
@@ -127,7 +130,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
 관리자 "요약 재생성" 버튼 ──▶ 상태 초기화 후 같은 체인에 재투입 (자막 있으면 summarize, 없으면 fetch-transcript)
 ```
 
-- **WebSub(PubSubHubbub) 푸시 구독**: 채널 피드를 Google 허브에 구독(`hub.mode=subscribe`, `verify=async`, `hub.secret`)해 업로드 순간에만 콜백을 받습니다. 주기적 폴링이 없어 YouTube API 쿼터·함수 호출을 평소엔 0으로 유지합니다. 구독 lease는 만료되므로 **QStash cron으로 매일 재구독**하고, 놓친 영상은 **일일 정합성 cron(`reconcile-sermons`)이 채널 재생목록과 DB를 대조해 자동 백필**합니다.
+- **WebSub(PubSubHubbub) 푸시 구독**: 채널 피드를 Google 허브에 구독(`hub.mode=subscribe`, `verify=async`, `hub.secret`)해 업로드 순간에만 콜백을 받습니다. 푸시가 도착하면 업로드 순간에 바로 체인이 돌아 폴링 주기를 기다리지 않습니다. 다만 Google 허브가 2026-09-03부터 이 채널에 배달을 멈춰, 현재 등록을 실제로 수행하는 것은 **예배 시간대에 집중시킨 QStash cron 폴링**(`reconcile-sermons`, 주일·수요 예배 시간대 매시간 + 매일 1회 안전망)입니다. 구독 lease는 만료되므로 재구독 cron은 **매일** 계속 돌리되, 실패해도 등록은 폴링이 책임지므로 장애로 취급하지 않습니다.
 - **콜백 보안 2겹**: 구독 검증(GET)은 **우리 채널 토픽일 때만 `hub.challenge`를 에코**해 임의 토픽 구독을 차단하고, 알림(POST)은 **`X-Hub-Signature`(HMAC-SHA1)를 원문 바이트 기준 `timingSafeEqual`로 비교**해 위조를 차단합니다.
 - **QStash 다단계 잡 체이닝**: `ingest-video → fetch-transcript → summarize`를 각각 독립 서버리스 함수로 분리하고 QStash 메시지로 연결합니다. `fetch-transcript`가 자막을 끝내 못 구하면(최대 6회 재시도 소진) `fetch-audio-transcript`가 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓰고, 그 결과를 같은 형식으로 변환해 `summarize`로 합류시킵니다. 모든 잡 엔드포인트는 QStash `Receiver` 서명으로 검증되며, 한 단계가 실패해도 그 단계만 재시도됩니다. 오디오 받아쓰기가 실패하면 잡 본문의 `attempt`를 올려 **1회 자동으로 다시 태우고**, 소진하면 `no_transcript`로 종결합니다 — 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 일이 있어, 사람이 버튼을 다시 누르지 않아도 회수되게 했습니다.
 - **서버리스식 지수 백오프**: Vercel 함수는 프로세스를 붙잡고 `sleep`할 수 없으므로, **QStash 지연 발행(`delay`)으로 백오프를 외부에 위임**합니다. 간격은 `5 × 3ⁿ분`으로 증가하고 `attempts < 3` 한도를 두며, 자막이 영구히 없는 건은 재시도 후보에서 제외해 API 쿼터 소진을 막습니다. 정기 재시도는 `retry-summaries` cron이 수행합니다.
@@ -193,6 +196,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video
 | 배경 제거(누끼) | remove.bg API                                                                                          |
 | 썸네일 합성     | Next.js `ImageResponse`(`next/og`, Satori), sharp                                                      |
 | 메시지 큐·크론  | Upstash QStash                                                                                         |
+| 업로드 감지     | YouTube Data API v3 (폴링, uploads 재생목록 조회)                                                      |
 | 영상·자막       | RapidAPI yt-api                                                                                        |
 | 실시간 구독     | YouTube WebSub (PubSubHubbub)                                                                          |
 | Validation      | Zod                                                                                                    |
@@ -267,7 +271,7 @@ src/
         publish-post/route.ts        # 예약 게시 공개 시각 캐시 재검증 (QStash 지연 콜백)
         retry-summaries/route.ts     # 오디오 변환 잔류 회수 + 요약 미완료분 재시도 (QStash cron)
         websub-renew/route.ts        # WebSub 재구독 (QStash cron)
-        reconcile-sermons/route.ts   # 채널↔DB 정합성 백필 (QStash cron)
+        reconcile-sermons/route.ts   # 업로드 감지 폴링 주경로 (QStash cron, 예배 시간대 집중 + 매일 안전망)
         analytics-rollup/route.ts    # 방문 통계 일일 롤업 (QStash cron)
   components/
     layout/                          # Header, Footer, PageHero, KakaoMap, VisitBlock
@@ -295,8 +299,8 @@ src/
     actions/                         # 관리자 Server Actions (썸네일 생성/요약 트리거 포함)
     ai/                              # Gemini·OpenAI 호출, 설교 요약 생성
     posts/                           # 게시글 경로 재검증 유틸 (액션·예약 공개 잡 공유)
-    sermons/                         # 동기화·적재·요약 claim/재시도·정합성 백필·제목 분류·ISR revalidate
-    youtube/                         # YouTube 클라이언트, RapidAPI 채널, WebSub 구독/검증
+    sermons/                         # 동기화·적재·요약 claim/재시도·업로드 감지 폴링·제목 분류·ISR revalidate
+    youtube/                         # YouTube Data API 폴링(업로드 목록·상세), RapidAPI 채널(폴백·수동 동기화), WebSub 구독/검증
     thumbnails/                      # 배경 생성·누끼·자막밴드·텍스트 합성·구절 추출·WebP 변환
     transcript/                      # RapidAPI 자막 fetch, 요약 프롬프트 빌드
     analytics/                       # 봇·데이터센터 판별, IP 마스킹/해시, 지역명, 통계 롤업
@@ -327,7 +331,7 @@ scripts/
   seed-from-rapidapi.ts              # RapidAPI로 실제 설교 데이터 시드
   summarize-sermons.ts               # 설교 일괄 요약 (수동 실행)
   websub-subscribe.ts                # WebSub 최초 구독
-  qstash-schedules.ts                # QStash 정기 스케줄 등록 (멱등)
+  qstash-schedules.ts                # QStash 정기 스케줄 desired set 적용(등록은 그대로 반영), 폐기 스케줄 삭제만 dry-run 기본(--apply)
   cleanup-thumbnails.ts              # 썸네일 후보 트림 + R2 고아 객체 정리 (dry-run 기본)
   audit-bulletin-r2.ts               # bulletins/ 프리픽스 고아 객체 감사 (조회 기본, --delete)
   reset-db.ts                        # 개발 DB 초기화
@@ -549,7 +553,8 @@ OPENAI_API_KEY=your_openai_api_key
 REMOVE_BG_API_KEY=your_remove_bg_api_key
 
 # QStash (메시지 큐 + 정기 스케줄)
-# 스케줄(WebSub 갱신·요약 재시도)은 `npm run qstash:schedules` 1회 실행으로 멱등 등록
+# 정기 스케줄(6개)은 `npm run qstash:schedules` 1회 실행으로 등록/갱신하고, 목록에서 빠진 ycc- 스케줄은
+# --apply를 붙였을 때만 삭제한다.
 QSTASH_URL=https://qstash-eu-central-1.upstash.io
 QSTASH_TOKEN=your_qstash_token
 QSTASH_CURRENT_SIGNING_KEY=your_qstash_current_signing_key
@@ -564,6 +569,10 @@ RAPIDAPI_TRANSCRIPT_HOST=youtube-transcript3.p.rapidapi.com
 # WebSub (콜백 URL은 사이트 origin + /api/youtube/websub 로 코드에서 합성)
 WEBSUB_SECRET=your_websub_secret
 YOUTUBE_CHANNEL_ID=UCxxxxxxxxxxxxxxxxxxxxxx
+
+# YouTube Data API v3 — 설교 업로드 감지 폴링(uploads 재생목록 조회). 공개 데이터 읽기라 채널 소유권·OAuth 불필요.
+# 서버에서 호출하므로 HTTP 리퍼러 제한을 걸면 안 된다 — 리퍼러가 없어 전부 차단된다. 제한은 API 제한으로 건다.
+YOUTUBE_API_KEY=your_youtube_api_key
 
 # 자체 방문 분석 — visitor_id 해시용 솔트 (랜덤 문자열, 32바이트 이상 권장)
 ANALYTICS_SALT=your_analytics_salt
@@ -660,19 +669,27 @@ npm run db:seed
 # YouTube 채널 WebSub 최초 구독 (이후 갱신은 cron이 담당)
 npm run websub:subscribe
 
-# QStash 정기 스케줄 등록 (멱등, 재실행 안전)
+# QStash 정기 스케줄의 desired set 적용. 등록(create)은 멱등이라 그대로 반영된다.
+# 목록에서 빠진 ycc- 스케줄 삭제는 기본이 dry-run — "삭제 예정" 줄에 예상 밖 ID가 있으면 멈추고 확인한다.
 # 대상 URL은 실행 환경의 NEXT_PUBLIC_SITE_URL로 결정된다. 로컬 .env.local이 프리뷰 도메인이면 프로덕션 스케줄이 그쪽으로 바뀌므로 반드시 프로덕션 origin을 넘긴다.
 NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules
+
+# 삭제 예정 목록을 확인했으면 반영
+NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules -- --apply
 ```
 
-`qstash:schedules`는 다음 4개 스케줄을 등록/갱신합니다.
+`qstash:schedules`는 다음 스케줄의 desired set을 적용합니다. `--apply` 없이는 목록 조회와 등록만 하고 삭제 후보를 출력만 합니다. 목록에서 빠진 `ycc-` 스케줄은 `--apply`를 붙였을 때만 삭제됩니다.
 
-| 스케줄              | 주기   | 역할                                           |
-| ------------------- | ------ | ---------------------------------------------- |
-| `websub-renew`      | 매일   | WebSub 구독 lease 갱신                         |
-| `retry-summaries`   | 매시간 | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
-| `reconcile-sermons` | 매일   | 채널 재생목록 ↔ DB 정합성 대조·누락 백필       |
-| `analytics-rollup`  | 매일   | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
+| 스케줄                       | 주기                        | 역할                                           |
+| ---------------------------- | --------------------------- | ---------------------------------------------- |
+| `websub-renew`               | 매일                        | WebSub 구독 lease 갱신(부경로 유지용)          |
+| `retry-summaries`            | 매시간                      | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
+| `reconcile-sermons`          | 매일                        | 업로드 감지 안전망                             |
+| `reconcile-sermons-sun`      | 주일 11~17시 KST 매시간     | 업로드 감지 주경로(주일 예배)                  |
+| `reconcile-sermons-wed`      | 수요일 20~23시 KST 매시간   | 업로드 감지 주경로(수요 예배)                  |
+| `analytics-rollup`           | 매일                        | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
+
+이 표는 `scripts/qstash-schedules.ts`의 `main()` desired 배열을 옮겨 적은 것입니다. cron 값의 정본은 그 스크립트입니다 — 어긋나면 스크립트 쪽이 맞습니다.
 
 실제 설교 데이터 시드와 일괄 요약(수동 보충):
 
@@ -722,7 +739,7 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 | 업로드/스토리지 | `upload-sniff`, `r2`, `gallery-video`                                                                                                                                      | 허용 MIME/파일 시그니처(`%PDF-` 포함), R2 파일명 정규화·key prefix, 주보 면·PDF key 형식과 presign prefix 가드, 영상 형식·크기·서명 URL 검증                                                                                      |
 | 인증/SEO        | `auth-origin`, `sitemap`, `seo/jsonld`                                                                                                                                     | Trusted origin 정규화, sitemap URL 생성, JSON-LD 빌더                                                                                                                                                                             |
 | 주보            | `bulletin-editor`, `bulletin-format`, `bulletin-scale`, `bulletin-pdf`, `bulletin-paging`, `bulletin-zoom`, `actions/bulletins`                                            | 공지·면 정규화/검증, 날짜·권호 표기, 긴 변 축소 클램프, PDF 면 렌더·WebP→JPEG 폴백·상한 거부, 면 이동 클램프·표기, 줌 클램프·앵커 고정·오프셋 클램프, 미검증 키 저장 거부                                                         |
-| 설교 동기화     | `youtube/websub`, `sermons/sync`, `sermons/reconcile`                                                                                                                      | WebSub 서명 검증·Atom 파싱, 신규 삽입 계획·중복 방지, 정합성 백필                                                                                                                                                                 |
+| 설교 동기화     | `youtube/websub`, `sermons/sync`, `sermons/reconcile`                                                                                                                      | WebSub 서명 검증·Atom 파싱, 신규 삽입 계획·중복 방지, 업로드 감지 폴링(Data API 주경로·yt-api 폴백)                                                                                                                              |
 | 설교 요약       | `sermons/summarize`(+integration), `ai/gemini`, `ai/sermon-summary`, `ai/audio-transcript`, `transcript/rapidapi`, `transcript/prompt`                                     | claim 선점·지수 백오프·재시도 선별, 재생성 요청의 상태 초기화·오디오 재시도 종결, 요약 모델 폴백(Sol 실패 시 Gemini)·스키마/챕터 검증, 받아쓰기 파싱·커버리지 검사, 자막 fetch·프롬프트 빌드                                      |
 | 설교 표기       | `sermons/classify-title`, `sermons/format`, `sermons/list-title`, `sermons/sermon-date`                                                                                    | 제목 분류·표시 포맷·날짜 파싱                                                                                                                                                                                                     |
 | 썸네일          | `thumbnails/scripture`, `detect-caption-band`, `compose-text`, `generate-background`, `position`, `remove-background`, `store`(+integration), `webp`, `actions/thumbnails` | 성경구절 추출, 자막 밴드 crop, 텍스트 합성·배치, 배경 생성, 누끼, 후보 저장/트림, WebP 변환                                                                                                                                       |

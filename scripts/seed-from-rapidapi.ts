@@ -18,7 +18,7 @@ async function main() {
 
   for (const video of videos) {
     const worshipType: WorshipType = classifyByTitle(video.title)
-    const sermonId = await insertSermon(video, worshipType)
+    const sermonId = await insertSermon(video, worshipType, 'seed')
     if (sermonId) {
       inserted++
       byType[worshipType] = (byType[worshipType] ?? 0) + 1

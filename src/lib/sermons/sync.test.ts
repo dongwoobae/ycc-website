@@ -40,6 +40,7 @@ describe('resyncAllSermons onProgress', () => {
       { current: 2, total: 2 },
     ])
     expect(result.inserted).toBe(2)
+    expect(insertSermon).toHaveBeenCalledWith(expect.objectContaining({ videoId: 'a' }), '특송', 'sync')
   })
 
   it('자막 미준비(요약 유형)면 QStash fetch-transcript로 폴백 발행한다', async () => {
