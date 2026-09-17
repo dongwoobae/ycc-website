@@ -59,7 +59,7 @@ interface RawVideoItem {
 
 /**
  * videos.list 응답을 videoId → 상세 맵으로 정규화한다.
- * 길이를 못 읽은 항목은 넣지 않는다 — 0초로 저장되면 오디오 받아쓰기의 길이 검사가 기준을 잃는다.
+ * 길이를 못 읽었거나 0 이하인 항목은 넣지 않는다 — 0초로 저장되면 오디오 받아쓰기의 길이 검사가 기준을 잃는다.
  * snippet은 liveBroadcastContent 때문에 받는다. 제목은 후보에 이미 있어 쓰지 않는다.
  */
 export function normalizeVideoDetails(raw: unknown): Map<string, VideoDetail> {
@@ -70,7 +70,9 @@ export function normalizeVideoDetails(raw: unknown): Map<string, VideoDetail> {
     const id = typeof it.id === 'string' ? it.id : ''
     if (!id) continue
     const durationSeconds = parseIsoDuration(it.contentDetails?.duration)
-    if (durationSeconds === null) continue
+    // 0 이하(P0D·PT0S)는 방송 중이거나 방송 종료 후 VOD 처리가 끝나지 않은 영상의 신호다 —
+    // liveBroadcastContent가 이미 'none'으로 넘어간 뒤에도 나타날 수 있어 그 필드로는 못 거른다.
+    if (durationSeconds === null || durationSeconds <= 0) continue
     out.set(id, {
       durationSeconds,
       isLiveOrUpcoming: it.snippet?.liveBroadcastContent !== 'none',

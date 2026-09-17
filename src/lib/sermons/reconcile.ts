@@ -72,6 +72,12 @@ export async function reconcileSermons(): Promise<{ checked: number; inserted: n
     return { checked: 0, inserted: 0 }
   }
 
+  if (listing.candidates.length === 0) {
+    // 225개 안팎인 채널에서 빈 목록은 채널 접근·쿼터 이상의 신호일 수 있다. 등록 없이 종료하되 남긴다.
+    console.warn('[reconcile] 업로드 목록이 비었다')
+    await log('warning', 'sermon', undefined, '[reconcile] 업로드 목록이 비었다')
+  }
+
   const existing = await db.select({ id: sermons.youtubeVideoId }).from(sermons)
   const existingIds = new Set(existing.map((r) => r.id).filter((x): x is string => !!x))
   const missing = listing.candidates.filter((v) => !existingIds.has(v.videoId))
@@ -92,8 +98,16 @@ export async function reconcileSermons(): Promise<{ checked: number; inserted: n
   let inserted = 0
   for (const candidate of missing) {
     const detail = details.get(candidate.videoId)
-    // 길이가 확정되지 않아 지금 등록하면 0초로 남는다.
-    if (!detail || detail.isLiveOrUpcoming) continue
+    if (!detail) {
+      // 길이 0 이하(방송 중·VOD 처리중)로 data-api.ts가 이미 배제했거나, videos.list가 이 videoId를
+      // 아예 돌려주지 않았다(비공개 전환 등). 후자는 매 회차 조용히 반복될 수 있어 로그로 남긴다.
+      console.warn(`[reconcile] 상세 없음 — 건너뜀 videoId=${candidate.videoId}`)
+      await log('warning', 'sermon', undefined, `[reconcile] 상세 없음 — 건너뜀 videoId=${candidate.videoId}`)
+      continue
+    }
+    // 상세는 있지만 아직 방송 중·예약 공개다(liveBroadcastContent !== 'none'). 길이가 확정되지
+    // 않아 지금 등록하면 0초로 남는다.
+    if (detail.isLiveOrUpcoming) continue
 
     const video = toYouTubeVideo(candidate, detail)
     const worshipType = classifyByTitle(video.title)

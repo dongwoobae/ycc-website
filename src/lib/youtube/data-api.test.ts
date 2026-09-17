@@ -66,18 +66,28 @@ describe('normalizeVideoDetails', () => {
         {
           id: 'live-1',
           snippet: { liveBroadcastContent: 'live' },
-          contentDetails: { duration: 'PT0S' },
+          contentDetails: { duration: 'PT1H' },
         },
       ],
     })
 
     expect(map.get('c-oLFHUSx8A')).toEqual({ durationSeconds: 2077, isLiveOrUpcoming: false })
-    expect(map.get('live-1')).toEqual({ durationSeconds: 0, isLiveOrUpcoming: true })
+    expect(map.get('live-1')).toEqual({ durationSeconds: 3600, isLiveOrUpcoming: true })
   })
 
   it('길이를 못 읽은 항목은 넣지 않는다', () => {
     const map = normalizeVideoDetails({
       items: [{ id: 'bad', snippet: { liveBroadcastContent: 'none' }, contentDetails: {} }],
+    })
+    expect(map.size).toBe(0)
+  })
+
+  it('길이가 0 이하(P0D·PT0S)인 항목은 넣지 않는다 — 방송 중이거나 VOD 처리가 끝나지 않은 신호다', () => {
+    const map = normalizeVideoDetails({
+      items: [
+        { id: 'processing', snippet: { liveBroadcastContent: 'none' }, contentDetails: { duration: 'P0D' } },
+        { id: 'live-zero', snippet: { liveBroadcastContent: 'live' }, contentDetails: { duration: 'PT0S' } },
+      ],
     })
     expect(map.size).toBe(0)
   })

@@ -98,7 +98,7 @@ describe('reconcileSermons — Data API 주경로', () => {
     expect(insertSermon).not.toHaveBeenCalled()
   })
 
-  it('상세를 못 받은 영상은 건너뛴다', async () => {
+  it('상세를 못 받은 영상은 건너뛰고 warning을 남긴다', async () => {
     vi.mocked(listUploadCandidates).mockResolvedValue([candidate('missing-1', '주일예배 - 상세 없음')])
     vi.mocked(fetchVideoDetails).mockResolvedValue(new Map())
 
@@ -106,6 +106,12 @@ describe('reconcileSermons — Data API 주경로', () => {
 
     expect(result).toEqual({ checked: 1, inserted: 0 })
     expect(insertSermon).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith(
+      'warning',
+      'sermon',
+      undefined,
+      expect.stringContaining('videoId=missing-1'),
+    )
   })
 
   it('영상 상세 조회(videos.list)가 실패하면 이번 회차를 건너뛰고 error를 남긴다', async () => {
@@ -121,13 +127,14 @@ describe('reconcileSermons — Data API 주경로', () => {
     expect(log).toHaveBeenCalledWith('error', 'sermon', undefined, expect.stringContaining('상세 조회 실패'))
   })
 
-  it('빈 목록을 "전부 삭제됨"으로 해석하지 않는다', async () => {
+  it('빈 목록을 "전부 삭제됨"으로 해석하지 않지만, 이상 신호로 warning을 남긴다', async () => {
     vi.mocked(listUploadCandidates).mockResolvedValue([])
 
     const result = await reconcileSermons()
 
     expect(result).toEqual({ checked: 0, inserted: 0 })
     expect(insertSermon).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith('warning', 'sermon', undefined, expect.stringContaining('업로드 목록이 비었다'))
   })
 
   it('revalidate가 던져도 남은 누락분을 계속 등록한다', async () => {
