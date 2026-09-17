@@ -12,14 +12,29 @@ export async function sermonExists(videoId: string): Promise<boolean> {
   return !!row
 }
 
+/** 설교가 등록된 경로. 값 자체는 영문으로 두고 표시할 때만 한국어로 바꾼다. */
+export type SermonOrigin = 'websub' | 'reconcile' | 'sync' | 'seed'
+
+const ORIGIN_LABEL: Record<SermonOrigin, string> = {
+  websub: '푸시',
+  reconcile: '폴링',
+  sync: '수동',
+  seed: '시드',
+}
+
 /**
  * 새 설교를 즉시 공개 상태로 삽입한다. 이미 있으면 빈 문자열을 반환한다.
  *
  * 실패는 서버 로그에 남기고 그대로 다시 던진다. 특히 sermons 행만 남고 자식 행 생성이 깨진 상태는
  * 어떤 복구 경로도 줍지 못한다 — reconcile은 등록됐다고 보고 건너뛰고, 요약 스위퍼는 sermon_summaries
  * 행만 훑는다. 그 상태를 사람에게 알리는 수단은 이 로그뿐이다.
+ * 등록 경로를 create 로그에 남긴다 — WebSub 푸시가 복구되면 `— 푸시` 행이 나타나는 것이 유일한 신호다.
  */
-export async function insertSermon(video: YouTubeVideo, worshipType: WorshipType): Promise<string> {
+export async function insertSermon(
+  video: YouTubeVideo,
+  worshipType: WorshipType,
+  origin: SermonOrigin,
+): Promise<string> {
   let id = ''
   try {
     const [row] = await db
@@ -43,7 +58,7 @@ export async function insertSermon(video: YouTubeVideo, worshipType: WorshipType
       await db.insert(sermonTranscripts).values({ sermonId: id }).onConflictDoNothing()
       await db.insert(sermonThumbnails).values({ sermonId: id }).onConflictDoNothing()
       console.log(`[sermon] 등록 videoId=${video.videoId} type=${worshipType} "${video.title}"`)
-      await log('create', 'sermon', id, `${video.title} (${worshipType})`)
+      await log('create', 'sermon', id, `${video.title} (${worshipType}) — ${ORIGIN_LABEL[origin]}`)
     }
   } catch (e) {
     console.error(`[sermon] 등록 실패 videoId=${video.videoId}`, e)

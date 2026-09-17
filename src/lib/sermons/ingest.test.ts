@@ -36,18 +36,18 @@ beforeEach(() => {
 })
 
 describe('insertSermon', () => {
-  it('정상 등록이면 create 로그를 남긴다', async () => {
-    const id = await insertSermon(video, '주일예배')
+  it('정상 등록이면 출처를 붙인 create 로그를 남긴다', async () => {
+    const id = await insertSermon(video, '주일예배', 'reconcile')
 
     expect(id).toBe('sid')
-    expect(log).toHaveBeenCalledWith('create', 'sermon', 'sid', '주일예배 - 제목 (주일예배)')
+    expect(log).toHaveBeenCalledWith('create', 'sermon', 'sid', '주일예배 - 제목 (주일예배) — 폴링')
   })
 
   it('자식 행 생성이 실패하면 sermons 행만 남았음을 로그로 남기고 다시 던진다', async () => {
     // 1번째 insert(sermons)는 통과시키고 2번째(sermon_summaries)부터 실패시킨다.
     state.failFromCall = 2
 
-    await expect(insertSermon(video, '주일예배')).rejects.toThrow('column does not exist')
+    await expect(insertSermon(video, '주일예배', 'reconcile')).rejects.toThrow('column does not exist')
 
     expect(log).toHaveBeenCalledWith('error', 'sermon', 'sid', expect.stringContaining('videoId=vid-1'))
     const [action, , , message] = vi.mocked(log).mock.calls[0]
@@ -58,7 +58,7 @@ describe('insertSermon', () => {
   it('sermons 행 자체가 실패하면 id 없이 로그를 남기고 다시 던진다', async () => {
     state.failFromCall = 1
 
-    await expect(insertSermon(video, '주일예배')).rejects.toThrow('column does not exist')
+    await expect(insertSermon(video, '주일예배', 'reconcile')).rejects.toThrow('column does not exist')
 
     expect(log).toHaveBeenCalledWith('error', 'sermon', undefined, expect.stringContaining('videoId=vid-1'))
   })

@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   }
 
   const worshipType = classifyByTitle(video.title)
-  const sermonId = await insertSermon(video, worshipType)
+  const sermonId = await insertSermon(video, worshipType, 'websub')
   // 자동 등록분이 ISR 1시간 주기를 기다리지 않고 즉시 공개 페이지에 노출되게 한다.
   if (sermonId) revalidateSermonPaths(sermonId)
   if (sermonId && expectsAutoSummary(worshipType)) {
