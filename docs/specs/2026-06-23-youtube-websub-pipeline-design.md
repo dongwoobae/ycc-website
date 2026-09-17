@@ -4,6 +4,10 @@
 **상태**: 설계 확정 (구현 계획 대기)
 **대체 대상**: `2026-06-20-sermon-youtube-ai-summary-design.md`(Vercel Cron + Gemini 영상 직접입력 방식)을 **전면 교체**한다.
 
+> **2026-09-17 — 아래 "업로드 감지 = WebSub 푸시" 결정은 유효하지 않다.**
+> 감지 주경로는 YouTube Data API 폴링으로 바뀌었고 WebSub은 부경로로 남는다.
+> `2026-09-17-sermon-detection-polling-design.md`를 보라. 그 외 자막·요약·큐 설계는 이 문서가 유효하다.
+
 ## 교체 사유
 
 기존 설계는 Vercel Cron 폴링으로 재생목록을 동기화하고 Gemini에 YouTube URL을 직접 입력했다. 그러나:
