@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { normalizePlaylistItems, normalizeVideoDetails, parseIsoDuration, uploadsPlaylistId } from './data-api'
+import {
+  apiErrorReason,
+  normalizePlaylistItems,
+  normalizeVideoDetails,
+  parseIsoDuration,
+  uploadsPlaylistId,
+} from './data-api'
 
 describe('uploadsPlaylistId', () => {
   it('UC 접두를 UU로 바꾼다', () => {
@@ -85,5 +91,82 @@ describe('normalizeVideoDetails', () => {
       ],
     })
     expect(map.size).toBe(0)
+  })
+})
+
+describe('apiErrorReason', () => {
+  it('키가 무효한 400은 details의 API_KEY_INVALID로 갈린다 — errors[0]은 badRequest라 값 오류와 구분되지 않는다', () => {
+    expect(
+      apiErrorReason({
+        error: {
+          code: 400,
+          message: 'API key not valid. Please pass a valid API key.',
+          errors: [
+            { message: 'API key not valid. Please pass a valid API key.', domain: 'global', reason: 'badRequest' },
+          ],
+          status: 'INVALID_ARGUMENT',
+          details: [
+            {
+              '@type': 'type.googleapis.com/google.rpc.ErrorInfo',
+              reason: 'API_KEY_INVALID',
+              domain: 'googleapis.com',
+            },
+            {
+              '@type': 'type.googleapis.com/google.rpc.LocalizedMessage',
+              locale: 'en-US',
+              message: 'API key not valid.',
+            },
+          ],
+        },
+      }),
+    ).toBe('API_KEY_INVALID')
+  })
+
+  it('playlistId 값이 잘못된 400은 errors[0].reason에서 온다', () => {
+    expect(
+      apiErrorReason({
+        error: {
+          code: 400,
+          message: 'Invalid Value',
+          errors: [{ message: 'Invalid Value', domain: 'global', reason: 'invalid' }],
+        },
+      }),
+    ).toBe('invalid')
+  })
+
+  it('재생목록 없음 404', () => {
+    expect(
+      apiErrorReason({
+        error: {
+          code: 404,
+          errors: [{ domain: 'youtube.playlistItem', reason: 'playlistNotFound', location: 'playlistId' }],
+        },
+      }),
+    ).toBe('playlistNotFound')
+  })
+
+  it('403은 errors 배열 자체가 없고 details만 있다', () => {
+    expect(
+      apiErrorReason({
+        error: {
+          code: 403,
+          status: 'PERMISSION_DENIED',
+          details: [
+            {
+              '@type': 'type.googleapis.com/google.rpc.ErrorInfo',
+              reason: 'API_KEY_SERVICE_BLOCKED',
+              domain: 'googleapis.com',
+            },
+          ],
+        },
+      }),
+    ).toBe('API_KEY_SERVICE_BLOCKED')
+  })
+
+  it('사유를 못 찾거나 코드 형태가 아니면 null — 자유 문자열을 로그로 흘리지 않는다', () => {
+    expect(apiErrorReason({ error: { code: 400, message: 'Invalid Value' } })).toBeNull()
+    expect(apiErrorReason({ error: { errors: [{ reason: 'key AIzaSyXXXX is bad' }] } })).toBeNull()
+    expect(apiErrorReason(null)).toBeNull()
+    expect(apiErrorReason('<html>502</html>')).toBeNull()
   })
 })

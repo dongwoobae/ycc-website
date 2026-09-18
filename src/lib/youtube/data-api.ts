@@ -86,13 +86,47 @@ function apiKey(): string {
   return key
 }
 
+/** 사유 코드로 인정하는 형태. 여기서 벗어나면 버린다 — 자유 문자열을 로그로 흘리지 않는다. */
+const REASON_CODE = /^[A-Za-z_]{1,64}$/
+
+/**
+ * 오류 응답에서 사유 코드만 꺼낸다. `message`는 형식이 보장되지 않아 쓰지 않는다.
+ *
+ * `details`를 먼저 보는 이유: 키가 무효한 400은 `errors[0].reason`이 `badRequest`로 와서
+ * playlistId 값 오류(`invalid`)와 구분되지 않고, `details`의 `API_KEY_INVALID`라야 갈린다.
+ * 반대로 403은 `errors` 배열 자체가 없고 `details`만 온다.
+ */
+export function apiErrorReason(body: unknown): string | null {
+  const err = (body as { error?: { details?: unknown; errors?: unknown } } | null)?.error
+  if (!err) return null
+  const details = Array.isArray(err.details) ? err.details : []
+  const errors = Array.isArray(err.errors) ? err.errors : []
+  for (const entry of [...details, ...errors]) {
+    const reason = (entry as { reason?: unknown } | null)?.reason
+    if (typeof reason === 'string' && REASON_CODE.test(reason)) return reason
+  }
+  return null
+}
+
+/** 오류 본문이 JSON이 아닐 수 있다(프록시의 HTML 오류 면). 파싱 실패가 상태 코드를 가리면 안 된다. */
+async function errorReasonOf(res: Response): Promise<string | null> {
+  try {
+    return apiErrorReason(JSON.parse(await res.text()))
+  } catch {
+    return null
+  }
+}
+
 /** 요청 URL은 키를 쿼리스트링에 싣는다. 오류 메시지에 URL을 넣지 않는다. */
 async function getJson(path: string, params: Record<string, string>): Promise<unknown> {
   const url = new URL(`${API_BASE}/${path}`)
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   url.searchParams.set('key', apiKey())
   const res = await fetch(url.toString())
-  if (!res.ok) throw new Error(`youtube data api ${path} ${res.status}`)
+  if (!res.ok) {
+    const reason = await errorReasonOf(res)
+    throw new Error(`youtube data api ${path} ${res.status}${reason ? ` ${reason}` : ''}`)
+  }
   return res.json()
 }
 

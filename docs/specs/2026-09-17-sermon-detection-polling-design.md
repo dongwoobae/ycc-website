@@ -166,6 +166,7 @@ RapidAPI yt-api 무료 플랜은 응답 헤더 실측으로 **월 300회**(`X-Ra
 **추가할 테스트**
 
 - Data API 모듈: `playlistItems.list` 응답 정규화(videoId·제목·publishedAt·썸네일), `videos.list`의 ISO8601 duration → 초 변환, 키 미설정 시 폴백 신호
+- Data API 모듈: 오류 응답에서 사유 코드 추출. 키 무효 400은 `errors[0].reason`이 `badRequest`라 `details`의 `API_KEY_INVALID`를 먼저 봐야 값 오류(`invalid`)와 갈리고, 403은 `errors` 배열 없이 `details`만 온다. 코드 형태가 아닌 문자열은 버린다
 - `reconcileSermons`: 누락분이 없으면 `videos.list`를 호출하지 않는다(쿼터 절약이 설계 근거이므로 단언으로 고정한다)
 - `reconcileSermons`: Data API 403에서 예외를 던지지 않고 `{ checked: 0, inserted: 0 }`으로 끝난다
 - 관리자 로그 페이지: `action=warning` 필터가 화이트리스트를 통과한다
