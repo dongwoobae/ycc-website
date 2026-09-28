@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  adminWorshipTypeOptions,
   adultWorshipSchedule,
   eventFilterPills,
   eventSectionScope,
@@ -91,6 +92,11 @@ describe('미분류 worship type', () => {
     expect(worshipTypes).not.toContain('미분류')
     expect(isPublicWorshipType('미분류')).toBe(false)
     expect(isPublicWorshipType('주일예배')).toBe(true)
+  })
+
+  it('keeps the stored value selectable in the admin form even when it is not public', () => {
+    expect(adminWorshipTypeOptions('미분류')).toEqual(['미분류', ...worshipTypes])
+    expect(adminWorshipTypeOptions('주일예배')).toEqual([...worshipTypes])
   })
 
   it('uses worshipType as the auto-summary source of truth', () => {

@@ -6,7 +6,7 @@ import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonThumbnails } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
 import { revalidateSermonPaths } from '@/lib/sermons/revalidate'
-import { requestSummaryRegeneration } from '@/lib/sermons/summarize'
+import { requestSummaryRegeneration, startTranscriptAfterReclassify } from '@/lib/sermons/summarize'
 import { isWorshipType } from '@/lib/worship'
 
 export interface SermonEditInput {
@@ -65,17 +65,28 @@ export async function getSermonForAdmin(id: string) {
   return row
 }
 
-export async function generateSummaryAction(id: string) {
+export async function generateSummaryAction(id: string): Promise<'queued' | 'in_progress'> {
   await requireAdmin()
-  await requestSummaryRegeneration(id)
+  const result = await requestSummaryRegeneration(id)
   revalidateSermonPaths(id)
+  return result
 }
 
-export async function updateSermonAction(id: string, input: SermonEditInput) {
+export async function updateSermonAction(
+  id: string,
+  input: SermonEditInput,
+): Promise<'saved' | 'transcript_started' | 'transcript_failed'> {
   const session = await requireAdmin()
   if (!input.title.trim()) throw new Error('title is required')
   if (!isWorshipType(input.worshipType)) throw new Error('invalid worshipType')
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.sermonDate)) throw new Error('invalid sermonDate')
+
+  const [previous] = await db
+    .select({ worshipType: sermons.worshipType })
+    .from(sermons)
+    .where(eq(sermons.id, id))
+    .limit(1)
+  if (!previous) throw new Error('sermon not found')
 
   const [updated] = await db
     .update(sermons)
@@ -91,6 +102,11 @@ export async function updateSermonAction(id: string, input: SermonEditInput) {
   if (!updated) throw new Error('sermon not found')
   await log('update', 'sermon', updated.id, updated.title, session.user.id)
   revalidateSermonPaths(id)
+
+  const transcript = await startTranscriptAfterReclassify(id, previous.worshipType)
+  if (transcript === 'started') return 'transcript_started'
+  if (transcript === 'failed') return 'transcript_failed'
+  return 'saved'
 }
 
 export async function togglePublishAction(id: string, publish: boolean) {

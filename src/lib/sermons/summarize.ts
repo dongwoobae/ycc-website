@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, not, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { sermons, sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
 import { log } from '@/lib/logger'
@@ -7,7 +7,7 @@ import { publishJob } from '@/lib/qstash'
 import { fetchTranscript } from '@/lib/transcript/rapidapi'
 import { transcribeFromAudio } from '@/lib/ai/audio-transcript'
 import { buildTranscriptText, type TranscriptSegment } from '@/lib/transcript/prompt'
-import { autoSummaryTypes } from '@/lib/worship'
+import { autoSummaryTypes, expectsAutoSummary } from '@/lib/worship'
 
 export const MAX_SUMMARY_ATTEMPTS = 3
 export const STALE_PENDING_MS = 10 * 60 * 1000
@@ -428,8 +428,15 @@ export async function manualSummarize(id: string): Promise<'ready' | 'failed'> {
  * 오디오 폴백까지 타는 경우 받아쓰기와 요약을 합치면 Vercel 함수 1회 예산(300초)을 넘긴다.
  * 상태 초기화는 job이 claimSermonById를 통과하게 만드는 장치다: 종결 상태(no_transcript)나
  * 시도를 소진한 행도 이 초기화 덕분에 별도 분기 없이 재투입된다.
+ *
+ * 살아 있는 요약 선점이나 오디오 변환 진행 표시는 초기화하지 않고 'in_progress'를 돌려준다 —
+ * 선점을 풀면 두 번째 summarize가 선점에 성공해 요약이 두 번 돈다. 자막 대기 재시도 중인
+ * fetch-transcript 체인은 상태가 'none'이라 여기서 보이지 않는다.
  */
-export async function requestSummaryRegeneration(sermonId: string): Promise<void> {
+export async function requestSummaryRegeneration(
+  sermonId: string,
+  now: Date = new Date(),
+): Promise<'queued' | 'in_progress'> {
   const [row] = await db
     .select({ videoId: sermons.youtubeVideoId, transcriptText: sermonTranscripts.transcriptText })
     .from(sermons)
@@ -441,7 +448,21 @@ export async function requestSummaryRegeneration(sermonId: string): Promise<void
   await db.execute(
     sql`INSERT INTO sermon_summaries (sermon_id) VALUES (${sermonId}) ON CONFLICT (sermon_id) DO NOTHING`,
   )
-  await db
+  const pending = eq(sermonSummaries.summaryStatus, 'pending')
+  const inProgress = or(
+    and(
+      pending,
+      isNotNull(sermonSummaries.summaryClaimedAt),
+      gt(sermonSummaries.summaryClaimedAt, new Date(now.getTime() - STALE_PENDING_MS)),
+    ),
+    and(
+      pending,
+      isNull(sermonSummaries.summaryClaimedAt),
+      isNotNull(sermonSummaries.summaryNextRetryAt),
+      gt(sermonSummaries.summaryNextRetryAt, now),
+    ),
+  )
+  const reset = await db
     .update(sermonSummaries)
     // summary_generated_at을 남겨 두면 claimSermonById의 stale pending 분기가
     // (IS NULL을 요구해) 죽은 워커를 회수하지 못한다.
@@ -452,13 +473,67 @@ export async function requestSummaryRegeneration(sermonId: string): Promise<void
       summaryGeneratedAt: null,
       summaryClaimedAt: null,
     })
-    .where(eq(sermonSummaries.sermonId, sermonId))
+    .where(and(eq(sermonSummaries.sermonId, sermonId), not(inProgress!)))
+    .returning({ sermonId: sermonSummaries.sermonId })
+  if (reset.length === 0) return 'in_progress'
 
   if (row.transcriptText?.trim()) {
     await publishJob('summarize', { sermonId })
-    return
+    return 'queued'
   }
   // attempt를 상한으로 채워 보내 자막 대기 재시도를 건너뛴다 — RapidAPI를 한 번만 보고
   // 없으면 곧바로 오디오 폴백으로 넘어간다. 관리자가 3시간을 기다릴 이유가 없다.
   await publishJob('fetch-transcript', { sermonId, videoId: row.videoId, attempt: MAX_TRANSCRIPT_RETRY })
+  return 'queued'
+}
+
+/**
+ * 관리자가 자동 요약 대상이 아니던 설교를 대상 유형으로 바꿨을 때, 등록 시 건너뛴 자막 수집을 시작한다.
+ * 제목에 예배명이 빠져 '미분류'로 등록된 설교가 이 경로의 대상이다.
+ *
+ * 이전 유형도 대상이었다면 등록 때 발행된 체인이 아직 자막을 기다리고 있을 수 있어 건너뛴다.
+ * 자막이 있거나 상태가 'none'을 벗어났다면 이미 누군가 처리했으므로 역시 건너뛴다.
+ * 발행 실패는 던지지 않는다 — 저장은 이미 끝났고, 관리자는 '요약 재생성'으로 이어 갈 수 있다.
+ */
+export async function startTranscriptAfterReclassify(
+  sermonId: string,
+  previousType: string,
+): Promise<'started' | 'skipped' | 'failed'> {
+  if (expectsAutoSummary(previousType)) return 'skipped'
+  const [row] = await db
+    .select({
+      worshipType: sermons.worshipType,
+      videoId: sermons.youtubeVideoId,
+      transcriptText: sermonTranscripts.transcriptText,
+      summaryStatus: sermonSummaries.summaryStatus,
+    })
+    .from(sermons)
+    .leftJoin(sermonTranscripts, eq(sermonTranscripts.sermonId, sermons.id))
+    .leftJoin(sermonSummaries, eq(sermonSummaries.sermonId, sermons.id))
+    .where(eq(sermons.id, sermonId))
+    .limit(1)
+  if (
+    !row?.videoId ||
+    !expectsAutoSummary(row.worshipType) ||
+    row.transcriptText?.trim() ||
+    (row.summaryStatus ?? 'none') !== 'none'
+  ) {
+    return 'skipped'
+  }
+
+  try {
+    // 등록 때 제대로 분류됐다면 탔을 경로와 같게 attempt 0부터 보낸다 — 업로드 직후 고친 경우
+    // 유튜브 자막이 아직 없어 대기 재시도가 필요하다.
+    await publishJob('fetch-transcript', { sermonId, videoId: row.videoId, attempt: 0 })
+    return 'started'
+  } catch (e) {
+    console.error(`[reclassify] fetch-transcript 발행 실패 videoId=${row.videoId}`, e)
+    await log(
+      'error',
+      'sermon',
+      sermonId,
+      `재분류 후 fetch-transcript 발행 실패 — 자막·요약 미진행: videoId=${row.videoId}`,
+    )
+    return 'failed'
+  }
 }

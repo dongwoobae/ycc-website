@@ -45,6 +45,7 @@ const {
   summarizeClaimed,
   publishSummarizeOrMarkFailed,
   requestSummaryRegeneration,
+  startTranscriptAfterReclassify,
   MAX_TRANSCRIPT_RETRY,
   MAX_AUDIO_TRANSCRIPT_RETRY,
   publishAudioTranscript,
@@ -219,6 +220,120 @@ describe('requestSummaryRegeneration (integration)', () => {
   it('throws when the sermon has no YouTube video id', async () => {
     const id = await insertSermonFixture(h.db)
     await expect(requestSummaryRegeneration(id)).rejects.toThrow()
+  })
+
+  it('leaves a live summarize claim alone and reports it as in progress', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, {
+      youtubeVideoId: 'vid-live-claim',
+      transcriptText: '[00:00] hi',
+      summaryStatus: 'pending',
+      summaryAttempts: 1,
+      summaryClaimedAt: new Date(Date.now() - 60_000),
+    })
+
+    expect(await requestSummaryRegeneration(id)).toBe('in_progress')
+
+    expect(publishJob).not.toHaveBeenCalled()
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryStatus).toBe('pending')
+    expect(row.summaryAttempts).toBe(1)
+  })
+
+  it('leaves a live audio transcription alone and reports it as in progress', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, {
+      youtubeVideoId: 'vid-live-audio',
+      summaryStatus: 'pending',
+      summaryNextRetryAt: new Date(Date.now() + 5 * 60_000),
+    })
+
+    expect(await requestSummaryRegeneration(id)).toBe('in_progress')
+
+    expect(publishJob).not.toHaveBeenCalled()
+  })
+
+  it('still resets a dead summarize claim and an expired audio marker', async () => {
+    const deadClaim = await insertSermonFixture(h.db, {
+      youtubeVideoId: 'vid-dead-claim',
+      transcriptText: '[00:00] hi',
+      summaryStatus: 'pending',
+      summaryClaimedAt: new Date(Date.now() - STALE_PENDING_MS - 60_000),
+    })
+    const expiredAudio = await insertSermonFixture(h.db, {
+      youtubeVideoId: 'vid-expired-audio',
+      summaryStatus: 'pending',
+      summaryNextRetryAt: new Date(Date.now() - 60_000),
+    })
+
+    expect(await requestSummaryRegeneration(deadClaim)).toBe('queued')
+    expect(await requestSummaryRegeneration(expiredAudio)).toBe('queued')
+
+    for (const id of [deadClaim, expiredAudio]) {
+      const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+      expect(row.summaryStatus).toBe('none')
+    }
+  })
+})
+
+describe('startTranscriptAfterReclassify (integration)', () => {
+  it('starts the transcript chain when an admin moves a sermon into an auto-summary type', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-reclass', worshipType: '주일예배' })
+
+    expect(await startTranscriptAfterReclassify(id, '미분류')).toBe('started')
+
+    expect(publishJob).toHaveBeenCalledWith('fetch-transcript', { sermonId: id, videoId: 'vid-reclass', attempt: 0 })
+  })
+
+  it('does nothing when the previous type was already an auto-summary type', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-was-auto', worshipType: '수요예배' })
+
+    expect(await startTranscriptAfterReclassify(id, '주일예배')).toBe('skipped')
+
+    expect(publishJob).not.toHaveBeenCalled()
+  })
+
+  it('does nothing when the new type is not an auto-summary type', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-reclass-choir', worshipType: '시온찬양대' })
+
+    expect(await startTranscriptAfterReclassify(id, '미분류')).toBe('skipped')
+
+    expect(publishJob).not.toHaveBeenCalled()
+  })
+
+  it('does nothing once a transcript exists or the summary pipeline has moved past none', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockClear()
+    const withTranscript = await insertSermonFixture(h.db, {
+      youtubeVideoId: 'vid-has-transcript',
+      transcriptText: '[00:00] hi',
+    })
+    const noTranscript = await insertSermonFixture(h.db, {
+      youtubeVideoId: 'vid-gave-up',
+      summaryStatus: 'no_transcript',
+    })
+    const noVideo = await insertSermonFixture(h.db)
+
+    for (const id of [withTranscript, noTranscript, noVideo]) {
+      expect(await startTranscriptAfterReclassify(id, '미분류')).toBe('skipped')
+    }
+    expect(publishJob).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed publish so the admin can fall back to the regenerate button', async () => {
+    const { publishJob } = await import('@/lib/qstash')
+    vi.mocked(publishJob).mockRejectedValueOnce(new Error('qstash down'))
+    const id = await insertSermonFixture(h.db, { youtubeVideoId: 'vid-publish-fail', worshipType: '주일예배' })
+
+    expect(await startTranscriptAfterReclassify(id, '미분류')).toBe('failed')
   })
 })
 
