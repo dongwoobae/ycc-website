@@ -43,7 +43,7 @@ export async function insertSermon(
         title: video.title,
         preacher: DEFAULT_PREACHER,
         worshipType,
-        sermonDate: sermonDateFromTitle(video.title) ?? (video.publishedAt || '').slice(0, 10),
+        sermonDate: sermonDateFromTitle(video.title, video.publishedAt) ?? (video.publishedAt || '').slice(0, 10),
         videoUrl: `https://youtu.be/${video.videoId}`,
         thumbnailUrl: video.thumbnailUrl,
         youtubeVideoId: video.videoId,
