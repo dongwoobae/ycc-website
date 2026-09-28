@@ -7,7 +7,7 @@ import { formatTimestamp } from '@/lib/sermons/format'
 import { summaryStatusLabel } from '@/lib/sermons/summary-status'
 import type { SermonChapter } from '@/lib/types'
 import type { ThumbnailCandidate, ThumbnailStyle, ThumbnailText } from '@/lib/thumbnails/types'
-import { worshipTypes } from '@/lib/worship'
+import { adminWorshipTypeOptions } from '@/lib/worship'
 import ThumbnailModal from './ThumbnailModal'
 
 interface Props {
@@ -80,7 +80,7 @@ export default function SermonEditForm({
             value={form.worshipType}
             onChange={(event) => set('worshipType', event.target.value)}
           >
-            {worshipTypes.map((worshipType) => (
+            {adminWorshipTypeOptions(initial.worshipType).map((worshipType) => (
               <option key={worshipType} value={worshipType}>
                 {worshipType}
               </option>

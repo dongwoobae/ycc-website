@@ -114,6 +114,15 @@ export function isPublicWorshipType(value: string): value is PublicWorshipType {
   return worshipTypes.includes(value as PublicWorshipType)
 }
 
+/**
+ * 관리자 편집 폼의 예배 종류 선택지. 저장된 값이 목록에 없으면 맨 앞에 넣는다 — 값에 맞는 option이
+ * 없으면 select는 첫 option('주일예배')을 보여 주면서 상태는 원래 값('미분류')을 유지해,
+ * 드롭다운을 건드리지 않고 저장하면 화면과 다른 값이 저장된다.
+ */
+export function adminWorshipTypeOptions(current: string): string[] {
+  return isPublicWorshipType(current) ? [...worshipTypes] : [current, ...worshipTypes]
+}
+
 export function expectsAutoSummary(value: string): boolean {
   return (autoSummaryTypes as readonly string[]).includes(value)
 }
