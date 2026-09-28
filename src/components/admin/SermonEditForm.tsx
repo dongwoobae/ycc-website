@@ -10,6 +10,12 @@ import type { ThumbnailCandidate, ThumbnailStyle, ThumbnailText } from '@/lib/th
 import { adminWorshipTypeOptions } from '@/lib/worship'
 import ThumbnailModal from './ThumbnailModal'
 
+const SAVE_MESSAGES: Record<Awaited<ReturnType<typeof updateSermonAction>>, string> = {
+  saved: '저장됨',
+  transcript_started: '저장됨 — 자막·요약 처리를 시작했어요. 요약 재생성은 누르지 않아도 돼요',
+  transcript_failed: '저장됨 — 자막 수집 요청이 실패했어요. 요약 재생성을 눌러 주세요',
+}
+
 interface Props {
   id: string
   initial: SermonEditInput
@@ -106,8 +112,8 @@ export default function SermonEditForm({
             setMsg('')
             startTransition(async () => {
               try {
-                await updateSermonAction(id, form)
-                setMsg('저장됨')
+                const result = await updateSermonAction(id, form)
+                setMsg(SAVE_MESSAGES[result])
                 router.refresh()
               } catch (e) {
                 setMsg(e instanceof Error ? e.message : String(e))
@@ -125,8 +131,12 @@ export default function SermonEditForm({
             setMsg('')
             startTransition(async () => {
               try {
-                await generateSummaryAction(id)
-                setMsg('요약 요청됨 — 몇 분 뒤 새로고침하면 상태가 바뀌어요')
+                const result = await generateSummaryAction(id)
+                setMsg(
+                  result === 'in_progress'
+                    ? '이미 처리 중이에요 — 몇 분 뒤 새로고침해 상태를 확인해 주세요'
+                    : '요약 요청됨 — 몇 분 뒤 새로고침하면 상태가 바뀌어요',
+                )
                 router.refresh()
               } catch (e) {
                 setMsg(e instanceof Error ? e.message : String(e))
