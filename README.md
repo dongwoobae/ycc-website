@@ -754,12 +754,12 @@ Vitest 테스트는 운영 영향이 큰 유틸과 파이프라인 로직 중심
 `main` 대상 push·PR에서 네 job이 병렬로 돕니다. 러너는 Node 24이고, 번들된 npm 11이 로컬과 같은 메이저라
 락파일 해석이 어긋나지 않습니다.
 
-| Job                     | 하는 일                                                                  |
-| ----------------------- | ------------------------------------------------------------------------ |
-| Lint                    | `eslint` + `prettier --check`                                            |
-| Typecheck               | `tsc --noEmit`                                                           |
-| Test (unit)             | `vitest run` — PGlite 인메모리 Postgres라 외부 의존성이 없습니다         |
-| Build, E2E & Lighthouse | 마이그레이션 검증·적용 → 시드 → `next build` → e2e 일부 → `lhci autorun` |
+| Job                     | 하는 일                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| Lint                    | `eslint` + `prettier --check`                                                         |
+| Typecheck               | `tsc --noEmit`                                                                        |
+| Test (unit)             | `vitest run` — PGlite 인메모리 Postgres라 외부 의존성이 없습니다                      |
+| Build, E2E & Lighthouse | 마이그레이션 검증·적용 → 시드 → `next build` → e2e 일부 → `lhci autorun`(main push만) |
 
 Build job은 Postgres 서비스 컨테이너와 Neon HTTP 프록시(`ghcr.io/timowilhelm/local-neon-http-proxy`)를 띄웁니다.
 `src/lib/db/index.ts`가 모듈 최상위에서 접속을 만들고 상세 라우트 4개가 `generateStaticParams`에서 DB를 읽기 때문에,
@@ -772,7 +772,9 @@ Build job의 `db:migrate`는 그 서비스 컨테이너를 향합니다. 프로�
 `endOfLine`은 `auto`입니다 — 이 저장소에는 `.gitattributes`가 없고 Windows 작업 트리가 CRLF라,
 `lf`로 고정하면 로컬에서 전 파일이 매번 불일치로 잡힙니다.
 
-Lighthouse 임계값은 `.lighthouserc.json`에 있고 **접근성 0.9 미만이면 CI가 실패**합니다(성능·모범사례·SEO는 경고).
+Lighthouse는 **main push에서만** 잽니다(횟수는 `.lighthouserc.json`의 `numberOfRuns`). 그래서 접근성 미달은 병합을 막지 못하고,
+Vercel 배포가 끝난 뒤 main CI 실패로 드러납니다.
+Lighthouse 임계값은 `.lighthouserc.json`에 있고 **접근성 0.9 미만이면 main CI가 실패**합니다(성능·모범사례·SEO는 경고).
 리포트는 실패 여부와 무관하게 `lighthouse-reports` 아티팩트로 올라갑니다.
 
 Playwright e2e는 `playwright.config.ts`의 프로젝트 둘로 갈라져 있습니다. CI는 `ci` 프로젝트(공개 화면만 읽는
