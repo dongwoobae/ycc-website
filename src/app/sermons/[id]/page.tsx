@@ -63,6 +63,8 @@ export default async function SermonDetailPage({ params }: SermonDetailProps) {
           ]),
         ]}
       />
+      {/* 성도들이 영상과 요약을 크게 보도록 헤더(Container wide)보다 넓게 둔다 — 폭이 다른 것은 의도다.
+          SermonSummary의 --sermon-video-offset 계산도 이 1600px를 쓰므로 함께 바꾼다. */}
       <Container className="max-w-[1600px]">
         <SermonSummary sermon={sermon} />
       </Container>
