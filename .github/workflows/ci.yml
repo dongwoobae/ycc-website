@@ -139,11 +139,14 @@ jobs:
           path: playwright-report
           if-no-files-found: ignore
 
+      # PR 확인을 늦추지 않으려고 main push에서만 잰다. 2026-10-01 기준 URL당 3회 측정이 PR마다 2분 43초를 썼다.
+      # 그 대가로 접근성 판정이 병합을 막지 못한다 — README의 CI 절 참고.
       - name: Lighthouse
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npm run lighthouse
 
       - name: Upload Lighthouse reports
-        if: always()
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse-reports

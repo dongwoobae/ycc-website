@@ -9,7 +9,7 @@
         "http://localhost:3000/sermons",
         "http://localhost:3000/about"
       ],
-      "numberOfRuns": 3
+      "numberOfRuns": 1
     },
     "upload": {
       "target": "filesystem",
