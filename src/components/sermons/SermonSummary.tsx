@@ -151,6 +151,9 @@ export default function SermonSummary({ sermon }: { sermon: Sermon }) {
       />
 
       <div className="mt-8 space-y-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-14">
+        <p className="text-base leading-relaxed text-ink-muted">
+          AI가 설교 영상을 자동으로 간추린 글입니다. 자세한 말씀은 영상으로 들어 주세요.
+        </p>
         {ready && sermon.quickSummary?.length ? (
           <section className="rounded-lg border border-line bg-paper p-6 shadow-subtle">
             <h2 className="text-2xl font-extrabold tracking-tight text-ink">빠른 요약</h2>

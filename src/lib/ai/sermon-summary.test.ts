@@ -21,6 +21,14 @@ describe('buildSummaryPrompt', () => {
     expect(prompt).toContain('총 1개 안팎')
   })
 
+  it('담임목사가 직접 전하는 말투와 예배 순서 구간 규칙을 명시한다', () => {
+    const prompt = buildSummaryPrompt(4140)
+    expect(prompt).toContain('당신은 이 설교를 전한 담임목사입니다')
+    expect(prompt).toContain("'설교자는', '목사님은'을 주어로 쓰지 않고")
+    expect(prompt).toContain('원고에 없는 경험·감정·말을 지어내지 않습니다')
+    expect(prompt).toContain('어떤 순서가 이어지는지만 1~2문장으로 씁니다')
+  })
+
   it('길이를 모르면(null) 강제 챕터 수 지시를 생략한다', () => {
     const prompt = buildSummaryPrompt(null)
     expect(prompt).not.toContain('900초를 초과해서는 안 됩니다')
