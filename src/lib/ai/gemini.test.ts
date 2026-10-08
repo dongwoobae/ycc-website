@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   AUDIO_TRANSCRIPT_MODEL,
   AUDIO_TRANSCRIPT_MODEL_GA,
+  DEFAULT_GEMINI_MODEL,
   FALLBACK_GEMINI_MODEL,
   generateContentWithFallback,
   isModelUnavailableError,
@@ -51,15 +52,15 @@ describe('isModelUnavailableError', () => {
 describe('generateContentWithFallback', () => {
   it('primary 성공 시 나머지 모델 미호출', async () => {
     const fn = vi.fn().mockResolvedValue({ text: 'ok' })
-    const res = await generateContentWithFallback(makeAi(fn), req, ['gemini-3.5-flash', FALLBACK_GEMINI_MODEL])
+    const res = await generateContentWithFallback(makeAi(fn), req, [DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL])
     expect(res).toEqual({ text: 'ok' })
     expect(fn).toHaveBeenCalledTimes(1)
-    expect(fn).toHaveBeenCalledWith({ model: 'gemini-3.5-flash', ...req })
+    expect(fn).toHaveBeenCalledWith({ model: DEFAULT_GEMINI_MODEL, ...req })
   })
 
   it('primary 503이면 다음 모델로 순서대로 재시도', async () => {
     const fn = vi.fn().mockRejectedValueOnce({ status: 503 }).mockResolvedValueOnce({ text: 'from-fallback' })
-    const res = await generateContentWithFallback(makeAi(fn), req, ['gemini-3.5-flash', FALLBACK_GEMINI_MODEL])
+    const res = await generateContentWithFallback(makeAi(fn), req, [DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL])
     expect(res).toEqual({ text: 'from-fallback' })
     expect(fn).toHaveBeenCalledTimes(2)
     expect(fn).toHaveBeenLastCalledWith({ model: FALLBACK_GEMINI_MODEL, ...req })
@@ -73,7 +74,7 @@ describe('generateContentWithFallback', () => {
       .mockResolvedValueOnce({ text: 'third' })
     const res = await generateContentWithFallback(makeAi(fn), req, [
       AUDIO_TRANSCRIPT_MODEL,
-      'gemini-3.5-flash',
+      DEFAULT_GEMINI_MODEL,
       FALLBACK_GEMINI_MODEL,
     ])
     expect(res).toEqual({ text: 'third' })
@@ -84,7 +85,7 @@ describe('generateContentWithFallback', () => {
   it('비일시오류는 즉시 throw, 나머지 모델 미호출', async () => {
     const fn = vi.fn().mockRejectedValue({ status: 400 })
     await expect(
-      generateContentWithFallback(makeAi(fn), req, ['gemini-3.5-flash', FALLBACK_GEMINI_MODEL]),
+      generateContentWithFallback(makeAi(fn), req, [DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL]),
     ).rejects.toMatchObject({ status: 400 })
     expect(fn).toHaveBeenCalledTimes(1)
   })
@@ -108,6 +109,6 @@ describe('generateContentWithFallback', () => {
   it('models 생략 시 기본값(resolveGeminiModel → FALLBACK_GEMINI_MODEL) 사용', async () => {
     const fn = vi.fn().mockResolvedValue({ text: 'ok' })
     await generateContentWithFallback(makeAi(fn), req)
-    expect(fn).toHaveBeenCalledWith({ model: 'gemini-3.5-flash', ...req })
+    expect(fn).toHaveBeenCalledWith({ model: DEFAULT_GEMINI_MODEL, ...req })
   })
 })

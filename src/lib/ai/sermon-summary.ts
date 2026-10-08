@@ -7,7 +7,7 @@ import { generateContentWithFallback, resolveGeminiModel } from './gemini'
 export { DEFAULT_GEMINI_MODEL } from './gemini'
 
 /** 요약 1차 모델. 실패하면 Gemini 체인으로 넘어간다 — 선택 근거는 2026-06-23-youtube-websub-pipeline-design.md "AI 요약" 항목. */
-export const SUMMARY_OPENAI_MODEL = 'gpt-5.6-sol'
+export const SUMMARY_OPENAI_MODEL = 'gpt-6.1-sol'
 // summarize 라우트의 maxDuration 안에서 Gemini 폴백이 돌 시간을 남기려고 OpenAI 호출을 먼저 끊는다.
 const OPENAI_TIMEOUT_MS = 150_000
 
@@ -73,6 +73,7 @@ ${chapterCountLine}
   (O) 감사는 지나온 날을 향한 마음입니다.
 - 성도와 함께 말할 때는 '우리'를 씁니다. 자신을 가리키는 '저', '제가'는 쓰지 않습니다. 원고에서 직접 이야기한 자기 경험은 '~하던 때가 있었습니다', '~한 적이 있습니다'처럼 주어 없이 씁니다.
 - 원고에서 실제로 말한 경험과 예화만 씁니다. 원고에 없는 경험·감정·말을 지어내지 않습니다.
+- 같은 끝맺음을 되풀이하지 않습니다. quickSummary 항목들과 한 챕터 summary 안의 문장들이 '~을 기억해야 합니다', '~해야 합니다'처럼 같은 어미로 줄줄이 끝나지 않게 합니다. 말씀이 무엇을 말하는지 전하는 문장을 중심으로 쓰고, 권하는 문장은 꼭 필요한 곳에만 둡니다.
 
 [설교가 아닌 예배 순서]
 영상에는 설교 앞뒤로 찬양·기도·성경 봉독·헌금·광고·축도 같은 예배 순서가 함께 담겨 있을 수 있습니다.
@@ -171,7 +172,6 @@ async function summarizeWithGemini(prompt: string, durationSeconds: number | nul
   const res = await generateContentWithFallback(ai, {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
-      temperature: 0.2,
       responseMimeType: 'application/json',
       responseSchema,
     },

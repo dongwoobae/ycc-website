@@ -124,7 +124,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video           │
                         │                        │
                         └────────────┬───────────┘
                                       ▼
-                          /api/jobs/summarize  (GPT-5.6 Sol 구조화 요약, 실패 시 Gemini)
+                          /api/jobs/summarize  (GPT-6.1 Sol 구조화 요약, 실패 시 Gemini)
                                    │
                           실패 시 ◀┘ 지수 백오프 재발행 / retry-summaries cron
 
@@ -136,7 +136,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video           │
 - **QStash 다단계 잡 체이닝**: `ingest-video → fetch-transcript → summarize`를 각각 독립 서버리스 함수로 분리하고 QStash 메시지로 연결합니다. `fetch-transcript`가 자막을 끝내 못 구하면(30분 간격 최대 2회 재시도 소진) `fetch-audio-transcript`가 유튜브 워치 URL로 Gemini에 받아쓰기 작업을 맡기고(Interactions API `background`) `poll-audio-transcript`가 30초 간격으로 결과를 가져와, 같은 형식으로 변환해 `summarize`로 합류시킵니다. 받아쓰기가 Gemini 쪽에서 돌기 때문에 Vercel 함수 1회 예산(300초)과 받아쓰기 시간이 분리됩니다 — 동기 호출로 돌던 2026-10-04에는 64분 설교의 받아쓰기 7판 중 6판이 300초에서 끊겼습니다. 모든 잡 엔드포인트는 QStash `Receiver` 서명으로 검증되며, 한 단계가 실패해도 그 단계만 재시도됩니다. 오디오 받아쓰기가 실패하면 잡 본문의 `attempt`를 올려 **1회 자동으로 다시 태우고**, 소진하면 `no_transcript`로 종결합니다 — 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 일이 있어, 사람이 버튼을 다시 누르지 않아도 회수되게 했습니다.
 - **서버리스식 지수 백오프**: Vercel 함수는 프로세스를 붙잡고 `sleep`할 수 없으므로, **QStash 지연 발행(`delay`)으로 백오프를 외부에 위임**합니다. 간격은 `5 × 3ⁿ분`으로 증가하고 `attempts < 3` 한도를 두며, 자막이 영구히 없는 건은 재시도 후보에서 제외해 API 쿼터 소진을 막습니다. 정기 재시도는 `retry-summaries` cron이 수행합니다.
 - **원자적 동시성 제어(claim)**: WebSub 중복 알림·재시도 cron·수동 트리거가 겹쳐도 같은 설교가 동시에 여러 번 요약되지 않도록, Postgres CTE `UPDATE ... RETURNING`으로 **선점 가능한 상태일 때만 원자적으로 1건을 선점**합니다. 선점은 `summary_claimed_at`에 시각을 적는 **리스**라, 10분이 지나면 죽은 워커로 보고 회수하고 매시간 스위퍼가 그 행을 다시 태웁니다. 리스를 별도 컬럼에 두는 이유는 상태·백오프 시각 같은 기존 값으로 "언제부터 붙잡고 있나"를 대신하면 재시도를 거친 행에서 판정이 뒤집히기 때문입니다.
-- **구조화 출력**: 한 줄 소개(핵심 성경구절 포함)·핵심 요점 8~12개·**타임스탬프 챕터 분할**을 JSON 스키마로 강제하고(OpenAI는 `json_schema` strict, Gemini는 `responseSchema`), 받은 결과를 다시 **zod로 검증**(챕터 시작 시각 오름차순·영상 길이 이내)합니다. 모델 응답을 신뢰하지 않고 경계에서 막는 구조이며, 1차 모델(GPT-5.6 Sol)이 실패하거나 검증을 통과하지 못하면 Gemini 체인(3.5 Flash → 2.5 Flash)으로 넘어갑니다.
+- **구조화 출력**: 한 줄 소개(핵심 성경구절 포함)·핵심 요점 8~12개·**타임스탬프 챕터 분할**을 JSON 스키마로 강제하고(OpenAI는 `json_schema` strict, Gemini는 `responseSchema`), 받은 결과를 다시 **zod로 검증**(챕터 시작 시각 오름차순·영상 길이 이내)합니다. 모델 응답을 신뢰하지 않고 경계에서 막는 구조이며, 1차 모델(GPT-6.1 Sol)이 실패하거나 검증을 통과하지 못하면 Gemini 체인(3.8 Flash → 3.5 Flash)으로 넘어갑니다.
 - **조용한 절단 차단**: 오디오 받아쓰기는 `finishReason=STOP`으로 정상 종료하면서 앞부분만 받아쓰고 끝나는 경우가 있습니다(2026-08-27 실측 — 57분 설교를 7분 37초까지). 종료 사유만으로는 걸러지지 않고, 지금 쓰는 Interactions 응답에는 종료 사유 자체가 없으므로 **마지막 타임스탬프가 영상 길이의 80%에 못 미치면 실패로 돌립니다**. 정상 사례는 99%대라 영상 끝의 침묵이나 마무리 찬양은 흡수합니다.
 - **받아쓰기 입력의 프레임 축소**: 유튜브 URL을 그대로 넘기면 받아쓰기에 쓰지 않는 영상 프레임까지 입력에 들어가, 64분 설교가 약 40만 토큰이 되고 Pro의 장문(20만 토큰 초과) 요금 구간으로 넘어갑니다. 그렇다고 프레임을 다 빼면 타임스탬프가 몇 분씩 밀립니다 — 프레임이 시각 기준점 구실을 하기 때문입니다. 10초에 1장으로 줄여 입력을 약 12만 토큰으로 낮추고 타임스탬프는 저장본과 4초 안으로 맞췄습니다(2026-10-08 실측).
 - **catch로 잡을 수 없는 실패 회수**: Vercel이 예산을 넘긴 함수를 끊으면 `catch`가 아예 실행되지 않아 어떤 종결 처리도 일어나지 않습니다(2026-08-27 프로덕션에서 실제로 겪었고, 상태가 `none`에 잔류해 사람이 버튼을 다시 눌러야 했습니다). 받아쓰기를 비동기로 바꾼 뒤에도 시작 job이 죽거나 조회 사슬이 끊기면 같은 일이 생기므로, 오디오 변환은 **시작 시점에 DB로 흔적을 남깁니다** — `summary_status='pending'`에 만료 시각을 함께 찍고, 매시간 도는 `retry-summaries`가 만료된 흔적을 걷어 다시 태웁니다. 조회 job은 돌 때마다 만료 시각을 미뤄, 진행 중인 작업을 스위퍼가 가로채지 않습니다. `pending`은 두 가지를 뜻하는데 **`summary_claimed_at`이 갈라 줍니다** — 값이 있으면 요약 워커의 선점, 없으면 오디오 변환 진행입니다. 회수는 후자만 봅니다. 회수마다 시도 횟수를 소비해, 강제 종료가 반복돼도 회수 → 또 종료 → 또 회수로 무한히 돌지 않습니다. 자막이 들어오면 그 횟수를 0으로 되돌립니다 — 요약 선점도 같은 횟수를 보기 때문에, 2026-10-04에는 세 번 회수한 뒤 받아쓰기가 성공했는데도 요약이 상한에 막혀 하루 가까이 멈췄습니다. 자막을 저장한 **뒤** 끊긴 건은 오디오 변환이 이미 끝난 것이므로 다시 태우지 않고 요약 재시도 경로로 넘깁니다.
@@ -193,7 +193,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video           │
 | Database        | Neon Postgres                                                                                          |
 | ORM             | Drizzle ORM, Drizzle Kit                                                                               |
 | Storage         | Cloudflare R2, AWS S3 SDK                                                                              |
-| AI 요약         | OpenAI `gpt-5.6-sol` 1차, Google Gemini (`@google/genai`) `gemini-3.5-flash` → `gemini-2.5-flash` 폴백 |
+| AI 요약         | OpenAI `gpt-6.1-sol` 1차, Google Gemini (`@google/genai`) `gemini-3.8-flash` → `gemini-3.5-flash` 폴백 |
 | 이미지 생성     | OpenAI `gpt-image-2` (썸네일 배경)                                                                     |
 | 배경 제거(누끼) | remove.bg API                                                                                          |
 | 썸네일 합성     | Next.js `ImageResponse`(`next/og`, Satori), sharp                                                      |
@@ -547,9 +547,9 @@ NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr
 
 # Gemini (AI 설교 요약 폴백, 자막 없는 영상의 오디오 받아쓰기)
 GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-3.5-flash
+GEMINI_MODEL=gemini-3.8-flash
 
-# OpenAI (AI 설교 요약 1차 gpt-5.6-sol, 썸네일 배경 생성 gpt-image-2)
+# OpenAI (AI 설교 요약 1차 gpt-6.1-sol, 썸네일 배경 생성 gpt-image-2)
 OPENAI_API_KEY=your_openai_api_key
 
 # remove.bg (인물컷형 썸네일 누끼)

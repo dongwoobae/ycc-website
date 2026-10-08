@@ -29,6 +29,10 @@ describe('buildSummaryPrompt', () => {
     expect(prompt).toContain('어떤 순서가 이어지는지만 1~2문장으로 씁니다')
   })
 
+  it('같은 끝맺음을 되풀이하지 않게 한다', () => {
+    expect(buildSummaryPrompt(4140)).toContain('같은 끝맺음을 되풀이하지 않습니다')
+  })
+
   it('길이를 모르면(null) 강제 챕터 수 지시를 생략한다', () => {
     const prompt = buildSummaryPrompt(null)
     expect(prompt).not.toContain('900초를 초과해서는 안 됩니다')
@@ -71,13 +75,13 @@ describe('parseSermonSummary', () => {
 
 describe('generateSermonSummary', () => {
   const openAIBody = (payload: unknown) => ({
-    model: 'gpt-5.6-sol',
+    model: 'gpt-6.1-sol',
     output: [
       { type: 'reasoning', summary: [] },
       { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: JSON.stringify(payload) }] },
     ],
   })
-  const geminiResponse = { text: JSON.stringify(valid), modelVersion: 'gemini-3.5-flash' }
+  const geminiResponse = { text: JSON.stringify(valid), modelVersion: 'gemini-3.8-flash' }
 
   function stubKeys({ openai = true } = {}) {
     vi.stubEnv('GEMINI_API_KEY', 'gemini-test-key')
@@ -91,19 +95,19 @@ describe('generateSermonSummary', () => {
     generateContentWithFallback.mockReset()
   })
 
-  it('summarizes with GPT-5.6 Sol first', async () => {
+  it('summarizes with GPT-6.1 Sol first', async () => {
     stubKeys()
     const fetchMock = vi.fn<typeof fetch>(async () => Response.json(openAIBody(valid)))
     vi.stubGlobal('fetch', fetchMock)
 
     const result = await generateSermonSummary('[00:00] 말씀', 600)
 
-    expect(result).toEqual({ ...valid, model: 'gpt-5.6-sol' })
+    expect(result).toEqual({ ...valid, model: 'gpt-6.1-sol' })
     expect(generateContentWithFallback).not.toHaveBeenCalled()
     const [url, init] = fetchMock.mock.calls[0]
     expect(String(url)).toBe('https://api.openai.com/v1/responses')
     const body = JSON.parse(String(init?.body))
-    expect(body.model).toBe('gpt-5.6-sol')
+    expect(body.model).toBe('gpt-6.1-sol')
     expect(body.store).toBe(false)
     expect(body.prompt_cache_options).toEqual({ mode: 'explicit' })
     expect(body.text.format).toMatchObject({ type: 'json_schema', strict: true })
@@ -122,7 +126,7 @@ describe('generateSermonSummary', () => {
     const result = await generateSermonSummary('[00:00] 말씀', 600)
 
     expect(fetchMock).toHaveBeenCalledOnce()
-    expect(result).toEqual({ ...valid, model: 'gemini-3.5-flash' })
+    expect(result).toEqual({ ...valid, model: 'gemini-3.8-flash' })
   })
 
   it('falls back to Gemini when the OpenAI summary fails validation', async () => {
@@ -136,7 +140,7 @@ describe('generateSermonSummary', () => {
     const result = await generateSermonSummary('[00:00] 말씀', 600)
 
     expect(fetchMock).toHaveBeenCalledOnce()
-    expect(result).toEqual({ ...valid, model: 'gemini-3.5-flash' })
+    expect(result).toEqual({ ...valid, model: 'gemini-3.8-flash' })
   })
 
   it('goes straight to Gemini when OPENAI_API_KEY is not set', async () => {
@@ -148,6 +152,8 @@ describe('generateSermonSummary', () => {
     const result = await generateSermonSummary('[00:00] 말씀', 600)
 
     expect(fetchMock).not.toHaveBeenCalled()
-    expect(result.model).toBe('gemini-3.5-flash')
+    expect(result.model).toBe('gemini-3.8-flash')
+    const [, request] = generateContentWithFallback.mock.calls[0]
+    for (const key of ['temperature', 'topP', 'topK']) expect(request.config).not.toHaveProperty(key)
   })
 })

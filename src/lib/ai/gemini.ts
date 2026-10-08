@@ -1,9 +1,9 @@
 import type { GenerateContentParameters, GenerateContentResponse, GoogleGenAI } from '@google/genai'
 
 /** 기본(우선) 모델. GEMINI_MODEL 환경변수로 덮어쓸 수 있다. */
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash'
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
 /** 우선 모델이 일시 과부하(503)일 때 자동 우회할 안정 모델. */
-export const FALLBACK_GEMINI_MODEL = 'gemini-2.5-flash'
+export const FALLBACK_GEMINI_MODEL = 'gemini-3.5-flash'
 /** 오디오(유튜브 URL) 받아쓰기 1차 모델. */
 export const AUDIO_TRANSCRIPT_MODEL = 'gemini-3.1-pro-preview'
 /** AUDIO_TRANSCRIPT_MODEL의 preview 태그가 떨어지고 정식 출시되면 쓸 이름. preview가 단종(404)되면 자동으로 이쪽으로 전환된다. */

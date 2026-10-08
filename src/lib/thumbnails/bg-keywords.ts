@@ -23,7 +23,6 @@ export async function geminiBgKeywords(input: BgKeywordsInput): Promise<string> 
   const body = [input.summary, ...(input.quickSummary ?? [])].filter(Boolean).join('\n')
   const res = await generateContentWithFallback(ai, {
     contents: [{ role: 'user', parts: [{ text: PROMPT + body }] }],
-    config: { temperature: 0.6 },
   })
   const text = res.text?.trim()
   if (!text) throw new Error('gemini returned empty bg keywords')
