@@ -12,8 +12,11 @@ import { autoSummaryTypes, expectsAutoSummary } from '@/lib/worship'
 export const MAX_SUMMARY_ATTEMPTS = 3
 export const STALE_PENDING_MS = 10 * 60 * 1000
 
-/** fetch-transcript job이 자막을 기다리며 30분 간격으로 재발행하는 상한. 소진하면 오디오 폴백으로 넘어간다. */
-export const MAX_TRANSCRIPT_RETRY = 6
+/**
+ * fetch-transcript job이 자막을 기다리며 30분 간격으로 재발행하는 상한. 소진하면 오디오 폴백으로 넘어간다.
+ * 횟수 근거는 2026-10-08-audio-transcript-async-design.md "자막 대기".
+ */
+export const MAX_TRANSCRIPT_RETRY = 2
 
 /**
  * 오디오 변환이 실패했을 때 자동으로 다시 태우는 횟수. 같은 영상이 한 판은 잘리고 다음 판은
@@ -510,7 +513,7 @@ export async function requestSummaryRegeneration(
     return 'queued'
   }
   // attempt를 상한으로 채워 보내 자막 대기 재시도를 건너뛴다 — RapidAPI를 한 번만 보고
-  // 없으면 곧바로 오디오 폴백으로 넘어간다. 관리자가 3시간을 기다릴 이유가 없다.
+  // 없으면 곧바로 오디오 폴백으로 넘어간다. 관리자가 자막 대기를 기다릴 이유가 없다.
   await publishJob('fetch-transcript', { sermonId, videoId: row.videoId, attempt: MAX_TRANSCRIPT_RETRY })
   return 'queued'
 }

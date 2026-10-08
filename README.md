@@ -110,9 +110,9 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video           │
                                    │                          │
                                    └────────────┬─────────────┘
                                                  ▼
-                          /api/jobs/fetch-transcript  (RapidAPI yt-api 자막, 최대 6회 재시도)
+                          /api/jobs/fetch-transcript  (RapidAPI yt-api 자막, 30분 간격 최대 2회 재시도)
                                    │
-                    자막 확보 ─────┴───── 6회 소진(자막 끝내 없음)
+                    자막 확보 ─────┴───── 2회 소진(자막 끝내 없음)
                         │                        │
                         │                        ▼
                         │         /api/jobs/fetch-audio-transcript
@@ -132,7 +132,7 @@ QStash 큐 ── delay/cron ──▶ /api/jobs/ingest-video           │
 
 - **WebSub(PubSubHubbub) 푸시 구독**: 채널 피드를 Google 허브에 구독(`hub.mode=subscribe`, `verify=async`, `hub.secret`)해 업로드 순간에만 콜백을 받습니다. 푸시가 도착하면 업로드 순간에 바로 체인이 돌아 폴링 주기를 기다리지 않습니다. 다만 Google 허브가 2026-09-03부터 이 채널에 배달을 멈춰, 현재 등록을 실제로 수행하는 것은 **예배 시간대에 집중시킨 QStash cron 폴링**(`reconcile-sermons`, 주일·수요 예배 시간대 매시간 + 매일 1회 안전망)입니다. 구독 lease는 만료되므로 재구독 cron은 **매일** 계속 돌리되, 실패해도 등록은 폴링이 책임지므로 장애로 취급하지 않습니다.
 - **콜백 보안 2겹**: 구독 검증(GET)은 **우리 채널 토픽일 때만 `hub.challenge`를 에코**해 임의 토픽 구독을 차단하고, 알림(POST)은 **`X-Hub-Signature`(HMAC-SHA1)를 원문 바이트 기준 `timingSafeEqual`로 비교**해 위조를 차단합니다.
-- **QStash 다단계 잡 체이닝**: `ingest-video → fetch-transcript → summarize`를 각각 독립 서버리스 함수로 분리하고 QStash 메시지로 연결합니다. `fetch-transcript`가 자막을 끝내 못 구하면(최대 6회 재시도 소진) `fetch-audio-transcript`가 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓰고, 그 결과를 같은 형식으로 변환해 `summarize`로 합류시킵니다. 모든 잡 엔드포인트는 QStash `Receiver` 서명으로 검증되며, 한 단계가 실패해도 그 단계만 재시도됩니다. 오디오 받아쓰기가 실패하면 잡 본문의 `attempt`를 올려 **1회 자동으로 다시 태우고**, 소진하면 `no_transcript`로 종결합니다 — 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 일이 있어, 사람이 버튼을 다시 누르지 않아도 회수되게 했습니다.
+- **QStash 다단계 잡 체이닝**: `ingest-video → fetch-transcript → summarize`를 각각 독립 서버리스 함수로 분리하고 QStash 메시지로 연결합니다. `fetch-transcript`가 자막을 끝내 못 구하면(30분 간격 최대 2회 재시도 소진) `fetch-audio-transcript`가 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓰고, 그 결과를 같은 형식으로 변환해 `summarize`로 합류시킵니다. 모든 잡 엔드포인트는 QStash `Receiver` 서명으로 검증되며, 한 단계가 실패해도 그 단계만 재시도됩니다. 오디오 받아쓰기가 실패하면 잡 본문의 `attempt`를 올려 **1회 자동으로 다시 태우고**, 소진하면 `no_transcript`로 종결합니다 — 같은 영상이 한 판은 잘리고 다음 판은 끝까지 가는 일이 있어, 사람이 버튼을 다시 누르지 않아도 회수되게 했습니다.
 - **서버리스식 지수 백오프**: Vercel 함수는 프로세스를 붙잡고 `sleep`할 수 없으므로, **QStash 지연 발행(`delay`)으로 백오프를 외부에 위임**합니다. 간격은 `5 × 3ⁿ분`으로 증가하고 `attempts < 3` 한도를 두며, 자막이 영구히 없는 건은 재시도 후보에서 제외해 API 쿼터 소진을 막습니다. 정기 재시도는 `retry-summaries` cron이 수행합니다.
 - **원자적 동시성 제어(claim)**: WebSub 중복 알림·재시도 cron·수동 트리거가 겹쳐도 같은 설교가 동시에 여러 번 요약되지 않도록, Postgres CTE `UPDATE ... RETURNING`으로 **선점 가능한 상태일 때만 원자적으로 1건을 선점**합니다. 선점은 `summary_claimed_at`에 시각을 적는 **리스**라, 10분이 지나면 죽은 워커로 보고 회수하고 매시간 스위퍼가 그 행을 다시 태웁니다. 리스를 별도 컬럼에 두는 이유는 상태·백오프 시각 같은 기존 값으로 "언제부터 붙잡고 있나"를 대신하면 재시도를 거친 행에서 판정이 뒤집히기 때문입니다.
 - **구조화 출력**: 한 줄 소개(핵심 성경구절 포함)·핵심 요점 8~12개·**타임스탬프 챕터 분할**을 JSON 스키마로 강제하고(OpenAI는 `json_schema` strict, Gemini는 `responseSchema`), 받은 결과를 다시 **zod로 검증**(챕터 시작 시각 오름차순·영상 길이 이내)합니다. 모델 응답을 신뢰하지 않고 경계에서 막는 구조이며, 1차 모델(GPT-5.6 Sol)이 실패하거나 검증을 통과하지 못하면 Gemini 체인(3.5 Flash → 2.5 Flash)으로 넘어갑니다.
@@ -265,7 +265,7 @@ src/
         thumbnails/backfill-webp/route.ts      # 기존 PNG 썸네일 WebP 일괄 전환
       jobs/
         ingest-video/route.ts        # 신규 영상 적재
-        fetch-transcript/route.ts    # 자막 fetch·캐시 (최대 6회 재시도, 소진 시 오디오 폴백 발행)
+        fetch-transcript/route.ts    # 자막 fetch·캐시 (최대 2회 재시도, 소진 시 오디오 폴백 발행)
         fetch-audio-transcript/route.ts # 오디오 받아쓰기 폴백 (Gemini 유튜브 URL 직접 입력, 절단 검사·1회 자동 재시도)
         summarize/route.ts           # 요약(Sol 1차·Gemini 폴백, claim 선점)
         publish-post/route.ts        # 예약 게시 공개 시각 캐시 재검증 (QStash 지연 콜백)
