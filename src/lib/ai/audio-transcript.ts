@@ -55,10 +55,11 @@ const AUDIO_TRANSCRIPT_PROMPT = `이 오디오는 한국어 교회 설교 영상
 다른 설명 없이 이 형식의 받아쓰기 텍스트만 출력하세요.`
 
 /**
- * 받아쓰기에 화면은 쓰지 않는다. 기본 프레임 수로 넘기면 64분 설교에서 영상 토큰이 입력의 69%를 차지해
- * Pro의 20만 토큰 초과 요금 구간으로 넘어간다 — 실측은 2026-10-08-audio-transcript-async-design.md.
+ * 기본 프레임 수로 넘기면 64분 설교에서 영상 토큰이 입력의 69%를 차지해 Pro의 20만 토큰 초과 요금 구간으로
+ * 넘어간다. 프레임을 거의 빼면(0.001) 타임스탬프가 뒤로 갈수록 몇 분씩 밀린다 — 프레임이 시각 기준점 구실을
+ * 한다. 10초에 1장이 둘 다 피하는 값이다. 실측은 2026-10-08-audio-transcript-async-design.md.
  */
-export const AUDIO_ONLY_FPS = 0.001
+export const AUDIO_TRANSCRIPT_FPS = 0.1
 
 export const AUDIO_TRANSCRIPT_MODELS: readonly string[] = [
   AUDIO_TRANSCRIPT_MODEL,
@@ -79,7 +80,7 @@ export function buildAudioTranscriptInput(videoId: string) {
     {
       type: 'video' as const,
       uri: `https://www.youtube.com/watch?v=${videoId}`,
-      processing: { type: 'static' as const, fps: AUDIO_ONLY_FPS },
+      processing: { type: 'static' as const, fps: AUDIO_TRANSCRIPT_FPS },
     },
   ]
 }

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   assertCoversFullAudio,
-  AUDIO_ONLY_FPS,
+  AUDIO_TRANSCRIPT_FPS,
   AUDIO_TRANSCRIPT_MODELS,
   MIN_TRANSCRIPT_COVERAGE,
   parseTimestampedTranscript,
@@ -96,7 +96,7 @@ describe('assertCoversFullAudio', () => {
 })
 
 describe('startAudioTranscription', () => {
-  it('프레임을 뺀 background 작업을 첫 모델로 만든다', async () => {
+  it('프레임을 줄인 background 작업을 첫 모델로 만든다', async () => {
     create.mockResolvedValue({ id: 'int-1', status: 'in_progress' })
 
     const out = await startAudioTranscription('vid')
@@ -108,7 +108,7 @@ describe('startAudioTranscription', () => {
     expect(params.input[1]).toEqual({
       type: 'video',
       uri: 'https://www.youtube.com/watch?v=vid',
-      processing: { type: 'static', fps: AUDIO_ONLY_FPS },
+      processing: { type: 'static', fps: AUDIO_TRANSCRIPT_FPS },
     })
   })
 
