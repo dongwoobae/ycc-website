@@ -398,7 +398,7 @@ describe('retryAudioTranscriptOrGiveUp (integration)', () => {
 })
 
 describe('publishAudioTranscript (integration)', () => {
-  it('publishes with the retry and timeout options the audio job needs', async () => {
+  it('publishes without redelivery so a background task is never created twice', async () => {
     const { publishJob } = await import('@/lib/qstash')
     vi.mocked(publishJob).mockClear()
 
@@ -408,14 +408,13 @@ describe('publishAudioTranscript (integration)', () => {
       'fetch-audio-transcript',
       { sermonId: 'sid', videoId: 'vid-d', attempt: 0 },
       0,
-      { retries: 1, timeoutSeconds: 300 },
+      { retries: 0 },
     )
   })
 })
 
-// 오디오 변환은 Vercel 함수 예산(300초)에 걸려 강제 종료될 수 있다. 그러면 라우트의
-// catch가 실행되지 않아 어떤 종결 처리도 일어나지 않는다 — 진입 시 남긴 표시가
-// 그 잔류를 스위퍼에게 보이게 하는 유일한 흔적이다.
+// 시작 job이 죽거나 조회 사슬이 끊기면 어떤 종결 처리도 일어나지 않는다 — 진입 시 남긴
+// 표시가 그 잔류를 스위퍼에게 보이게 하는 유일한 흔적이다.
 describe('markAudioTranscriptInFlight (integration)', () => {
   it('marks the row pending with an expiry so a killed run leaves a trace', async () => {
     const id = await insertSermonFixture(h.db, { summaryStatus: 'none' })

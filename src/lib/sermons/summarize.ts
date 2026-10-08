@@ -18,16 +18,13 @@ export const MAX_TRANSCRIPT_RETRY = 6
 /**
  * 오디오 변환이 실패했을 때 자동으로 다시 태우는 횟수. 같은 영상이 한 판은 잘리고 다음 판은
  * 끝까지 가는 것을 실측으로 확인했다 — 모델 실패는 판마다 흔들리므로 한 번은 사람 손 없이 회수한다.
- * 재시도 한 번이 4~5분짜리 Gemini 호출을 통째로 다시 돌리므로 그 이상 늘리지 않는다.
+ * 재시도 한 번이 받아쓰기 전체를 다시 돌리므로 그 이상 늘리지 않는다.
  */
 export const MAX_AUDIO_TRANSCRIPT_RETRY = 1
 
-/** fetch-audio-transcript 라우트의 maxDuration과 맞춘 값. 짧으면 정상 처리 중인 호출을 실패로 보고 재전달한다. */
-const AUDIO_TRANSCRIPT_TIMEOUT_SECONDS = 300
-
 /**
- * 오디오 변환 진행 표시를 언제부터 죽은 것으로 볼지. 함수 상한 300초에 QStash 큐 지연과
- * 자동 재시도 한 판을 얹어도 남는 값이라, 정상 처리 중인 건을 스위퍼가 가로채지 않는다.
+ * 오디오 변환 진행 표시를 언제부터 죽은 것으로 볼지. 조회 job이 돌 때마다 만료를 이만큼 미루므로,
+ * 이 값은 조회 사슬이 끊겼다고 판단하는 공백이다. 조회 간격과 QStash 큐 지연을 여러 번 얹어도 남는다.
  */
 export const AUDIO_TRANSCRIPT_STALE_MS = 10 * 60 * 1000
 
@@ -43,9 +40,9 @@ const AUTO_SUMMARY_TYPES_SQL = sql.join(
 )
 
 /**
- * 오디오 변환 진입을 DB에 남긴다. Vercel이 300초에서 함수를 끊으면 라우트의 catch가
- * 실행되지 않아 어떤 종결 처리도 일어나지 않는다 — 이 표시가 그 잔류를 남기는 유일한 흔적이고,
- * reclaimStaleAudioTranscripts가 그것을 보고 회수한다.
+ * 오디오 변환 진입을 DB에 남긴다. 시작 job이 죽거나 조회 사슬이 끊기면 어떤 종결 처리도
+ * 일어나지 않는다 — 이 표시가 그 잔류를 남기는 유일한 흔적이고, reclaimStaleAudioTranscripts가
+ * 그것을 보고 회수한다.
  *
  * pending에 만료 시각을 함께 찍는 것이 claimSermonById의 pending(만료 시각 없음)과
  * 구분되는 지점이다. 두 표시는 서로의 선점을 건드리지 않는다.
@@ -63,6 +60,19 @@ export async function markAudioTranscriptInFlight(sermonId: string, now: Date = 
       summary_next_retry_at = ${new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS).toISOString()},
       summary_claimed_at = NULL
     WHERE ss.sermon_id = ${sermonId} AND NOT ${TRANSCRIPT_EXISTS}
+  `)
+}
+
+/** 조회 job이 살아 있는 동안 스위퍼가 진행 중인 작업을 가로채지 않게 만료 시각을 민다. 이미 풀린 표시는 건드리지 않는다. */
+export async function extendAudioTranscriptMarker(sermonId: string, now: Date = new Date()): Promise<void> {
+  await db.execute(sql`
+    UPDATE sermon_summaries ss SET
+      summary_next_retry_at = ${new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS).toISOString()}
+    WHERE ss.sermon_id = ${sermonId}
+      AND ss.summary_status = 'pending'
+      AND ss.summary_claimed_at IS NULL
+      AND ss.summary_next_retry_at IS NOT NULL
+      AND NOT ${TRANSCRIPT_EXISTS}
   `)
 }
 
@@ -153,13 +163,11 @@ export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new D
   }
 }
 
-/** 오디오 변환 job 발행. 발행 측이 둘(자막 포기 지점, 실패 후 자동 재시도)이라 옵션을 한 곳에 둔다. */
+/** 오디오 변환 시작 job 발행. 발행 측이 여럿(자막 포기 지점, 실패 후 자동 재시도, 스위퍼 회수)이라 옵션을 한 곳에 둔다. */
 export async function publishAudioTranscript(sermonId: string, videoId: string, attempt: number): Promise<void> {
-  await publishJob('fetch-audio-transcript', { sermonId, videoId, attempt }, 0, {
-    // QStash 재전달은 네트워크 사고용이다. 모델이 나쁜 결과를 낸 경우는 attempt로 따로 센다.
-    retries: 1,
-    timeoutSeconds: AUDIO_TRANSCRIPT_TIMEOUT_SECONDS,
-  })
+  // 재전달되면 Gemini background 작업이 두 번 만들어진다. 시작 job이 죽은 경우는 진행 표시가
+  // 만료돼 스위퍼가 줍는다.
+  await publishJob('fetch-audio-transcript', { sermonId, videoId, attempt }, 0, { retries: 0 })
 }
 
 /**
