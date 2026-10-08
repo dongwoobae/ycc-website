@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { sermonSummaries } from '@/lib/db/schema'
 import { verifyQStash } from '@/lib/qstash'
 import { revalidateSermonPaths } from '@/lib/sermons/revalidate'
-import { claimSermonById, summarizeClaimed } from '@/lib/sermons/summarize'
+import { claimSermonById, summarizeClaimed, warnIfSummaryAttemptsExhausted } from '@/lib/sermons/summarize'
 
 export const maxDuration = 300
 
@@ -15,7 +15,10 @@ export async function POST(req: Request) {
   const { sermonId } = JSON.parse(raw) as { sermonId: string }
 
   const claimed = await claimSermonById(sermonId)
-  if (!claimed) return Response.json({ ok: true, skipped: 'not claimable' })
+  if (!claimed) {
+    await warnIfSummaryAttemptsExhausted(sermonId)
+    return Response.json({ ok: true, skipped: 'not claimable' })
+  }
 
   // 자막은 fetch-transcript 단계에서 DB에 캐시되므로 DB 값을 사용한다.
   const text = claimed.transcriptText ?? ''

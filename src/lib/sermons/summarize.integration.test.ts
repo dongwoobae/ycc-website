@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest'
 import { makeTestDb, insertSermonFixture, type TestDb } from '@/test/pg'
-import { sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
+import { appLogs, sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
 const h = vi.hoisted(() => ({ db: null as unknown as TestDb }))
@@ -56,6 +56,7 @@ const {
   AUDIO_TRANSCRIPT_STALE_MS,
   STALE_PENDING_MS,
   MAX_SUMMARY_ATTEMPTS,
+  warnIfSummaryAttemptsExhausted,
 } = await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
@@ -703,5 +704,60 @@ describe('summary_claimed_at 리스 (integration)', () => {
     const ids = (await selectRetryTargets(20, now)).map((t) => t.id)
 
     expect(ids).toContain(id)
+  })
+})
+
+// 2026-10-04: 스위퍼가 오디오 변환을 세 번 회수하는 동안 시도 횟수를 다 썼고, 네 번째 판에서
+// 받아쓰기가 성공한 뒤 요약 선점이 상한에 막혀 아무도 다시 발행하지 않았다.
+describe('자막 확보 시 시도 횟수 초기화 (integration)', () => {
+  it('오디오 회수로 횟수를 다 쓴 뒤 자막이 들어와도 요약을 선점할 수 있다', async () => {
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryAttempts: MAX_SUMMARY_ATTEMPTS,
+      summaryNextRetryAt: new Date(Date.now() + 60_000),
+    })
+
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: '받아쓰기' }], 'vid')
+
+    const claimed = await claimSermonById(id)
+    expect(claimed?.attempts).toBe(1)
+  })
+
+  it('스위퍼가 자막 있는 잔류를 인계할 때도 횟수를 되돌린다', async () => {
+    const now = new Date('2026-10-04T10:05:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryAttempts: MAX_SUMMARY_ATTEMPTS,
+      summaryNextRetryAt: new Date(now.getTime() - 60_000),
+      transcriptText: '[00:00] 말씀',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.handedOff).toContain(id)
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryAttempts).toBe(0)
+    expect((await selectRetryTargets(20, now)).map((t) => t.id)).toContain(id)
+  })
+})
+
+describe('warnIfSummaryAttemptsExhausted (integration)', () => {
+  it('횟수를 다 쓴 none 행이면 경고를 남긴다', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'none', summaryAttempts: MAX_SUMMARY_ATTEMPTS })
+
+    expect(await warnIfSummaryAttemptsExhausted(id)).toBe(true)
+
+    const logs = await h.db.select().from(appLogs).where(eq(appLogs.entityId, id))
+    expect(logs.map((l) => l.action)).toContain('warning')
+  })
+
+  it('다른 선점이 잡고 있는 행은 정상 거절이라 남기지 않는다', async () => {
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryAttempts: 1,
+      summaryClaimedAt: new Date(),
+    })
+
+    expect(await warnIfSummaryAttemptsExhausted(id)).toBe(false)
   })
 })

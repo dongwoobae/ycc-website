@@ -124,11 +124,13 @@ export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new D
   `)
 
   // 자막 저장 직후 진행 표시를 풀기 전에 끊긴 행이다. 오디오 변환은 이미 끝났으니 다시 태우지 않고
-  // 표시만 풀어 요약 재시도 경로(selectRetryTargets)가 줍게 넘긴다.
+  // 표시만 풀어 요약 재시도 경로(selectRetryTargets)가 줍게 넘긴다. 회수로 쓴 시도 횟수는
+  // 요약 몫이 아니므로 되돌린다 — publishSummarizeOrMarkFailed의 표시 해제와 같은 이유다.
   const handed = await db.execute(sql`
     UPDATE sermon_summaries ss SET
       summary_status = 'none',
-      summary_next_retry_at = NULL
+      summary_next_retry_at = NULL,
+      summary_attempts = 0
     FROM sermons s
     WHERE s.id = ss.sermon_id
       AND ${staleMarker}
@@ -190,6 +192,18 @@ export async function retryAudioTranscriptOrGiveUp(
 export function computeNextRetry(attempts: number, now: Date): Date {
   const minutes = 5 * Math.pow(3, Math.max(0, attempts - 1))
   return new Date(now.getTime() + minutes * 60 * 1000)
+}
+
+/** 선점이 횟수 상한에 막힌 행을 로그로 드러낸다. 중복 전달로 인한 거절(pending·ready)은 정상이라 남기지 않는다. */
+export async function warnIfSummaryAttemptsExhausted(sermonId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ status: sermonSummaries.summaryStatus, attempts: sermonSummaries.summaryAttempts })
+    .from(sermonSummaries)
+    .where(eq(sermonSummaries.sermonId, sermonId))
+    .limit(1)
+  if (!row || !['none', 'failed'].includes(row.status) || row.attempts < MAX_SUMMARY_ATTEMPTS) return false
+  await log('warning', 'sermon', sermonId, `요약 시도 ${row.attempts}회 소진으로 건너뜀 — 관리자 요약 재생성 필요`)
+  return true
 }
 
 export interface RetryTarget {
@@ -336,9 +350,11 @@ export async function publishSummarizeOrMarkFailed(
   // 오디오 진행 표시가 남아 있으면 claimSermonById의 두 분기가 모두 막혀 summarize가
   // 조용히 아무 일도 하지 않는다. 만료 시각으로 이 표시만 골라 푼다 — 만료 시각이 없는
   // pending은 summarize가 잡고 있는 것이라 건드리면 안 된다.
+  // 시도 횟수도 되돌린다. 스위퍼의 오디오 회수가 같은 횟수를 소비해, 세 번째 회수에서 받아쓰기가
+  // 성공하면 요약 선점이 상한에 막혀 아무도 다시 발행하지 않는다(2026-10-04).
   await db
     .update(sermonSummaries)
-    .set({ summaryStatus: 'none', summaryNextRetryAt: null })
+    .set({ summaryStatus: 'none', summaryNextRetryAt: null, summaryAttempts: 0 })
     .where(
       and(
         eq(sermonSummaries.sermonId, sermonId),
