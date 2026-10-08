@@ -1,5 +1,38 @@
-import { describe, expect, it } from 'vitest'
-import { assertCoversFullAudio, MIN_TRANSCRIPT_COVERAGE, parseTimestampedTranscript } from './audio-transcript'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assertCoversFullAudio,
+  AUDIO_ONLY_FPS,
+  AUDIO_TRANSCRIPT_MODELS,
+  MIN_TRANSCRIPT_COVERAGE,
+  parseTimestampedTranscript,
+  readAudioTranscription,
+  startAudioTranscription,
+  transcribeFromAudio,
+} from './audio-transcript'
+
+const { create, get } = vi.hoisted(() => ({ create: vi.fn(), get: vi.fn() }))
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: class {
+    interactions = { create, get }
+  },
+}))
+
+beforeEach(() => {
+  vi.stubEnv('GEMINI_API_KEY', 'test-key')
+  create.mockReset()
+  get.mockReset()
+})
+afterEach(() => vi.unstubAllEnvs())
+
+/** 실측한 완료 응답의 단계 구성. 입력 단계의 프롬프트 예시 줄이 결과에 섞이면 안 된다. */
+const completed = (text: string) => ({
+  status: 'completed',
+  steps: [
+    { type: 'user_input', content: [{ type: 'text', text: '[00:02] 첫 문장 내용' }] },
+    { type: 'thought', signature: 'sig' },
+    { type: 'model_output', content: [{ type: 'text', text }] },
+  ],
+})
 
 describe('parseTimestampedTranscript', () => {
   it('parses [MM:SS] lines', () => {
@@ -35,7 +68,7 @@ describe('parseTimestampedTranscript', () => {
 
 describe('assertCoversFullAudio', () => {
   // thinkingBudget을 낮추면 모델이 앞부분만 받아쓰고 finishReason=STOP으로 정상 종료하는 것을 실측으로 확인했다.
-  // finishReason 검사만으로는 이 조용한 절단이 통과하므로 커버리지로 막는다.
+  // Interactions 응답에는 finishReason이 없어 이 검사가 조용한 절단을 막는 유일한 장치다.
   it('throws when the transcript stops far short of the audio length', () => {
     const segments = [{ startSeconds: 457, text: '귀한 찬양 감사합니다.' }]
     expect(() => assertCoversFullAudio(segments, 3465)).toThrow(/stopped early/)
@@ -59,5 +92,91 @@ describe('assertCoversFullAudio', () => {
 
   it('throws when there is nothing to measure', () => {
     expect(() => assertCoversFullAudio([], 3465)).toThrow(/stopped early/)
+  })
+})
+
+describe('startAudioTranscription', () => {
+  it('프레임을 뺀 background 작업을 첫 모델로 만든다', async () => {
+    create.mockResolvedValue({ id: 'int-1', status: 'in_progress' })
+
+    const out = await startAudioTranscription('vid')
+
+    expect(out).toEqual({ interactionId: 'int-1', model: AUDIO_TRANSCRIPT_MODELS[0] })
+    const params = create.mock.calls[0][0]
+    expect(params.model).toBe(AUDIO_TRANSCRIPT_MODELS[0])
+    expect(params.background).toBe(true)
+    expect(params.input[1]).toEqual({
+      type: 'video',
+      uri: 'https://www.youtube.com/watch?v=vid',
+      processing: { type: 'static', fps: AUDIO_ONLY_FPS },
+    })
+  })
+
+  it('생성 단계의 404·503은 다음 모델로 넘긴다', async () => {
+    create
+      .mockRejectedValueOnce({ status: 404 })
+      .mockRejectedValueOnce({ status: 503 })
+      .mockResolvedValueOnce({ id: 'int-3' })
+
+    const out = await startAudioTranscription('vid', ['a', 'b', 'c'])
+
+    expect(out).toEqual({ interactionId: 'int-3', model: 'c' })
+  })
+
+  it('그 밖의 오류는 바로 던진다', async () => {
+    create.mockRejectedValue({ status: 400 })
+
+    await expect(startAudioTranscription('vid', ['a', 'b'])).rejects.toMatchObject({ status: 400 })
+    expect(create).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('readAudioTranscription', () => {
+  it('진행 중이면 running', async () => {
+    get.mockResolvedValue({ status: 'in_progress' })
+
+    expect(await readAudioTranscription('int', 100)).toEqual({ state: 'running' })
+  })
+
+  it('끝까지 받아쓴 결과는 model_output만 파싱한다', async () => {
+    get.mockResolvedValue(completed('[00:00] 시작\n[01:35] 끝'))
+
+    expect(await readAudioTranscription('int', 100)).toEqual({
+      state: 'done',
+      segments: [
+        { startSeconds: 0, text: '시작' },
+        { startSeconds: 95, text: '끝' },
+      ],
+    })
+  })
+
+  it('앞부분만 받아쓴 결과는 실패로 본다', async () => {
+    get.mockResolvedValue(completed('[00:00] 시작\n[00:10] 중단'))
+
+    expect(await readAudioTranscription('int', 100)).toMatchObject({
+      state: 'failed',
+      error: expect.stringContaining('stopped early'),
+    })
+  })
+
+  it('작업이 failed면 실패로 본다', async () => {
+    get.mockResolvedValue({ status: 'failed', error: { message: 'boom' } })
+
+    expect(await readAudioTranscription('int', 100)).toMatchObject({
+      state: 'failed',
+      error: expect.stringContaining('boom'),
+    })
+  })
+})
+
+describe('transcribeFromAudio', () => {
+  it('끝날 때까지 조회해 세그먼트를 돌려준다', async () => {
+    create.mockResolvedValue({ id: 'int' })
+    get.mockResolvedValueOnce({ status: 'in_progress' }).mockResolvedValueOnce(completed('[00:00] 시작\n[01:35] 끝'))
+
+    const segments = await transcribeFromAudio('vid', 100, { pollMs: 0 })
+
+    expect(segments).toHaveLength(2)
+    expect(get).toHaveBeenCalledTimes(2)
   })
 })
