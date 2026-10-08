@@ -5,6 +5,7 @@ export type JobName =
   | 'ingest-video'
   | 'fetch-transcript'
   | 'fetch-audio-transcript'
+  | 'poll-audio-transcript'
   | 'summarize'
   | 'websub-renew'
   | 'retry-summaries'

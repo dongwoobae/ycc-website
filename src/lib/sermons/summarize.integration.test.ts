@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest'
 import { makeTestDb, insertSermonFixture, type TestDb } from '@/test/pg'
-import { sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
+import { appLogs, sermonSummaries, sermonTranscripts } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
 const h = vi.hoisted(() => ({ db: null as unknown as TestDb }))
@@ -56,6 +56,7 @@ const {
   AUDIO_TRANSCRIPT_STALE_MS,
   STALE_PENDING_MS,
   MAX_SUMMARY_ATTEMPTS,
+  warnIfSummaryAttemptsExhausted,
 } = await import('./summarize')
 
 describe('claimSermonById (integration)', () => {
@@ -150,6 +151,17 @@ describe('summarizeClaimed (integration)', () => {
     const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
     expect(row.summaryStatus).toBe('ready')
     expect(row.summary).toBe('요약본')
+  })
+
+  it('완료 로그에 시도 횟수·소요 초·모델을 남긴다', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'pending' })
+
+    await summarizeClaimed(id, 600, 'transcript body', 1)
+
+    const logs = await h.db.select().from(appLogs).where(eq(appLogs.entityId, id))
+    expect(logs.map((l) => l.message)).toContainEqual(
+      expect.stringMatching(/^AI 요약 완료 \(시도 1회 · \d+초 · \S+\)$/),
+    )
   })
 })
 
@@ -386,7 +398,7 @@ describe('retryAudioTranscriptOrGiveUp (integration)', () => {
 })
 
 describe('publishAudioTranscript (integration)', () => {
-  it('publishes with the retry and timeout options the audio job needs', async () => {
+  it('publishes without redelivery so a background task is never created twice', async () => {
     const { publishJob } = await import('@/lib/qstash')
     vi.mocked(publishJob).mockClear()
 
@@ -396,14 +408,13 @@ describe('publishAudioTranscript (integration)', () => {
       'fetch-audio-transcript',
       { sermonId: 'sid', videoId: 'vid-d', attempt: 0 },
       0,
-      { retries: 1, timeoutSeconds: 300 },
+      { retries: 0 },
     )
   })
 })
 
-// 오디오 변환은 Vercel 함수 예산(300초)에 걸려 강제 종료될 수 있다. 그러면 라우트의
-// catch가 실행되지 않아 어떤 종결 처리도 일어나지 않는다 — 진입 시 남긴 표시가
-// 그 잔류를 스위퍼에게 보이게 하는 유일한 흔적이다.
+// 시작 job이 죽거나 조회 사슬이 끊기면 어떤 종결 처리도 일어나지 않는다 — 진입 시 남긴
+// 표시가 그 잔류를 스위퍼에게 보이게 하는 유일한 흔적이다.
 describe('markAudioTranscriptInFlight (integration)', () => {
   it('marks the row pending with an expiry so a killed run leaves a trace', async () => {
     const id = await insertSermonFixture(h.db, { summaryStatus: 'none' })
@@ -532,7 +543,7 @@ describe('reclaimStaleAudioTranscripts (integration)', () => {
     expect(result.republished).not.toContain(id)
   })
 
-  // 강제 종료가 반복되면 회수 → 또 종료 → 또 회수로 끝없이 돈다. 횟수를 DB에 세야 끊긴다.
+  // 끊김이 반복되면 회수 → 또 끊김 → 또 회수로 끝없이 돈다. 횟수를 DB에 세야 끊긴다.
   it('gives up once the attempts are spent, clearing the marker', async () => {
     const { publishJob } = await import('@/lib/qstash')
     vi.mocked(publishJob).mockClear()
@@ -703,5 +714,60 @@ describe('summary_claimed_at 리스 (integration)', () => {
     const ids = (await selectRetryTargets(20, now)).map((t) => t.id)
 
     expect(ids).toContain(id)
+  })
+})
+
+// 2026-10-04: 스위퍼가 오디오 변환을 세 번 회수하는 동안 시도 횟수를 다 썼고, 네 번째 판에서
+// 받아쓰기가 성공한 뒤 요약 선점이 상한에 막혀 아무도 다시 발행하지 않았다.
+describe('자막 확보 시 시도 횟수 초기화 (integration)', () => {
+  it('오디오 회수로 횟수를 다 쓴 뒤 자막이 들어와도 요약을 선점할 수 있다', async () => {
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryAttempts: MAX_SUMMARY_ATTEMPTS,
+      summaryNextRetryAt: new Date(Date.now() + 60_000),
+    })
+
+    await publishSummarizeOrMarkFailed(id, [{ startSeconds: 0, text: '받아쓰기' }], 'vid')
+
+    const claimed = await claimSermonById(id)
+    expect(claimed?.attempts).toBe(1)
+  })
+
+  it('스위퍼가 자막 있는 잔류를 인계할 때도 횟수를 되돌린다', async () => {
+    const now = new Date('2026-10-04T10:05:00Z')
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryAttempts: MAX_SUMMARY_ATTEMPTS,
+      summaryNextRetryAt: new Date(now.getTime() - 60_000),
+      transcriptText: '[00:00] 말씀',
+    })
+
+    const result = await reclaimStaleAudioTranscripts(10, now)
+
+    expect(result.handedOff).toContain(id)
+    const [row] = await h.db.select().from(sermonSummaries).where(eq(sermonSummaries.sermonId, id))
+    expect(row.summaryAttempts).toBe(0)
+    expect((await selectRetryTargets(20, now)).map((t) => t.id)).toContain(id)
+  })
+})
+
+describe('warnIfSummaryAttemptsExhausted (integration)', () => {
+  it('횟수를 다 쓴 none 행이면 경고를 남긴다', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'none', summaryAttempts: MAX_SUMMARY_ATTEMPTS })
+
+    expect(await warnIfSummaryAttemptsExhausted(id)).toBe(true)
+
+    const logs = await h.db.select().from(appLogs).where(eq(appLogs.entityId, id))
+    expect(logs.map((l) => l.action)).toContain('warning')
+  })
+
+  it('다른 선점이 잡고 있는 행은 정상 거절이라 남기지 않는다', async () => {
+    const id = await insertSermonFixture(h.db, {
+      summaryStatus: 'pending',
+      summaryAttempts: 1,
+      summaryClaimedAt: new Date(),
+    })
+
+    expect(await warnIfSummaryAttemptsExhausted(id)).toBe(false)
   })
 })

@@ -5,7 +5,7 @@ import { reclaimStaleAudioTranscripts, selectRetryTargets } from '@/lib/sermons/
 /**
  * 막힌 설교를 주기적으로 재투입하는 스위퍼(QStash 스케줄 전용). 두 종류를 함께 본다.
  *
- * 1. 오디오 변환이 함수 예산에 걸려 강제 종료된 건 — 라우트의 catch가 실행되지 않아 진행 표시만
+ * 1. 오디오 변환의 시작 job이 죽었거나 조회 사슬이 끊긴 건 — 종결 처리 없이 진행 표시만
  *    남아 있다. 자막이 없으면 fetch-audio-transcript부터 다시 태우고, 자막이 이미 있으면(저장 직후
  *    끊긴 경우) 표시만 풀어 아래 2번에 넘긴다.
  * 2. 자막은 있는데 요약이 없는 건 — summarize만 재발행한다. 실제 중복/횟수제한은

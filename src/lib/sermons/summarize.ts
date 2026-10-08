@@ -12,22 +12,22 @@ import { autoSummaryTypes, expectsAutoSummary } from '@/lib/worship'
 export const MAX_SUMMARY_ATTEMPTS = 3
 export const STALE_PENDING_MS = 10 * 60 * 1000
 
-/** fetch-transcript job이 자막을 기다리며 30분 간격으로 재발행하는 상한. 소진하면 오디오 폴백으로 넘어간다. */
-export const MAX_TRANSCRIPT_RETRY = 6
+/**
+ * fetch-transcript job이 자막을 기다리며 30분 간격으로 재발행하는 상한. 소진하면 오디오 폴백으로 넘어간다.
+ * 횟수 근거는 2026-10-08-audio-transcript-async-design.md "자막 대기".
+ */
+export const MAX_TRANSCRIPT_RETRY = 2
 
 /**
  * 오디오 변환이 실패했을 때 자동으로 다시 태우는 횟수. 같은 영상이 한 판은 잘리고 다음 판은
  * 끝까지 가는 것을 실측으로 확인했다 — 모델 실패는 판마다 흔들리므로 한 번은 사람 손 없이 회수한다.
- * 재시도 한 번이 4~5분짜리 Gemini 호출을 통째로 다시 돌리므로 그 이상 늘리지 않는다.
+ * 재시도 한 번이 받아쓰기 전체를 다시 돌리므로 그 이상 늘리지 않는다.
  */
 export const MAX_AUDIO_TRANSCRIPT_RETRY = 1
 
-/** fetch-audio-transcript 라우트의 maxDuration과 맞춘 값. 짧으면 정상 처리 중인 호출을 실패로 보고 재전달한다. */
-const AUDIO_TRANSCRIPT_TIMEOUT_SECONDS = 300
-
 /**
- * 오디오 변환 진행 표시를 언제부터 죽은 것으로 볼지. 함수 상한 300초에 QStash 큐 지연과
- * 자동 재시도 한 판을 얹어도 남는 값이라, 정상 처리 중인 건을 스위퍼가 가로채지 않는다.
+ * 오디오 변환 진행 표시를 언제부터 죽은 것으로 볼지. 조회 job이 돌 때마다 만료를 이만큼 미루므로,
+ * 이 값은 조회 사슬이 끊겼다고 판단하는 공백이다. 조회 간격과 QStash 큐 지연을 여러 번 얹어도 남는다.
  */
 export const AUDIO_TRANSCRIPT_STALE_MS = 10 * 60 * 1000
 
@@ -43,9 +43,9 @@ const AUTO_SUMMARY_TYPES_SQL = sql.join(
 )
 
 /**
- * 오디오 변환 진입을 DB에 남긴다. Vercel이 300초에서 함수를 끊으면 라우트의 catch가
- * 실행되지 않아 어떤 종결 처리도 일어나지 않는다 — 이 표시가 그 잔류를 남기는 유일한 흔적이고,
- * reclaimStaleAudioTranscripts가 그것을 보고 회수한다.
+ * 오디오 변환 진입을 DB에 남긴다. 시작 job이 죽거나 조회 사슬이 끊기면 어떤 종결 처리도
+ * 일어나지 않는다 — 이 표시가 그 잔류를 남기는 유일한 흔적이고, reclaimStaleAudioTranscripts가
+ * 그것을 보고 회수한다.
  *
  * pending에 만료 시각을 함께 찍는 것이 claimSermonById의 pending(만료 시각 없음)과
  * 구분되는 지점이다. 두 표시는 서로의 선점을 건드리지 않는다.
@@ -66,6 +66,19 @@ export async function markAudioTranscriptInFlight(sermonId: string, now: Date = 
   `)
 }
 
+/** 조회 job이 살아 있는 동안 스위퍼가 진행 중인 작업을 가로채지 않게 만료 시각을 민다. 이미 풀린 표시는 건드리지 않는다. */
+export async function extendAudioTranscriptMarker(sermonId: string, now: Date = new Date()): Promise<void> {
+  await db.execute(sql`
+    UPDATE sermon_summaries ss SET
+      summary_next_retry_at = ${new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS).toISOString()}
+    WHERE ss.sermon_id = ${sermonId}
+      AND ss.summary_status = 'pending'
+      AND ss.summary_claimed_at IS NULL
+      AND ss.summary_next_retry_at IS NOT NULL
+      AND NOT ${TRANSCRIPT_EXISTS}
+  `)
+}
+
 interface ReclaimOutcome {
   republished: string[]
   gaveUp: string[]
@@ -73,11 +86,11 @@ interface ReclaimOutcome {
 }
 
 /**
- * 오디오 변환이 강제 종료돼 진행 표시만 남은 건을 회수한다(스위퍼 전용).
+ * 오디오 변환의 시작 job이 죽었거나 조회 사슬이 끊겨 진행 표시만 남은 건을 회수한다(스위퍼 전용).
  *
- * 회수마다 summary_attempts를 소비하는 이유는 강제 종료가 반복될 때 회수 → 또 종료 →
- * 또 회수로 끝없이 도는 것을 막기 위해서다. 상한을 채웠거나 재발행할 videoId가 없으면
- * no_transcript로 종결한다.
+ * 회수마다 summary_attempts를 소비하는 이유는 끊김이 반복될 때 회수 → 또 끊김 →
+ * 또 회수로 끝없이 도는 것을 막기 위해서다. 자막이 저장되면 이 횟수는 0으로 되돌아간다.
+ * 상한을 채웠거나 재발행할 videoId가 없으면 no_transcript로 종결한다.
  */
 export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new Date()): Promise<ReclaimOutcome> {
   const nextAt = new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS)
@@ -124,11 +137,13 @@ export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new D
   `)
 
   // 자막 저장 직후 진행 표시를 풀기 전에 끊긴 행이다. 오디오 변환은 이미 끝났으니 다시 태우지 않고
-  // 표시만 풀어 요약 재시도 경로(selectRetryTargets)가 줍게 넘긴다.
+  // 표시만 풀어 요약 재시도 경로(selectRetryTargets)가 줍게 넘긴다. 회수로 쓴 시도 횟수는
+  // 요약 몫이 아니므로 되돌린다 — publishSummarizeOrMarkFailed의 표시 해제와 같은 이유다.
   const handed = await db.execute(sql`
     UPDATE sermon_summaries ss SET
       summary_status = 'none',
-      summary_next_retry_at = NULL
+      summary_next_retry_at = NULL,
+      summary_attempts = 0
     FROM sermons s
     WHERE s.id = ss.sermon_id
       AND ${staleMarker}
@@ -151,13 +166,11 @@ export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new D
   }
 }
 
-/** 오디오 변환 job 발행. 발행 측이 둘(자막 포기 지점, 실패 후 자동 재시도)이라 옵션을 한 곳에 둔다. */
+/** 오디오 변환 시작 job 발행. 발행 측이 여럿(자막 포기 지점, 실패 후 자동 재시도, 스위퍼 회수)이라 옵션을 한 곳에 둔다. */
 export async function publishAudioTranscript(sermonId: string, videoId: string, attempt: number): Promise<void> {
-  await publishJob('fetch-audio-transcript', { sermonId, videoId, attempt }, 0, {
-    // QStash 재전달은 네트워크 사고용이다. 모델이 나쁜 결과를 낸 경우는 attempt로 따로 센다.
-    retries: 1,
-    timeoutSeconds: AUDIO_TRANSCRIPT_TIMEOUT_SECONDS,
-  })
+  // 재전달되면 Gemini background 작업이 두 번 만들어진다. 시작 job이 죽은 경우는 진행 표시가
+  // 만료돼 스위퍼가 줍는다.
+  await publishJob('fetch-audio-transcript', { sermonId, videoId, attempt }, 0, { retries: 0 })
 }
 
 /**
@@ -190,6 +203,18 @@ export async function retryAudioTranscriptOrGiveUp(
 export function computeNextRetry(attempts: number, now: Date): Date {
   const minutes = 5 * Math.pow(3, Math.max(0, attempts - 1))
   return new Date(now.getTime() + minutes * 60 * 1000)
+}
+
+/** 선점이 횟수 상한에 막힌 행을 로그로 드러낸다. 중복 전달로 인한 거절(pending·ready)은 정상이라 남기지 않는다. */
+export async function warnIfSummaryAttemptsExhausted(sermonId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ status: sermonSummaries.summaryStatus, attempts: sermonSummaries.summaryAttempts })
+    .from(sermonSummaries)
+    .where(eq(sermonSummaries.sermonId, sermonId))
+    .limit(1)
+  if (!row || !['none', 'failed'].includes(row.status) || row.attempts < MAX_SUMMARY_ATTEMPTS) return false
+  await log('warning', 'sermon', sermonId, `요약 시도 ${row.attempts}회 소진으로 건너뜀 — 관리자 요약 재생성 필요`)
+  return true
 }
 
 export interface RetryTarget {
@@ -336,9 +361,11 @@ export async function publishSummarizeOrMarkFailed(
   // 오디오 진행 표시가 남아 있으면 claimSermonById의 두 분기가 모두 막혀 summarize가
   // 조용히 아무 일도 하지 않는다. 만료 시각으로 이 표시만 골라 푼다 — 만료 시각이 없는
   // pending은 summarize가 잡고 있는 것이라 건드리면 안 된다.
+  // 시도 횟수도 되돌린다. 스위퍼의 오디오 회수가 같은 횟수를 소비해, 세 번째 회수에서 받아쓰기가
+  // 성공하면 요약 선점이 상한에 막혀 아무도 다시 발행하지 않는다(2026-10-04).
   await db
     .update(sermonSummaries)
-    .set({ summaryStatus: 'none', summaryNextRetryAt: null })
+    .set({ summaryStatus: 'none', summaryNextRetryAt: null, summaryAttempts: 0 })
     .where(
       and(
         eq(sermonSummaries.sermonId, sermonId),
@@ -362,8 +389,12 @@ export async function summarizeClaimed(
   attempts: number,
 ): Promise<'ready' | 'failed'> {
   const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
+  const startedAt = Date.now()
+  const elapsedSeconds = () => Math.round((Date.now() - startedAt) / 1000)
   try {
     const result = await generateSermonSummary(transcriptText, durationSeconds)
+    const seconds = elapsedSeconds()
+    const usedModel = result.model ?? model
     await db
       .update(sermonSummaries)
       .set({
@@ -373,11 +404,11 @@ export async function summarizeClaimed(
         summaryStatus: 'ready',
         summaryGeneratedAt: new Date(),
         summaryNextRetryAt: null,
-        summaryModel: result.model ?? model,
+        summaryModel: usedModel,
       })
       .where(eq(sermonSummaries.sermonId, id))
-    console.log(`[summarize] AI 요약 완료 sermonId=${id} (시도 ${attempts}회, model=${result.model ?? model})`)
-    await log('update', 'sermon', id, `AI 요약 완료 (시도 ${attempts}회)`)
+    console.log(`[summarize] AI 요약 완료 sermonId=${id} (시도 ${attempts}회, ${seconds}초, model=${usedModel})`)
+    await log('update', 'sermon', id, `AI 요약 완료 (시도 ${attempts}회 · ${seconds}초 · ${usedModel})`)
     return 'ready'
   } catch (e) {
     console.error(`[summarize] ${id} failed`, e)
@@ -385,7 +416,7 @@ export async function summarizeClaimed(
       'error',
       'sermon',
       id,
-      `AI 요약 실패 (시도 ${attempts}회): ${e instanceof Error ? e.message.slice(0, 150) : String(e).slice(0, 150)}`,
+      `AI 요약 실패 (시도 ${attempts}회 · ${elapsedSeconds()}초): ${e instanceof Error ? e.message.slice(0, 150) : String(e).slice(0, 150)}`,
     )
     await db
       .update(sermonSummaries)
@@ -482,7 +513,7 @@ export async function requestSummaryRegeneration(
     return 'queued'
   }
   // attempt를 상한으로 채워 보내 자막 대기 재시도를 건너뛴다 — RapidAPI를 한 번만 보고
-  // 없으면 곧바로 오디오 폴백으로 넘어간다. 관리자가 3시간을 기다릴 이유가 없다.
+  // 없으면 곧바로 오디오 폴백으로 넘어간다. 관리자가 자막 대기를 기다릴 이유가 없다.
   await publishJob('fetch-transcript', { sermonId, videoId: row.videoId, attempt: MAX_TRANSCRIPT_RETRY })
   return 'queued'
 }

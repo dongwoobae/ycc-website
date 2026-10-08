@@ -1,12 +1,12 @@
 import type { TranscriptSegment } from '@/lib/transcript/prompt'
-import { Agent, setGlobalDispatcher } from 'undici'
-import { FinishReason, GoogleGenAI } from '@google/genai'
+import { GoogleGenAI } from '@google/genai'
 import {
   AUDIO_TRANSCRIPT_MODEL,
   AUDIO_TRANSCRIPT_MODEL_GA,
   DEFAULT_GEMINI_MODEL,
   FALLBACK_GEMINI_MODEL,
-  generateContentWithFallback,
+  isModelUnavailableError,
+  isTransientGeminiError,
 } from './gemini'
 
 const TIMESTAMP_LINE = /^\[(\d{1,3}(?::\d{2}){1,2})\]\s*(.*)$/
@@ -54,54 +54,114 @@ const AUDIO_TRANSCRIPT_PROMPT = `이 오디오는 한국어 교회 설교 영상
 
 다른 설명 없이 이 형식의 받아쓰기 텍스트만 출력하세요.`
 
-let longRequestDispatcherConfigured = false
+/**
+ * 기본 프레임 수로 넘기면 64분 설교에서 영상 토큰이 입력의 69%를 차지해 Pro의 20만 토큰 초과 요금 구간으로
+ * 넘어간다. 프레임을 거의 빼면(0.001) 타임스탬프가 뒤로 갈수록 몇 분씩 밀린다 — 프레임이 시각 기준점 구실을
+ * 한다. 10초에 1장이 둘 다 피하는 값이다. 실측은 2026-10-08-audio-transcript-async-design.md.
+ */
+export const AUDIO_TRANSCRIPT_FPS = 0.1
 
-/** Node 기본 undici headersTimeout(5분)이 4~5분 걸리는 오디오 처리와 충돌해 간헐적 fetch failed를 일으키는 것을 실측으로 확인 — 10분으로 올린다. */
-function ensureLongRequestDispatcher(): void {
-  if (longRequestDispatcherConfigured) return
-  setGlobalDispatcher(new Agent({ headersTimeout: 600_000, bodyTimeout: 600_000 }))
-  longRequestDispatcherConfigured = true
+export const AUDIO_TRANSCRIPT_MODELS: readonly string[] = [
+  AUDIO_TRANSCRIPT_MODEL,
+  AUDIO_TRANSCRIPT_MODEL_GA,
+  DEFAULT_GEMINI_MODEL,
+  FALLBACK_GEMINI_MODEL,
+]
+
+function client(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
+  return new GoogleGenAI({ apiKey })
 }
 
-/** 유튜브 워치 URL을 Gemini에 직접 넘겨 오디오를 받아쓴다. 오디오 추출/다운로드는 하지 않는다(구글 서버가 처리). */
+export function buildAudioTranscriptInput(videoId: string) {
+  return [
+    { type: 'text' as const, text: AUDIO_TRANSCRIPT_PROMPT },
+    {
+      type: 'video' as const,
+      uri: `https://www.youtube.com/watch?v=${videoId}`,
+      processing: { type: 'static' as const, fps: AUDIO_TRANSCRIPT_FPS },
+    },
+  ]
+}
+
+/** 모델 체인은 작업 생성에서만 탄다. 생성은 수 초라 일시 오류·단종을 여기서 걸러 낼 수 있다. */
+export async function startAudioTranscription(
+  videoId: string,
+  models: readonly string[] = AUDIO_TRANSCRIPT_MODELS,
+): Promise<{ interactionId: string; model: string }> {
+  const ai = client()
+  let lastError: unknown
+  for (const model of [...new Set(models)]) {
+    try {
+      const created = await ai.interactions.create({
+        model,
+        input: buildAudioTranscriptInput(videoId),
+        background: true,
+      })
+      return { interactionId: created.id, model }
+    } catch (error) {
+      lastError = error
+      if (!isTransientGeminiError(error) && !isModelUnavailableError(error)) throw error
+    }
+  }
+  throw lastError
+}
+
+interface InteractionLike {
+  status?: string
+  error?: { message?: string }
+  steps?: { type?: string; content?: { type?: string; text?: string }[] }[]
+}
+
+/** 받아쓰기는 model_output 단계에만 있다. 입력 단계의 프롬프트 예시 줄이 섞이면 파서가 타임스탬프로 읽는다. */
+export function extractInteractionText(interaction: InteractionLike): string {
+  return (interaction.steps ?? [])
+    .filter((s) => s.type === 'model_output')
+    .flatMap((s) => s.content ?? [])
+    .map((c) => c.text ?? '')
+    .join('')
+}
+
+export type AudioTranscriptionState =
+  { state: 'running' } | { state: 'done'; segments: TranscriptSegment[] } | { state: 'failed'; error: string }
+
+/**
+ * Interactions 응답에는 finishReason이 없다. 출력 한도에 걸린 절단은 assertCoversFullAudio가 잡는다.
+ * 조회 요청 자체의 오류는 던진다 — 호출부가 진행 중과 같게 다룬다.
+ */
+export async function readAudioTranscription(
+  interactionId: string,
+  durationSeconds: number | null,
+): Promise<AudioTranscriptionState> {
+  const interaction = (await client().interactions.get(interactionId)) as InteractionLike
+  if (interaction.status === 'in_progress') return { state: 'running' }
+  if (interaction.status !== 'completed') {
+    return { state: 'failed', error: `interaction ${interaction.status}: ${interaction.error?.message ?? ''}`.trim() }
+  }
+  const text = extractInteractionText(interaction)
+  if (!text.trim()) return { state: 'failed', error: 'gemini returned empty audio transcript' }
+  const segments = parseTimestampedTranscript(text)
+  try {
+    assertCoversFullAudio(segments, durationSeconds)
+  } catch (e) {
+    return { state: 'failed', error: e instanceof Error ? e.message : String(e) }
+  }
+  return { state: 'done', segments }
+}
+
+/** 함수 시간 상한이 없는 로컬 스크립트용. 라우트는 시작·조회 job으로 나눠 쓴다(audio-transcript-job.ts). */
 export async function transcribeFromAudio(
   videoId: string,
   durationSeconds: number | null,
+  { pollMs = 15_000, maxPolls = 80 }: { pollMs?: number; maxPolls?: number } = {},
 ): Promise<TranscriptSegment[]> {
-  ensureLongRequestDispatcher()
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
-
-  const ai = new GoogleGenAI({ apiKey })
-  const res = await generateContentWithFallback(
-    ai,
-    {
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: AUDIO_TRANSCRIPT_PROMPT },
-            { fileData: { fileUri: `https://www.youtube.com/watch?v=${videoId}` } },
-          ],
-        },
-      ],
-      // 전역 dispatcher는 Node 내장 undici의 심볼 자리에 npm undici@8 Agent를 꽂는 구조라 두 버전 사이
-      // 상호운용에 기대고 있다 — 그게 깨지더라도 요청이 무한정 매달리지 않게 요청 단위 타임아웃을 병행한다.
-      config: { httpOptions: { timeout: 600_000 } },
-    },
-    [AUDIO_TRANSCRIPT_MODEL, AUDIO_TRANSCRIPT_MODEL_GA, DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL],
-  )
-
-  // 출력 한도에 걸려 중간에서 끊긴 받아쓰기도 파서는 정상 세그먼트로 만들어 내므로,
-  // 여기서 막지 않으면 뒷부분이 통째로 빠진 원고가 정상 요약으로 저장된다.
-  const finishReason = res.candidates?.[0]?.finishReason
-  if (finishReason != null && finishReason !== FinishReason.STOP) {
-    throw new Error(`gemini audio transcript did not finish normally: finishReason=${finishReason}`)
+  const { interactionId } = await startAudioTranscription(videoId)
+  for (let i = 0; i < maxPolls; i++) {
+    await new Promise((resolve) => setTimeout(resolve, pollMs))
+    const result = await readAudioTranscription(interactionId, durationSeconds)
+    if (result.state === 'done') return result.segments
+    if (result.state === 'failed') throw new Error(result.error)
   }
-
-  const text = res.text
-  if (!text) throw new Error('gemini returned empty audio transcript')
-  const segments = parseTimestampedTranscript(text)
-  assertCoversFullAudio(segments, durationSeconds)
-  return segments
+  throw new Error(`gemini audio transcript still running after ${maxPolls} polls`)
 }

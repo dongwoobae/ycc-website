@@ -1,7 +1,6 @@
 import { verifyQStash } from '@/lib/qstash'
-import { runAudioTranscriptStart, type AudioStartPayload } from '@/lib/sermons/audio-transcript-job'
+import { runAudioTranscriptPoll, type AudioPollPayload } from '@/lib/sermons/audio-transcript-job'
 
-// 작업 생성만 하고 돌아온다. 받아쓰기는 Gemini 쪽에서 돌고 poll-audio-transcript가 결과를 가져온다.
 export const maxDuration = 60
 
 export async function POST(req: Request) {
@@ -9,6 +8,6 @@ export async function POST(req: Request) {
   if (!(await verifyQStash(raw, req.headers.get('upstash-signature')))) {
     return new Response('unauthorized', { status: 401 })
   }
-  const outcome = await runAudioTranscriptStart(JSON.parse(raw) as AudioStartPayload)
+  const outcome = await runAudioTranscriptPoll(JSON.parse(raw) as AudioPollPayload)
   return Response.json({ ok: true, outcome })
 }
