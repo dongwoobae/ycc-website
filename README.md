@@ -680,14 +680,17 @@ NEXT_PUBLIC_SITE_URL=https://www.ycjc.kr npm run qstash:schedules -- --apply
 
 `qstash:schedules`는 다음 스케줄의 desired set을 적용합니다. `--apply` 없이는 목록 조회와 등록만 하고 삭제 후보를 출력만 합니다. 목록에서 빠진 `ycc-` 스케줄은 `--apply`를 붙였을 때만 삭제됩니다.
 
-| 스케줄                  | 주기                      | 역할                                           |
-| ----------------------- | ------------------------- | ---------------------------------------------- |
-| `websub-renew`          | 매일                      | WebSub 구독 lease 갱신(부경로 유지용)          |
-| `retry-summaries`       | 매시간                    | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
-| `reconcile-sermons`     | 매일                      | 업로드 감지 안전망                             |
-| `reconcile-sermons-sun` | 주일 11~17시 KST 매시간   | 업로드 감지 주경로(주일 예배)                  |
-| `reconcile-sermons-wed` | 수요일 20~23시 KST 매시간 | 업로드 감지 주경로(수요 예배)                  |
-| `analytics-rollup`      | 매일                      | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
+| 스케줄                       | 주기                           | 역할                                           |
+| ---------------------------- | ------------------------------ | ---------------------------------------------- |
+| `websub-renew`               | 매일                           | WebSub 구독 lease 갱신(부경로 유지용)          |
+| `retry-summaries`            | 매시간                         | 오디오 변환 잔류 회수, 요약 미완료분 재시도    |
+| `reconcile-sermons`          | 매일                           | 업로드 감지 안전망                             |
+| `reconcile-sermons-sun-head` | 주일 12:20·12:40 KST           | 업로드 감지 주경로(주일 예배)                  |
+| `reconcile-sermons-sun`      | 주일 13:00~15:40 KST 20분 간격 | 업로드 감지 주경로(주일 예배)                  |
+| `reconcile-sermons-sun-tail` | 주일 16:00 KST                 | 업로드 감지 주경로(주일 찬양예배)              |
+| `reconcile-sermons-wed`      | 수요일 20:20·20:40 KST         | 업로드 감지 주경로(수요 예배)                  |
+| `reconcile-sermons-wed-tail` | 수요일 21:00·21:20 KST         | 업로드 감지 주경로(수요 예배)                  |
+| `analytics-rollup`           | 매일                           | 방문 로그 → 일일 통계(`daily_page_stats`) 집계 |
 
 이 표는 `scripts/qstash-schedules.ts`의 `main()` desired 배열을 옮겨 적은 것입니다. cron 값의 정본은 그 스크립트입니다 — 어긋나면 스크립트 쪽이 맞습니다.
 

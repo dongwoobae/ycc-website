@@ -12,8 +12,9 @@ import { getCanonicalSiteOrigin } from '../src/lib/site-origin'
  * cleanup-thumbnails.ts·audit-bulletin-r2.ts와 같은 기본값 — 삭제는 실행 취소가 안 된다).
  * 대상 origin은 site-origin 기반 프로덕션 URL — 로컬 실행 시 NEXT_PUBLIC_SITE_URL을 반드시 앞에 붙인다.
  *
- * reconcile-sermons가 설교 등록의 주경로다. 주일·수요 예배 시간대에 매시간 돌리고 매일 1회로 받친다.
- * 시간대를 정한 근거(업로드 시각 분포)와 websub-renew 갱신 주기 근거는
+ * reconcile-sermons가 설교 등록의 주경로다. 주일·수요 업로드 시각대에 20분 간격으로
+ * 돌리고 매일 1회로 받친다. cron이 UTC라 한 창을 여러 스케줄로 나눴다. 시간대 근거(업로드 시각 분포)는
+ * docs/specs/2026-10-08-audio-transcript-async-design.md "폴링 시간표", websub-renew 갱신 주기 근거는
  * docs/specs/2026-09-17-sermon-detection-polling-design.md에 있다.
  */
 async function main() {
@@ -23,8 +24,11 @@ async function main() {
       { job: 'websub-renew', cron: '0 0 * * *', scheduleId: 'ycc-websub-renew' },
       { job: 'retry-summaries', cron: '0 * * * *', scheduleId: 'ycc-retry-summaries' },
       { job: 'reconcile-sermons', cron: '0 0 * * *', scheduleId: 'ycc-reconcile-sermons' },
-      { job: 'reconcile-sermons', cron: '0 2-8 * * 0', scheduleId: 'ycc-reconcile-sermons-sun' },
-      { job: 'reconcile-sermons', cron: '0 11-14 * * 3', scheduleId: 'ycc-reconcile-sermons-wed' },
+      { job: 'reconcile-sermons', cron: '20,40 3 * * 0', scheduleId: 'ycc-reconcile-sermons-sun-head' },
+      { job: 'reconcile-sermons', cron: '*/20 4-6 * * 0', scheduleId: 'ycc-reconcile-sermons-sun' },
+      { job: 'reconcile-sermons', cron: '0 7 * * 0', scheduleId: 'ycc-reconcile-sermons-sun-tail' },
+      { job: 'reconcile-sermons', cron: '20,40 11 * * 3', scheduleId: 'ycc-reconcile-sermons-wed' },
+      { job: 'reconcile-sermons', cron: '0,20 12 * * 3', scheduleId: 'ycc-reconcile-sermons-wed-tail' },
       { job: 'analytics-rollup', cron: '10 15 * * *', scheduleId: 'ycc-analytics-rollup' },
     ],
     apply,
