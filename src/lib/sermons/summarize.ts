@@ -86,11 +86,11 @@ interface ReclaimOutcome {
 }
 
 /**
- * 오디오 변환이 강제 종료돼 진행 표시만 남은 건을 회수한다(스위퍼 전용).
+ * 오디오 변환의 시작 job이 죽었거나 조회 사슬이 끊겨 진행 표시만 남은 건을 회수한다(스위퍼 전용).
  *
- * 회수마다 summary_attempts를 소비하는 이유는 강제 종료가 반복될 때 회수 → 또 종료 →
- * 또 회수로 끝없이 도는 것을 막기 위해서다. 상한을 채웠거나 재발행할 videoId가 없으면
- * no_transcript로 종결한다.
+ * 회수마다 summary_attempts를 소비하는 이유는 끊김이 반복될 때 회수 → 또 끊김 →
+ * 또 회수로 끝없이 도는 것을 막기 위해서다. 자막이 저장되면 이 횟수는 0으로 되돌아간다.
+ * 상한을 채웠거나 재발행할 videoId가 없으면 no_transcript로 종결한다.
  */
 export async function reclaimStaleAudioTranscripts(limit = 10, now: Date = new Date()): Promise<ReclaimOutcome> {
   const nextAt = new Date(now.getTime() + AUDIO_TRANSCRIPT_STALE_MS)

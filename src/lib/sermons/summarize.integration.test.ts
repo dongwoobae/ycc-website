@@ -543,7 +543,7 @@ describe('reclaimStaleAudioTranscripts (integration)', () => {
     expect(result.republished).not.toContain(id)
   })
 
-  // 강제 종료가 반복되면 회수 → 또 종료 → 또 회수로 끝없이 돈다. 횟수를 DB에 세야 끊긴다.
+  // 끊김이 반복되면 회수 → 또 끊김 → 또 회수로 끝없이 돈다. 횟수를 DB에 세야 끊긴다.
   it('gives up once the attempts are spent, clearing the marker', async () => {
     const { publishJob } = await import('@/lib/qstash')
     vi.mocked(publishJob).mockClear()
