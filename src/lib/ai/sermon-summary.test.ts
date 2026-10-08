@@ -29,6 +29,10 @@ describe('buildSummaryPrompt', () => {
     expect(prompt).toContain('어떤 순서가 이어지는지만 1~2문장으로 씁니다')
   })
 
+  it('같은 끝맺음을 되풀이하지 않게 한다', () => {
+    expect(buildSummaryPrompt(4140)).toContain('같은 끝맺음을 되풀이하지 않습니다')
+  })
+
   it('길이를 모르면(null) 강제 챕터 수 지시를 생략한다', () => {
     const prompt = buildSummaryPrompt(null)
     expect(prompt).not.toContain('900초를 초과해서는 안 됩니다')
