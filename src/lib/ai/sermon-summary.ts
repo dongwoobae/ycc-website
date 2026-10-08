@@ -7,7 +7,7 @@ import { generateContentWithFallback, resolveGeminiModel } from './gemini'
 export { DEFAULT_GEMINI_MODEL } from './gemini'
 
 /** 요약 1차 모델. 실패하면 Gemini 체인으로 넘어간다 — 선택 근거는 2026-06-23-youtube-websub-pipeline-design.md "AI 요약" 항목. */
-export const SUMMARY_OPENAI_MODEL = 'gpt-5.6-sol'
+export const SUMMARY_OPENAI_MODEL = 'gpt-6.1-sol'
 // summarize 라우트의 maxDuration 안에서 Gemini 폴백이 돌 시간을 남기려고 OpenAI 호출을 먼저 끊는다.
 const OPENAI_TIMEOUT_MS = 150_000
 
@@ -171,7 +171,6 @@ async function summarizeWithGemini(prompt: string, durationSeconds: number | nul
   const res = await generateContentWithFallback(ai, {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
-      temperature: 0.2,
       responseMimeType: 'application/json',
       responseSchema,
     },
