@@ -378,8 +378,12 @@ export async function summarizeClaimed(
   attempts: number,
 ): Promise<'ready' | 'failed'> {
   const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
+  const startedAt = Date.now()
+  const elapsedSeconds = () => Math.round((Date.now() - startedAt) / 1000)
   try {
     const result = await generateSermonSummary(transcriptText, durationSeconds)
+    const seconds = elapsedSeconds()
+    const usedModel = result.model ?? model
     await db
       .update(sermonSummaries)
       .set({
@@ -389,11 +393,11 @@ export async function summarizeClaimed(
         summaryStatus: 'ready',
         summaryGeneratedAt: new Date(),
         summaryNextRetryAt: null,
-        summaryModel: result.model ?? model,
+        summaryModel: usedModel,
       })
       .where(eq(sermonSummaries.sermonId, id))
-    console.log(`[summarize] AI 요약 완료 sermonId=${id} (시도 ${attempts}회, model=${result.model ?? model})`)
-    await log('update', 'sermon', id, `AI 요약 완료 (시도 ${attempts}회)`)
+    console.log(`[summarize] AI 요약 완료 sermonId=${id} (시도 ${attempts}회, ${seconds}초, model=${usedModel})`)
+    await log('update', 'sermon', id, `AI 요약 완료 (시도 ${attempts}회 · ${seconds}초 · ${usedModel})`)
     return 'ready'
   } catch (e) {
     console.error(`[summarize] ${id} failed`, e)
@@ -401,7 +405,7 @@ export async function summarizeClaimed(
       'error',
       'sermon',
       id,
-      `AI 요약 실패 (시도 ${attempts}회): ${e instanceof Error ? e.message.slice(0, 150) : String(e).slice(0, 150)}`,
+      `AI 요약 실패 (시도 ${attempts}회 · ${elapsedSeconds()}초): ${e instanceof Error ? e.message.slice(0, 150) : String(e).slice(0, 150)}`,
     )
     await db
       .update(sermonSummaries)

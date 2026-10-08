@@ -152,6 +152,17 @@ describe('summarizeClaimed (integration)', () => {
     expect(row.summaryStatus).toBe('ready')
     expect(row.summary).toBe('요약본')
   })
+
+  it('완료 로그에 시도 횟수·소요 초·모델을 남긴다', async () => {
+    const id = await insertSermonFixture(h.db, { summaryStatus: 'pending' })
+
+    await summarizeClaimed(id, 600, 'transcript body', 1)
+
+    const logs = await h.db.select().from(appLogs).where(eq(appLogs.entityId, id))
+    expect(logs.map((l) => l.message)).toContainEqual(
+      expect.stringMatching(/^AI 요약 완료 \(시도 1회 · \d+초 · \S+\)$/),
+    )
+  })
 })
 
 describe('publishSummarizeOrMarkFailed (integration)', () => {
