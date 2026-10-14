@@ -8,6 +8,8 @@ export const FALLBACK_GEMINI_MODEL = 'gemini-3.6-flash'
 export const AUDIO_TRANSCRIPT_MODEL = 'gemini-3.1-pro-preview'
 /** AUDIO_TRANSCRIPT_MODEL의 preview 태그가 떨어지고 정식 출시되면 쓸 이름. preview가 단종(404)되면 자동으로 이쪽으로 전환된다. */
 export const AUDIO_TRANSCRIPT_MODEL_GA = 'gemini-3.1-pro'
+/** Pro가 둘 다 안 될 때 Flash보다 먼저 시도할 모델. 주력으로 두지 않은 근거는 2026-10-08-audio-transcript-async-design.md "모델 체인". */
+export const AUDIO_TRANSCRIPT_MODEL_STABLE = 'gemini-4-argon'
 
 export function resolveGeminiModel(): string {
   return process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
