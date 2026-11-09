@@ -8,7 +8,8 @@ import { test, expect } from '@playwright/test'
  *     애니메이션으로 걸렸다가 도중에 얼어붙어, 맨 위가 아닌 곳(관측: 2~92px)에서 멈췄다.
  *  2. loading.tsx 가 있는 라우트(/news·/bulletins·/gallery)는 구 스크롤 핸들러의
  *     findDOMNode 가 <head>로 호이스팅된 metadata 를 집어 스크롤 자체를 포기했다.
- *     → next.config.ts 의 experimental.appNewScrollHandler 로 해결.
+ *     → experimental.appNewScrollHandler 로 해결했다. Next 16.4 에서는 Fragment ref 를 쓰는
+ *       새 핸들러만 남아 플래그가 없어졌다(2026-11-09 확인).
  *
  * 목적지에 콘텐츠가 없으면 검사가 성립하지 않는다 — 아래 skip 참고.
  */
